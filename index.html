@@ -71,7 +71,6 @@
             color: var(--marigold);
             text-transform: uppercase;
             letter-spacing: 2px;
-            border-bottom: 2px dashed var(--saffron);
             padding-bottom: 0.5rem;
         }
 
@@ -141,7 +140,6 @@
             font-size: 2.5rem;
             margin-top: 4rem;
             color: var(--chakra-blue);
-            border-bottom: 4px solid var(--saffron);
             padding-bottom: 0.5rem;
         }
 
@@ -265,16 +263,7 @@
         }
         
         hr {
-            border: 0;
-            height: 4px;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--saffron),
-                var(--saffron) 10px,
-                var(--ivory) 10px,
-                var(--ivory) 20px
-            );
-            margin: 4rem 0;
+            display: none;
         }
     </style>
 </head>
@@ -321,6 +310,7 @@
             <li><a href="#cli">20. Englist CLI</a></li>
             <li><a href="#lsp">21. Language Server (LSP)</a></li>
             <li><a href="#roadmap">22. Future Roadmap</a></li>
+            <li><a href="#benchmarks">23. Benchmarks</a></li>
         </ul>
     </nav>
 
@@ -571,6 +561,12 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
             <li><strong>Standard Library Maturation:</strong> Implementing cryptographic hashing, highly concurrent threading models, and a non-blocking TCP server entirely natively.</li>
             <li><strong>LLVM Backend:</strong> While the C backend is excellent for bootstrapping, a native LLVM IR backend is planned for even tighter optimization control and faster compilation speeds (bypassing the C compiler intermediary).</li>
         </ol>
+
+        <h2 id="benchmarks">23. Benchmarks</h2>
+        <p>The Englist compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
+        <p>You can execute the benchmarking suite using the built-in CLI command:</p>
+        <pre><code>eng benchmark benchmarks --runs 5</code></pre>
+        <p>The performance metrics are tracked daily through our continuous integration pipelines, ensuring the C and LLVM codegen backends maintain zero-cost abstraction guarantees.</p>
 
     </main>
 
