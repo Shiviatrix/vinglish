@@ -1,5 +1,0 @@
-function foo(x: borrow mutable number) returns number
-begin
-    let y be borrow x
-    return deref (deref y)
-end

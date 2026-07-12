@@ -8,3 +8,15 @@ test_borrow
 __pycache__/
 .DS_Store
 *.eps
+
+# Ignore scratch scripts and old backup files
+/fix*.py
+/main.rs.recovered
+/a.c
+/rt.c
+
+# Ignore ad-hoc test scripts in root (real tests should be in tests/)
+/test*.eng
+/test*.rs
+/factorial.eng
+/test.eng
