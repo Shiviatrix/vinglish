@@ -286,13 +286,11 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                     pos += 1;
                     Token::NotEq
                 } else {
-                    errors.push(LexError::UnexpectedChar {
-                        ch: '!',
-                        offset: start_offs,
-                    });
-                    continue;
+                    Token::Bang
                 }
             }
+            '|' => Token::Pipe,
+            '?' => Token::QuestionMark,
             '<' => {
                 if next == Some('=') {
                     pos += 1;

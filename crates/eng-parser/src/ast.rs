@@ -148,6 +148,17 @@ pub enum Expr {
     Block(Box<Block>),
     /// List literal: `[1, 2, 3]`
     List { elements: Vec<Expr>, span: Span },
+    /// Macro call: `fmt!(...)`
+    MacroCall {
+        name: Ident,
+        args: Vec<Expr>,
+        span: Span,
+    },
+    /// Postfix Try `?`
+    PostfixTry {
+        inner: Box<Expr>,
+        span: Span,
+    },
 }
 
 impl Expr {
@@ -161,6 +172,8 @@ impl Expr {
             | Expr::Index { span, .. }
             | Expr::StructLit { span, .. }
             | Expr::List { span, .. }
+            | Expr::MacroCall { span, .. }
+            | Expr::PostfixTry { span, .. }
             | Expr::GenericInst { span, .. } => *span,
             Expr::Ident(id) => id.span,
             Expr::Block(b) => b.span,
@@ -446,9 +459,26 @@ pub struct RouteDecl {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Variant {
+    pub name: Ident,
+    pub payload: Option<TypeExpr>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDef {
+    pub visibility: Visibility,
+    pub name: Ident,
+    pub type_params: Vec<Ident>,
+    pub variants: Vec<Variant>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Item {
     Function(FunctionDef),
     Type(TypeDef),
+    Enum(EnumDef),
     Package(PackageDecl),
     Module(ModuleDecl),
     Use(UseDecl),
@@ -462,6 +492,7 @@ impl Item {
         match self {
             Item::Function(f) => f.span,
             Item::Type(t) => t.span,
+            Item::Enum(e) => e.span,
             Item::Package(p) => p.span,
             Item::Module(m) => m.span,
             Item::Use(u) => u.span,

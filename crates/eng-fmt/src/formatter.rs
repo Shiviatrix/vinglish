@@ -78,6 +78,19 @@ impl Formatter {
                 self.dedent();
             }
             Item::Statement(s) => self.fmt_stmt(s),
+            Item::Enum(e) => {
+                self.line(&format!("enum {} {{", e.name.name));
+                self.indent();
+                for variant in &e.variants {
+                    if let Some(payload) = &variant.payload {
+                        self.line(&format!("{} {}", variant.name.name, fmt_type(payload)));
+                    } else {
+                        self.line(&format!("{}", variant.name.name));
+                    }
+                }
+                self.dedent();
+                self.line("}");
+            }
         }
     }
 
@@ -330,6 +343,13 @@ fn fmt_expr(expr: &Expr) -> String {
                 .collect::<Vec<_>>()
                 .join(", ");
             format!("{} {{ {} }}", fmt_expr(ty), fields_str)
+        }
+        Expr::MacroCall { name, args, .. } => {
+            let args_str = args.iter().map(fmt_expr).collect::<Vec<_>>().join(", ");
+            format!("{}!({})", name.name, args_str)
+        }
+        Expr::PostfixTry { inner, .. } => {
+            format!("{}?", fmt_expr(inner))
         }
     }
 }

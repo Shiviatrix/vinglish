@@ -211,6 +211,7 @@ pub struct FunctionSymbol {
     pub visibility: Visibility,
     pub ty: Type,
     pub generic_params: Vec<TypeVar>,
+    pub is_variant_constructor: Option<(TypeId, usize)>,
 }
 
 #[derive(Debug, Clone)]

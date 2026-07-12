@@ -130,6 +130,18 @@ impl<'a> MirLowerer<'a> {
                     eng_hir::symbol::FunctionId(SymbolId(0))
                 };
 
+                if let Some(fs) = self.symbol_table.get_func(func_id) {
+                    if let Some((enum_id, variant_index)) = fs.is_variant_constructor {
+                        let temp = self.new_temp(*ty);
+                        self.push_instr(Instruction::HeapAllocate(temp, enum_id));
+                        self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(0), Operand::Constant(eng_parser::ast::Literal::Int(variant_index as i64))));
+                        if !lowered_args.is_empty() {
+                            self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(variant_index), lowered_args[0].clone()));
+                        }
+                        return Operand::Var(temp);
+                    }
+                }
+
                 let temp = self.new_temp(*ty);
                 self.push_instr(Instruction::Call(temp, func_id, lowered_args));
                 Operand::Var(temp)
@@ -235,6 +247,59 @@ impl<'a> MirLowerer<'a> {
                 let temp = self.new_temp(*ty);
                 self.push_instr(Instruction::LoadField(temp, obj_op, *field_id));
                 Operand::Var(temp)
+            }
+            HirExpr::MacroCall { name, args, ty, .. } => {
+                let mut lowered_args = Vec::new();
+                for arg in args {
+                    lowered_args.push(self.lower_expr(arg));
+                }
+                
+                let temp = self.new_temp(*ty);
+                if name == "Ok" {
+                    // Result struct layout: { tag: number, payload: T }
+                    let int_ty_id = self.symbol_table.intern_type(eng_hir::types::Type::Int);
+                    self.push_instr(Instruction::HeapAllocate(temp, eng_hir::symbol::TypeId(eng_hir::symbol::SymbolId(0))));
+                    let tag_temp = self.new_temp(int_ty_id);
+                    self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(eng_parser::ast::Literal::Int(1)))); // tag 1 = Ok
+                    self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
+                    self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(1), lowered_args[0].clone()));
+                } else if name == "Err" {
+                    let int_ty_id = self.symbol_table.intern_type(eng_hir::types::Type::Int);
+                    self.push_instr(Instruction::HeapAllocate(temp, eng_hir::symbol::TypeId(eng_hir::symbol::SymbolId(0))));
+                    let tag_temp = self.new_temp(int_ty_id);
+                    self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(eng_parser::ast::Literal::Int(0)))); // tag 0 = Err
+                    self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
+                    self.push_instr(Instruction::StoreField(temp, eng_hir::symbol::FieldId(1), lowered_args[0].clone()));
+                } else {
+                    self.push_instr(Instruction::CallIntrinsic(temp, name.clone(), lowered_args));
+                }
+                Operand::Var(temp)
+            }
+            HirExpr::PostfixTry { inner, ty, .. } => {
+                let inner_val = self.lower_expr(inner);
+                let int_ty_id = self.symbol_table.intern_type(eng_hir::types::Type::Int);
+                let tag_temp = self.new_temp(int_ty_id);
+                self.push_instr(Instruction::LoadField(tag_temp, inner_val.clone(), eng_hir::symbol::FieldId(0)));
+                
+                let bool_ty_id = self.symbol_table.intern_type(eng_hir::types::Type::Bool);
+                let is_ok = self.new_temp(bool_ty_id);
+                // Assume Ok variant index is 1 because we added "tag" as field 0
+                self.push_instr(Instruction::BinaryOp(is_ok, eng_parser::ast::BinOp::Eq, Operand::Var(tag_temp), Operand::Constant(eng_parser::ast::Literal::Int(1))));
+                
+                let ok_block = self.new_block();
+                let err_block = self.new_block();
+                
+                self.end_block(Terminator::Branch(Operand::Var(is_ok), ok_block, err_block));
+                
+                // Err block: return the result value directly!
+                self.switch_to_block(err_block);
+                self.end_block(Terminator::Return(Some(inner_val.clone())));
+                
+                // Ok block: load field 1 (Ok payload)
+                self.switch_to_block(ok_block);
+                let ok_val = self.new_temp(*ty);
+                self.push_instr(Instruction::LoadField(ok_val, inner_val, eng_hir::symbol::FieldId(1)));
+                Operand::Var(ok_val)
             }
             _ => Operand::Constant(eng_parser::ast::Literal::Unit),
         }

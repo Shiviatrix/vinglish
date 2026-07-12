@@ -230,7 +230,9 @@
             <li><a href="#control-flow">4. Control Flow</a></li>
             <li><a href="#memory">5. Memory & Ownership</a></li>
             <li><a href="#generics">6. Generics & Polymorphism</a></li>
-            <li><a href="#structs">7. Structs & Layout</a></li>
+            <li><a href="#error-handling">7. Error Handling</a></li>
+            <li><a href="#formatting">8. String Formatting</a></li>
+            <li><a href="#structs">9. Structs & Layout</a></li>
         </ul>
 
         <h2>II. Standard Library</h2>
@@ -361,7 +363,24 @@ struct, type, address</span></code></pre>
     <span class="highlight-keyword">return</span> p
 <span class="highlight-keyword">end</span></code></pre>
 
-        <h2 id="structs">7. Structs & Layout</h2>
+        <h2 id="error-handling">7. Error Handling</h2>
+        <p>Englist avoids exceptions entirely, utilizing explicit <code>Result&lt;T, E&gt;</code> types combined with the postfix <code>?</code> operator for safe error propagation. Errors must be handled or explicitly propagated, ensuring resilient code.</p>
+        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">read_config</span>() <span class="highlight-keyword">returns</span> <span class="highlight-type">Result</span>&lt;<span class="highlight-type">text</span>, <span class="highlight-type">text</span>&gt;
+<span class="highlight-keyword">begin</span>
+    <span class="highlight-keyword">let</span> file <span class="highlight-keyword">be</span> open(<span class="highlight-string">"config.txt"</span>)<span class="highlight-keyword">?</span>
+    <span class="highlight-keyword">let</span> content <span class="highlight-keyword">be</span> read_to_string(<span class="highlight-keyword">borrow</span> file)<span class="highlight-keyword">?</span>
+    <span class="highlight-keyword">return</span> <span class="highlight-function">Ok</span>(content)
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="formatting">8. String Formatting</h2>
+        <p>Dynamic string interpolation is handled natively at compile time via the <code>fmt!</code> macro. It parses the format string to evaluate expressions and automatically coerces primitive types into a safe textual representation.</p>
+        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">greet</span>(name: <span class="highlight-type">text</span>, age: <span class="highlight-type">number</span>)
+<span class="highlight-keyword">begin</span>
+    <span class="highlight-keyword">let</span> msg <span class="highlight-keyword">be</span> <span class="highlight-function">fmt!</span>(<span class="highlight-string">"Hello, my name is {name} and I am {age} years old."</span>)
+    print(msg)
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="structs">9. Structs & Layout</h2>
         <p>Structs in Englist map 1:1 with C structures. They guarantee memory layout order, making them ideal for systems programming, foreign function interfacing (FFI), and network packet serialization.</p>
         <p>Struct instantiation utilizes brace syntax. Every field must be initialized.</p>
 

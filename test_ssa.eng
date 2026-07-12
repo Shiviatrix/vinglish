@@ -1,0 +1,10 @@
+function calculate(number x) returns number
+begin
+    let mutable y be x
+    if x is above 10 begin
+        y be x * 2
+    end otherwise begin
+        y be x + 5
+    end
+    y
+end

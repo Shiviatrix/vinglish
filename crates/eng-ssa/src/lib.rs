@@ -96,6 +96,11 @@ fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<eng_hir::sym
                     .map(|(op, b)| (convert_operand(op), b))
                     .collect(),
             ),
+            Instruction::CallIntrinsic(dest, name, args) => Instruction::CallIntrinsic(
+                convert_var(dest),
+                name,
+                args.into_iter().map(convert_operand).collect(),
+            ),
         }
     };
 

@@ -1,0 +1,48 @@
+use std.math
+use std.collections.vector
+use std.io
+
+function main() returns number
+begin
+    print("Testing Math Module...")
+    let abs_val be abs(-10)
+    if abs_val is 10 then
+        print("  abs(-10) = 10: OK")
+    otherwise
+        print("  abs(-10) = 10: FAILED")
+
+    let min_val be min(5, 8)
+    if min_val is 5 then
+        print("  min(5, 8) = 5: OK")
+    otherwise
+        print("  min(5, 8) = 5: FAILED")
+
+    print("Testing Vector Module...")
+    let vec be vector_new<number>()
+    push<number>(borrow mutable vec, 42)
+    push<number>(borrow mutable vec, 100)
+    push<number>(borrow mutable vec, 200)
+
+    let val1 be get<number>(borrow vec, 0)
+    let val2 be get<number>(borrow vec, 1)
+    let val3 be get<number>(borrow vec, 2)
+
+    if val1 is 42 then
+        print("  vec[0] = 42: OK")
+    otherwise
+        print("  vec[0] = 42: FAILED")
+
+    if val2 is 100 then
+        print("  vec[1] = 100: OK")
+    otherwise
+        print("  vec[1] = 100: FAILED")
+
+    if val3 is 200 then
+        print("  vec[2] = 200: OK")
+    otherwise
+        print("  vec[2] = 200: FAILED")
+
+    vector_free<number>(borrow mutable vec)
+    print("All tests completed.")
+    return 0
+end

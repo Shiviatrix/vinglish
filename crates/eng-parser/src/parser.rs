@@ -176,7 +176,7 @@ impl<'t> Parser<'t> {
                 Some(Item::Function(self.parse_function(vis, true)))
             }
             Token::Function => Some(Item::Function(self.parse_function(vis, false))),
-            Token::Type => Some(Item::Type(self.parse_type_def(vis))),
+            Token::Type => Some(self.parse_type_decl(vis)),
             Token::Package => Some(Item::Package(self.parse_package())),
             Token::Module => Some(Item::Module(self.parse_module_decl())),
             Token::Use => Some(Item::Use(self.parse_use())),
@@ -1061,6 +1061,41 @@ impl<'t> Parser<'t> {
                         span,
                     };
                 }
+                Token::Bang => {
+                    self.advance();
+                    let call_start = self.current_span();
+                    self.expect(&Token::LParen);
+                    let mut args = Vec::new();
+                    while !matches!(self.current(), Token::RParen | Token::EOF) {
+                        if let Some(arg) = self.parse_expr() {
+                            args.push(arg);
+                        }
+                        if !self.eat(&Token::Comma) {
+                            break;
+                        }
+                    }
+                    let end = self.current_span();
+                    self.expect(&Token::RParen);
+                    let span = expr.span().merge(end);
+                    if let Expr::Ident(name) = expr {
+                        expr = Expr::MacroCall { name, args, span };
+                    } else {
+                        self.errors.push(ParseError::Custom {
+                            message: "Macro calls must be on identifiers".to_string(),
+                            span,
+                        });
+                        break;
+                    }
+                }
+                Token::QuestionMark => {
+                    let end = self.current_span();
+                    self.advance();
+                    let span = expr.span().merge(end);
+                    expr = Expr::PostfixTry {
+                        inner: Box::new(expr),
+                        span,
+                    };
+                }
                 // Natural-language call: `calculate tax for order`
                 // If ident follows ident, treat it as function call with next token as arg
                 _ => break,
@@ -1224,6 +1259,12 @@ impl<'t> Parser<'t> {
                 let val = self.parse_type_expr().map(Box::new)?;
                 return Some(TypeExpr::Dict { key, val });
             }
+            if s == "Result" {
+                self.advance();
+                self.eat(&Token::Of);
+                let inner = self.parse_type_expr().map(Box::new)?;
+                return Some(TypeExpr::Result(inner));
+            }
         }
         match self.current().clone() {
             Token::Number => {
@@ -1277,14 +1318,52 @@ impl<'t> Parser<'t> {
 
     // ── Other top-level items ─────────────────────────────────────────────────
 
-    fn parse_type_def(&mut self, visibility: Visibility) -> TypeDef {
+    fn parse_type_decl(&mut self, visibility: Visibility) -> Item {
         let start = self.current_span();
         self.expect(&Token::Type);
         let name = self
             .expect_ident()
             .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         let type_params = self.parse_type_params();
+        
         self.skip_newlines();
+
+        // Enum definition
+        if self.eat(&Token::Be) { // "=" is token Be
+            let mut variants = Vec::new();
+            loop {
+                self.skip_newlines();
+                if let Some(vname) = self.expect_ident() {
+                    let mut payload = None;
+                    if self.eat(&Token::LParen) {
+                        payload = self.parse_type_expr();
+                        self.expect(&Token::RParen);
+                    }
+                    variants.push(Variant {
+                        name: vname.clone(),
+                        payload,
+                        span: vname.span,
+                    });
+                } else {
+                    break;
+                }
+
+                self.skip_newlines();
+                if !self.eat(&Token::Pipe) {
+                    break;
+                }
+            }
+
+            return Item::Enum(EnumDef {
+                visibility,
+                name,
+                type_params,
+                variants,
+                span: start.merge(self.current_span()),
+            });
+        }
+
+        // Struct definition
         let capabilities = if self.eat(&Token::Requires) {
             self.parse_ident_list()
         } else {
@@ -1292,20 +1371,17 @@ impl<'t> Parser<'t> {
         };
         self.skip_newlines();
 
-        // Parse fields (if any) using a block-like structure, but not actually a Block of Stmt.
+        // Parse fields (if any) using a block-like structure
         let mut fields = Vec::new();
         if self.eat(&Token::Indent) || self.eat(&Token::Begin) {
-            // Fields are basically separated by newlines
             loop {
                 self.skip_newlines();
                 if matches!(self.current(), Token::Dedent | Token::End | Token::EOF) {
                     break;
                 }
 
-                // Parse a field definition, which looks like a param: `name: type` or `type name`
                 let start_idx = self.current_span().start;
-                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon)
-                {
+                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon) {
                     if let Some(fname) = self.expect_ident() {
                         self.eat(&Token::Colon);
                         if let Some(ty) = self.parse_type_expr() {
@@ -1329,11 +1405,9 @@ impl<'t> Parser<'t> {
                 }
 
                 if self.current_span().start == start_idx {
-                    // Nothing was consumed, break or advance to prevent infinite loop
                     self.advance();
                 }
 
-                // Optional comma (usually newline separated)
                 self.eat(&Token::Comma);
                 self.skip_newlines();
             }
@@ -1342,14 +1416,14 @@ impl<'t> Parser<'t> {
             }
         }
 
-        TypeDef {
+        Item::Type(TypeDef {
             visibility,
             name,
             type_params,
             fields,
             capabilities,
             span: start.merge(self.current_span()),
-        }
+        })
     }
 
     fn parse_package(&mut self) -> PackageDecl {

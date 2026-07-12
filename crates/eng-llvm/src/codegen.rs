@@ -263,6 +263,9 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 let val = self.resolve_operand(op)?;
                 self.ssa_values.insert(*dest, val);
             }
+            Instruction::CallIntrinsic(_dest, _name, _args) => {
+                // Not supported in LLVM yet, just dummy
+            }
 
             Instruction::BinaryOp(dest, op, left, right) => {
                 let lhs = self.resolve_operand(left)?;

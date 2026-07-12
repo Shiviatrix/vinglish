@@ -127,7 +127,8 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                             | Instruction::<V>::Phi(dest, _) => used_vars.contains(dest),
                             Instruction::<V>::StoreField(_, _, _)
                             | Instruction::<V>::Drop(_)
-                            | Instruction::<V>::Call(_, _, _) => true, // Side effects!
+                            | Instruction::<V>::Call(_, _, _)
+                            | Instruction::<V>::CallIntrinsic(_, _, _) => true, // Side effects!
                         }
                     });
 

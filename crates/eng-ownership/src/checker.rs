@@ -242,6 +242,14 @@ impl Checker {
                 }
             }
             Expr::Lit { .. } => {}
+            Expr::MacroCall { args, .. } => {
+                for arg in args {
+                    self.check_expr_use(arg);
+                }
+            }
+            Expr::PostfixTry { inner, .. } => {
+                self.check_expr_use(inner);
+            }
         }
     }
 }

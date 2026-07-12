@@ -66,7 +66,7 @@ impl OwnershipAnalysisPass {
                                 }
                             }
                         }
-                        Instruction::<SsaValueId>::Call(dest, _, args) => {
+                        Instruction::<SsaValueId>::Call(dest, _, args) | Instruction::<SsaValueId>::CallIntrinsic(dest, _, args) => {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
 

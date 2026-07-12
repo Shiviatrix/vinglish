@@ -1,0 +1,10 @@
+type Pair<T>
+    first: T
+    second: T
+end
+
+function main() returns number
+begin
+    let p be Pair<number> { first: 10, second: 20 }
+    return p.second
+end

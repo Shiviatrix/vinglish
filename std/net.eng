@@ -11,10 +11,13 @@ begin
     fd: number
 end
 
-public function tcp_connect(text host, number port) returns TcpSocket
+public function tcp_connect(text host, number port) returns Result of TcpSocket
 begin
     let fd be eng_net_tcp_connect(host, port)
-    return TcpSocket { fd: fd }
+    if fd is below 0 then begin
+        return Err("Connection failed")
+    end
+    return Ok(TcpSocket { fd: fd })
 end
 
 public function is_valid(borrow TcpSocket sock) returns number
@@ -25,17 +28,22 @@ begin
     return 1
 end
 
-public function tcp_send(borrow TcpSocket sock, text data) returns number
+public function tcp_send(borrow TcpSocket sock, text data) returns Result of number
 begin
-    return eng_net_tcp_send(sock.fd, data)
+    let res be eng_net_tcp_send(sock.fd, data)
+    if res is below 0 then begin
+        return Err("Send failed")
+    end
+    return Ok(res)
 end
 
-public function tcp_receive(borrow TcpSocket sock, number max_bytes) returns text
+public function tcp_receive(borrow TcpSocket sock, number max_bytes) returns Result of text
 begin
-    return eng_net_tcp_recv(sock.fd, max_bytes)
+    let res be eng_net_tcp_recv(sock.fd, max_bytes)
+    return Ok(res)
 end
 
-public function close(borrow TcpSocket sock)
+public function tcp_close(borrow TcpSocket sock)
 begin
     eng_net_tcp_close(sock.fd)
 end

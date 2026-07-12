@@ -1,0 +1,13 @@
+use std.math
+use std.io
+
+function main() returns number
+begin
+    let result be pow(2, 3)
+    if result is 8
+        print("pow(2, 3) is 8!")
+    otherwise
+        print("pow(2, 3) failed!")
+    
+    return 0
+end

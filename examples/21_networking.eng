@@ -11,20 +11,17 @@ use std.io
 use std.net
 use std.string
 
-function main() returns number
+function main() returns Result of number
 begin
-    let sock be tcp_connect("google.com", 80)
-    if is_valid(borrow sock) is 0 then begin
-        print("Failed to connect!")
-        return 1
-    end
+    let sock be tcp_connect("127.0.0.1", 8080)?
     
-    let request be "GET / HTTP/1.1\r\nHost: google.com\r\nConnection: close\r\n\r\n"
-    tcp_send(borrow sock, request)
+    let request be fmt!("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+    tcp_send(borrow sock, request)?
     
-    let response be tcp_receive(borrow sock, 512)
+    let response be tcp_receive(borrow sock, 512)?
+    print("Received response:")
     print(response)
     
-    close(borrow sock)
-    return 0
+    tcp_close(borrow sock)
+    return Ok(0)
 end

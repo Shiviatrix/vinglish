@@ -1,0 +1,7 @@
+function calculate(number x, number y) returns number
+begin
+    let a be x + y
+    let b be x + y
+    let c be a + b
+    c
+end

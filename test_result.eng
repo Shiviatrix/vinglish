@@ -1,0 +1,4 @@
+function main() returns Result of number
+begin
+    return Ok(1)
+end

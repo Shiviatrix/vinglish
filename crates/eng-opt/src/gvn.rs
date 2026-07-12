@@ -46,7 +46,7 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                             replace_operand(left);
                             replace_operand(right);
                         }
-                        Instruction::Call(_, _, args) => {
+                        Instruction::Call(_, _, args) | Instruction::CallIntrinsic(_, _, args) => {
                             for arg in args {
                                 replace_operand(arg);
                             }

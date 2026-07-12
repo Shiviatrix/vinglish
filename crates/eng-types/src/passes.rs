@@ -87,6 +87,7 @@ impl CompilerContext {
                             Box::new(Type::Unit),
                         ),
                         generic_params: vec![],
+                        is_variant_constructor: None,
                     },
                 );
                 if let Some(fs) = symbol_table.get_func_mut(sym_id) {
@@ -194,6 +195,65 @@ impl CompilerPass for NameResolutionPass {
                         ctx.define(qualified_name, ScopedId::Type(id));
                     }
                 }
+                AstItem::Enum(e) => {
+                    let mut generic_params = Vec::new();
+                    for _ in &e.type_params {
+                        generic_params.push(eng_hir::types::TypeVar::fresh());
+                    }
+
+                    let qualified_name = if ctx.current_module.is_empty() {
+                        e.name.name.clone()
+                    } else {
+                        format!("{}.{}", ctx.current_module, e.name.name)
+                    };
+
+                    // An Enum is also a type
+                    let mut ts = TypeSymbol::new(
+                        eng_hir::symbol::TypeId(SymbolId(0)),
+                        qualified_name.clone(),
+                        e.visibility,
+                    );
+                    ts.generic_params = generic_params.clone();
+                    
+                    let id = ctx.symbol_table.define_type(qualified_name.clone(), ts);
+                    if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
+                        ts.id = id;
+                    }
+                    
+                    ctx.define(e.name.name.clone(), ScopedId::Type(id));
+                    if !ctx.current_module.is_empty() {
+                        ctx.define(qualified_name.clone(), ScopedId::Type(id));
+                    }
+                    
+                    // We also need to define constructor functions for each variant
+                    // E.g., `Ok` is a generic function `T -> Result<T, E>`.
+                    for (index, variant) in e.variants.iter().enumerate() {
+                        let variant_name = if ctx.current_module.is_empty() {
+                            variant.name.name.clone()
+                        } else {
+                            format!("{}.{}", ctx.current_module, variant.name.name)
+                        };
+
+                        let fn_id = ctx.symbol_table.define_func(
+                            variant_name.clone(),
+                            FunctionSymbol {
+                                id: eng_hir::symbol::FunctionId(SymbolId(0)),
+                                name: variant_name.clone(),
+                                visibility: e.visibility,
+                                ty: Type::Unit, // Will be inferred in type_pass
+                                generic_params: generic_params.clone(),
+                                is_variant_constructor: Some((id, index + 1)), // + 1 for tag
+                            },
+                        );
+                        if let Some(fs) = ctx.symbol_table.get_func_mut(fn_id) {
+                            fs.id = fn_id;
+                        }
+                        ctx.define(variant.name.name.clone(), ScopedId::Func(fn_id));
+                        if !ctx.current_module.is_empty() {
+                            ctx.define(variant_name, ScopedId::Func(fn_id));
+                        }
+                    }
+                }
                 AstItem::Function(f) => {
                     let mut generic_params = Vec::new();
                     for _ in &f.type_params {
@@ -220,6 +280,7 @@ impl CompilerPass for NameResolutionPass {
                             visibility: f.visibility,
                             ty: Type::Unit, // Will be inferred later
                             generic_params,
+                            is_variant_constructor: None,
                         },
                     );
                     if let Some(fs) = ctx.symbol_table.get_func_mut(id) {

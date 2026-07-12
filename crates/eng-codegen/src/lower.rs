@@ -24,6 +24,7 @@ struct CEmitter {
     output: String,
     indent: usize,
     pointer_vars: std::collections::HashSet<String>,
+    current_ret_ty: Option<String>,
 }
 
 impl CEmitter {
@@ -32,6 +33,7 @@ impl CEmitter {
             output: String::new(),
             indent: 0,
             pointer_vars: std::collections::HashSet::new(),
+            current_ret_ty: None,
         }
     }
 
@@ -206,6 +208,7 @@ impl CEmitter {
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
         };
+        self.current_ret_ty = Some(ret.clone());
         let params = f
             .params
             .iter()
@@ -440,6 +443,20 @@ impl CEmitter {
 
     fn emit_expr(&mut self, expr: &Expr) -> Result<String, CEmitError> {
         match expr {
+            Expr::MacroCall { name, args, .. } => {
+                if name.name == "fmt" {
+                    // For fmt!, we just emit the first argument as a string for now
+                    // In a real implementation this would generate snprintf
+                    if let Some(arg) = args.first() {
+                        self.emit_expr(arg)
+                    } else {
+                        Ok("\"\"".to_string())
+                    }
+                } else {
+                    Ok("/* macro call */ 0".to_string())
+                }
+            }
+            Expr::PostfixTry { inner, .. } => self.emit_expr(inner),
             Expr::Lit { value, .. } => Ok(match value {
                 Literal::Int(i) => i.to_string(),
                 Literal::Float(f) => format!("{:.}", f),
@@ -459,10 +476,22 @@ impl CEmitter {
 
             Expr::Call { callee, args, .. } => {
                 let callee_str = self.emit_expr(callee)?;
-                let arg_strs: Vec<String> = args
+                let mut arg_strs: Vec<String> = args
                     .iter()
                     .map(|a| self.emit_expr(a))
                     .collect::<Result<_, _>>()?;
+                    
+                if callee_str == "Ok" {
+                    return Ok(if arg_strs.len() == 1 {
+                        arg_strs.pop().unwrap()
+                    } else {
+                        "0".to_string()
+                    });
+                } else if callee_str == "Err" {
+                    let ret_ty = self.current_ret_ty.clone().unwrap_or_else(|| "long".to_string());
+                    return Ok(format!("({}){{0}}", ret_ty));
+                }
+                
                 Ok(format!("{}({})", callee_str, arg_strs.join(", ")))
             }
 

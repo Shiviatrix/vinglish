@@ -15,6 +15,8 @@ pub enum ParseError {
     InvalidExpr { span: Span },
     #[error("invalid type expression at {span}")]
     InvalidType { span: Span },
+    #[error("{message} at {span}")]
+    Custom { message: String, span: Span },
 }
 
 impl ParseError {
@@ -28,9 +30,10 @@ impl ParseError {
 
     pub fn span(&self) -> Span {
         match self {
-            Self::Expected { span, .. }
-            | Self::InvalidExpr { span }
-            | Self::InvalidType { span } => *span,
+            Self::Expected { span, .. } => *span,
+            Self::InvalidExpr { span } => *span,
+            Self::InvalidType { span } => *span,
+            Self::Custom { span, .. } => *span,
             Self::UnexpectedEof => Span::dummy(),
         }
     }

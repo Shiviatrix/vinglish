@@ -402,6 +402,88 @@ impl TypeInferencePass {
                     span: t.span,
                 }))
             }
+            Item::Enum(e) => {
+                let env = if let Some(SymbolKind::Type(ts)) = ctx
+                    .symbol_table
+                    .lookup(&e.name.name)
+                    .and_then(|id| ctx.symbol_table.get(id))
+                {
+                    let mut env_map = std::collections::HashMap::new();
+                    for (i, param) in ts.generic_params.iter().enumerate() {
+                        if let Some(ident) = e.type_params.get(i) {
+                            env_map.insert(ident.name.clone(), *param);
+                        }
+                    }
+                    env_map
+                } else {
+                    std::collections::HashMap::new()
+                };
+
+                let qualified_name = if ctx.current_module.is_empty() {
+                    e.name.name.clone()
+                } else {
+                    format!("{}.{}", ctx.current_module, e.name.name)
+                };
+                let id = ctx
+                    .symbol_table
+                    .lookup(&qualified_name)
+                    .map(TypeId)
+                    .unwrap_or(TypeId(SymbolId(0)));
+
+                let mut hir_variants = Vec::new();
+                if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
+                    ts.add_field("tag".to_string(), Type::Int, Visibility::Public);
+                }
+
+                for (index, v) in e.variants.iter().enumerate() {
+                    let ty = v.payload.as_ref().map(|ty_expr| {
+                        type_expr_to_type(ty_expr, &env)
+                    }).unwrap_or(Type::Unit);
+
+                    if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
+                        ts.add_field(v.name.name.clone(), ty.clone(), Visibility::Public);
+                    }
+
+                    let payload = v.payload.as_ref().map(|_| self.intern(ctx, ty.clone()));
+
+                    
+                    hir_variants.push(eng_hir::Variant {
+                        name: v.name.name.clone(),
+                        payload,
+                    });
+
+                    // Set constructor function types
+                    let variant_name = if ctx.current_module.is_empty() {
+                        v.name.name.clone()
+                    } else {
+                        format!("{}.{}", ctx.current_module, v.name.name)
+                    };
+                    
+                    if let Some(id) = ctx.symbol_table.lookup(&variant_name) {
+                        if let Some(fs) = ctx.symbol_table.get_func_mut(eng_hir::symbol::FunctionId(id)) {
+                            let enum_type = Type::Named(
+                                qualified_name.clone(), 
+                                fs.generic_params.iter().map(|v| Type::Var(*v)).collect()
+                            );
+                            
+                            if let Some(ref ty_expr) = v.payload {
+                                let arg_ty = type_expr_to_type(ty_expr, &env);
+                                fs.ty = Type::Function(vec![arg_ty], Box::new(enum_type));
+                            } else {
+                                fs.ty = Type::Function(vec![], Box::new(enum_type));
+                            }
+                        }
+                    }
+                }
+
+                Some(HirItem::Enum(eng_hir::EnumDef {
+                    visibility: e.visibility,
+                    id,
+                    name: e.name.name.clone(),
+                    variants: hir_variants,
+                    span: e.span,
+                }))
+            }
             _ => None,
         }
     }
@@ -538,6 +620,7 @@ impl TypeInferencePass {
                     visibility: f.visibility,
                     ty: fn_ty.clone(),
                     generic_params: vec![],
+                    is_variant_constructor: None,
                 },
             );
             if let Some(fs) = ctx.symbol_table.get_func_mut(method_id) {
@@ -857,6 +940,38 @@ impl TypeInferencePass {
                 }
             }
             Expr::Call { callee, args, span } => {
+                // Intercept `Ok` and `Err` as built-in constructors
+                if let Expr::Ident(id) = &**callee {
+                    if id.name == "Ok" || id.name == "Err" {
+                        let mut hir_args = Vec::new();
+                        let mut arg_tys = Vec::new();
+                        for a in args {
+                            let (aty, ha) = self.infer_expr(ctx, a);
+                            arg_tys.push(aty);
+                            hir_args.push(ha);
+                        }
+                        if arg_tys.len() == 1 {
+                            let result_ty = if id.name == "Ok" {
+                                Type::Result(Box::new(arg_tys[0].clone()), Box::new(self.fresh()))
+                            } else {
+                                Type::Result(Box::new(self.fresh()), Box::new(arg_tys[0].clone()))
+                            };
+                            self.record(ctx, *span, result_ty.clone());
+                            return (
+                                result_ty.clone(),
+                                HirExpr::MacroCall {
+                                    name: id.name.clone(),
+                                    args: hir_args,
+                                    ty: self.intern(ctx, result_ty),
+                                    span: *span,
+                                }
+                            );
+                        } else {
+                            ctx.type_errors.push(TypeError::new(format!("{} expects exactly 1 argument", id.name), *span));
+                        }
+                    }
+                }
+
                 let (callee_ty, mut hir_callee) = self.infer_expr(ctx, callee);
                 let mut arg_tys = Vec::new();
                 let mut hir_args = Vec::new();
@@ -1289,6 +1404,55 @@ impl TypeInferencePass {
             Expr::Block(block) => {
                 let (ty, hb) = self.infer_block(ctx, block);
                 (ty.clone(), HirExpr::Block(hb))
+            }
+            Expr::MacroCall { name, args, span } => {
+                let mut hir_args = Vec::new();
+                for a in args {
+                    let (_, ha) = self.infer_expr(ctx, a);
+                    hir_args.push(ha);
+                }
+                
+                let ret_ty = if name.name == "fmt" {
+                    Type::Text
+                } else {
+                    ctx.type_errors.push(TypeError::new(format!("Unknown macro: {}!", name.name), *span));
+                    Type::Unit
+                };
+
+                self.record(ctx, *span, ret_ty.clone());
+                (
+                    ret_ty.clone(),
+                    HirExpr::MacroCall {
+                        name: name.name.clone(),
+                        args: hir_args,
+                        ty: self.intern(ctx, ret_ty.clone()),
+                        span: *span,
+                    }
+                )
+            }
+            Expr::PostfixTry { inner, span } => {
+                let (inner_ty, hir_inner) = self.infer_expr(ctx, inner);
+                let ok_ty = self.fresh();
+                let err_ty = self.fresh();
+                
+                self.unify(ctx, inner_ty.clone(), Type::Result(Box::new(ok_ty.clone()), Box::new(err_ty.clone())), *span);
+
+                if let Some(expected_ret) = ctx.current_return_type.clone() {
+                    let expected_ok = self.fresh();
+                    self.unify(ctx, expected_ret, Type::Result(Box::new(expected_ok), Box::new(err_ty.clone())), *span);
+                } else {
+                    ctx.type_errors.push(TypeError::new("Cannot use `?` outside of a function returning Result", *span));
+                }
+
+                self.record(ctx, *span, ok_ty.clone());
+                (
+                    ok_ty.clone(),
+                    HirExpr::PostfixTry {
+                        inner: Box::new(hir_inner),
+                        ty: self.intern(ctx, ok_ty.clone()),
+                        span: *span,
+                    }
+                )
             }
         }
     }

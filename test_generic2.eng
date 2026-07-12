@@ -1,0 +1,13 @@
+use std.io
+
+type Wrapper<T>
+begin
+    val: T
+end
+
+function main() returns number
+begin
+    let w be Wrapper<number> { val: 42 }
+    print_num(w.val)
+    return 0
+end

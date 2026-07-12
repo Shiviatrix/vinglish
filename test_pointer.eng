@@ -1,0 +1,4 @@
+function ptr_test(x: address<number>) returns address<number>
+begin
+    return x
+end

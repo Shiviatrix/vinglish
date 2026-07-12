@@ -71,6 +71,9 @@ impl HirValidatorPass {
                     }
                 }
             }
+            HirItem::Enum(_) => {
+                // Not much to validate on EnumDef internally right now
+            }
             HirItem::Statement(s) => {
                 self.validate_stmt(ctx, s);
             }
@@ -206,6 +209,14 @@ impl HirValidatorPass {
                 for e in elements {
                     self.validate_expr(ctx, e);
                 }
+            }
+            HirExpr::MacroCall { args, .. } => {
+                for a in args {
+                    self.validate_expr(ctx, a);
+                }
+            }
+            HirExpr::PostfixTry { inner, .. } => {
+                self.validate_expr(ctx, inner);
             }
         }
     }

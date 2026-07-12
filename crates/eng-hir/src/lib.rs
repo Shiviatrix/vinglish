@@ -14,6 +14,7 @@ pub struct Module {
 pub enum Item {
     Function(FunctionDef),
     Type(TypeDef),
+    Enum(EnumDef),
     Statement(Stmt),
 }
 
@@ -44,6 +45,21 @@ pub struct TypeDef {
     pub name: String,
     pub fields: Vec<Param>,
     pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDef {
+    pub visibility: Visibility,
+    pub id: TypeId,
+    pub name: String,
+    pub variants: Vec<Variant>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Variant {
+    pub name: String,
+    pub payload: Option<TypeId>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -134,6 +150,17 @@ pub enum Expr {
         ty: TypeId,
         span: Span,
     },
+    MacroCall {
+        name: String,
+        args: Vec<Expr>,
+        ty: TypeId,
+        span: Span,
+    },
+    PostfixTry {
+        inner: Box<Expr>,
+        ty: TypeId,
+        span: Span,
+    },
     Block(Block),
 }
 
@@ -149,6 +176,8 @@ impl Expr {
             Expr::Index { ty, .. } => *ty,
             Expr::List { ty, .. } => *ty,
             Expr::StructInit { ty, .. } => *ty,
+            Expr::MacroCall { ty, .. } => *ty,
+            Expr::PostfixTry { ty, .. } => *ty,
             Expr::Block(b) => b.ty,
         }
     }
@@ -164,6 +193,8 @@ impl Expr {
             Expr::Index { span, .. } => *span,
             Expr::List { span, .. } => *span,
             Expr::StructInit { span, .. } => *span,
+            Expr::MacroCall { span, .. } => *span,
+            Expr::PostfixTry { span, .. } => *span,
             Expr::Block(b) => b.span,
         }
     }

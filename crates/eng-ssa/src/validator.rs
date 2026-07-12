@@ -57,6 +57,7 @@ impl SSAValidator {
                     Instruction::<SsaValueId>::Assign(dest, _)
                     | Instruction::<SsaValueId>::LoadField(dest, _, _)
                     | Instruction::<SsaValueId>::Call(dest, _, _)
+                    | Instruction::<SsaValueId>::CallIntrinsic(dest, _, _)
                     | Instruction::<SsaValueId>::HeapAllocate(dest, _)
                     | Instruction::<SsaValueId>::StackAllocate(dest, _)
                     | Instruction::<SsaValueId>::BinaryOp(dest, _, _, _)

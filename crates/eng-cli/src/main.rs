@@ -651,10 +651,6 @@ fn cmd_build(
             return Err(format!("C compiler exited with status {}", status));
         }
 
-        if std::env::var("ENGLIST_KEEP_C").is_err() {
-            let _ = fs::remove_file(&c_file);
-        }
-
         eprintln!("  \x1b[32m✓\x1b[0m  Binary: {}", output.display());
         return Ok(());
     }

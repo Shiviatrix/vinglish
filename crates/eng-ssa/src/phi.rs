@@ -13,6 +13,7 @@ pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &Dominator
                 Instruction::<VariableId>::Assign(dest, _)
                 | Instruction::<VariableId>::LoadField(dest, _, _)
                 | Instruction::<VariableId>::Call(dest, _, _)
+                | Instruction::<VariableId>::CallIntrinsic(dest, _, _)
                 | Instruction::<VariableId>::HeapAllocate(dest, _)
                 | Instruction::<VariableId>::StackAllocate(dest, _)
                 | Instruction::<VariableId>::BinaryOp(dest, _, _, _)

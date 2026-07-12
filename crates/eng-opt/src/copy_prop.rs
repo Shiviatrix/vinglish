@@ -22,6 +22,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                         Instruction::<V>::Assign(dest, _)
                         | Instruction::<V>::LoadField(dest, _, _)
                         | Instruction::<V>::Call(dest, _, _)
+                        | Instruction::<V>::CallIntrinsic(dest, _, _)
                         | Instruction::<V>::Borrow(dest, _)
                         | Instruction::<V>::BorrowMut(dest, _)
                         | Instruction::<V>::Deref(dest, _, _)
@@ -75,7 +76,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                         Instruction::<V>::Assign(_, op) => replace_operand(op),
                         Instruction::<V>::LoadField(_, obj, _) => replace_operand(obj),
                         Instruction::<V>::StoreField(_, _, op) => replace_operand(op),
-                        Instruction::<V>::Call(_, _, args) => {
+                        Instruction::<V>::Call(_, _, args) | Instruction::<V>::CallIntrinsic(_, _, args) => {
                             for arg in args {
                                 replace_operand(arg);
                             }

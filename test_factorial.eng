@@ -1,0 +1,15 @@
+foreign function printf(text format, number n) returns number
+
+function factorial(number n) returns number
+begin
+    if n is 0
+        return 1
+
+    return n * factorial(n - 1)
+end
+
+function main() returns number
+begin
+    printf("%lld\n", factorial(10))
+    return 0
+end

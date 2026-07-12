@@ -346,6 +346,10 @@ impl<'a> Interpreter<'a> {
                 let val = self.eval_operand(op, locals)?;
                 locals.insert(*dest, val);
             }
+            Instruction::<SsaValueId>::CallIntrinsic(dest, _name, _args) => {
+                // Dummy for now
+                locals.insert(*dest, Value::Unit);
+            }
             Instruction::<SsaValueId>::LoadField(dest, obj_op, field_id) => {
                 let mut obj = self.eval_operand(obj_op, locals)?;
                 while let Value::Reference(inner) = obj {

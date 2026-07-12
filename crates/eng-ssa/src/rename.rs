@@ -156,7 +156,7 @@ fn rename_block(
                 *obj = renamer.current_name(*obj);
                 rename_op(val, renamer);
             }
-            Instruction::<VariableId>::Call(_, _, args) => {
+            Instruction::<VariableId>::Call(_, _, args) | Instruction::<VariableId>::CallIntrinsic(_, _, args) => {
                 for arg in args {
                     rename_op(arg, renamer);
                 }
@@ -180,6 +180,7 @@ fn rename_block(
         | Instruction::<VariableId>::BinaryOp(dest, _, _, _)
         | Instruction::<VariableId>::UnaryOp(dest, _, _)
         | Instruction::<VariableId>::Call(dest, _, _)
+        | Instruction::<VariableId>::CallIntrinsic(dest, _, _)
         | Instruction::<VariableId>::HeapAllocate(dest, _)
         | Instruction::<VariableId>::StackAllocate(dest, _)
         | Instruction::<VariableId>::Borrow(dest, _)

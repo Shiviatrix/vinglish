@@ -56,6 +56,7 @@ pub enum Instruction<V: Clone + Copy + fmt::Display> {
     LoadField(V, Operand<V>, FieldId),
     StoreField(V, FieldId, Operand<V>),
     Call(V, FunctionId, Vec<Operand<V>>),
+    CallIntrinsic(V, String, Vec<Operand<V>>),
     HeapAllocate(V, TypeId),
     StackAllocate(V, TypeId),
     BinaryOp(V, BinOp, Operand<V>, Operand<V>),
@@ -84,6 +85,14 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{} = call fn_{}({})", dest, func.0 .0, args_str)
+            }
+            Instruction::CallIntrinsic(dest, name, args) => {
+                let args_str = args
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{} = call_intrinsic {}({})", dest, name, args_str)
             }
             Instruction::HeapAllocate(dest, ty) => {
                 write!(f, "{} = heap_allocate type_{}", dest, ty.0 .0)
