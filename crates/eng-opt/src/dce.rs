@@ -1,8 +1,8 @@
+use crate::{OptimizationPass, PassStats};
+use eng_mir::{Instruction, MirModule, Operand, Terminator};
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::hash::Hash;
-use std::collections::HashSet;
-use eng_mir::{Instruction, MirModule, Operand, Terminator};
-use crate::{OptimizationPass, PassStats};
 
 pub struct DeadCodeEliminationPass;
 
@@ -25,7 +25,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                     let block = func.blocks.iter().find(|b| b.id == block_id).unwrap();
                     let successors = match &block.terminator {
                         Terminator::<V>::Jump(target) => vec![target],
-                        Terminator::<V>::Branch(_, true_target, false_target) => vec![true_target, false_target],
+                        Terminator::<V>::Branch(_, true_target, false_target) => {
+                            vec![true_target, false_target]
+                        }
                         Terminator::<V>::Return(_) => vec![],
                     };
 
@@ -41,7 +43,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
             let _initial_blocks = func.blocks.len();
             func.blocks.retain(|b| reachable.contains(&b.id));
             // Instead of merged_blocks, we can just say removed blocks. But we only have merged_blocks in stats.
-            
+
             // Loop until no more instructions can be eliminated
             loop {
                 let mut used_vars: HashSet<V> = HashSet::new();
@@ -50,9 +52,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                 for block in &func.blocks {
                     for instr in &block.instrs {
                         match instr {
-                            Instruction::<V>::Assign(_, Operand::<V>::Var(id)) |
-                            Instruction::<V>::LoadField(_, Operand::<V>::Var(id), _) |
-                            Instruction::<V>::UnaryOp(_, _, Operand::<V>::Var(id)) => {
+                            Instruction::<V>::Assign(_, Operand::<V>::Var(id))
+                            | Instruction::<V>::LoadField(_, Operand::<V>::Var(id), _)
+                            | Instruction::<V>::UnaryOp(_, _, Operand::<V>::Var(id)) => {
                                 used_vars.insert(*id);
                             }
                             Instruction::<V>::StoreField(obj, _, val) => {
@@ -69,12 +71,16 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                                 }
                             }
                             Instruction::<V>::BinaryOp(_, _, left, right) => {
-                                if let Operand::<V>::Var(id) = left { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = right { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = left {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = right {
+                                    used_vars.insert(*id);
+                                }
                             }
-                            Instruction::<V>::Borrow(_, Operand::<V>::Var(id)) |
-                            Instruction::<V>::BorrowMut(_, Operand::<V>::Var(id)) |
-                            Instruction::<V>::Deref(_, Operand::<V>::Var(id), _) => {
+                            Instruction::<V>::Borrow(_, Operand::<V>::Var(id))
+                            | Instruction::<V>::BorrowMut(_, Operand::<V>::Var(id))
+                            | Instruction::<V>::Deref(_, Operand::<V>::Var(id), _) => {
                                 used_vars.insert(*id);
                             }
                             Instruction::<V>::Drop(id) => {
@@ -92,8 +98,12 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                     }
 
                     match &block.terminator {
-                        Terminator::<V>::Return(Some(Operand::<V>::Var(id))) => { used_vars.insert(*id); }
-                        Terminator::<V>::Branch(Operand::<V>::Var(id), _, _) => { used_vars.insert(*id); }
+                        Terminator::<V>::Return(Some(Operand::<V>::Var(id))) => {
+                            used_vars.insert(*id);
+                        }
+                        Terminator::<V>::Branch(Operand::<V>::Var(id), _, _) => {
+                            used_vars.insert(*id);
+                        }
                         _ => {}
                     }
                 }
@@ -104,23 +114,20 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                 for block in &mut func.blocks {
                     let initial_len = block.instrs.len();
                     block.instrs.retain(|instr| {
-                        
                         match instr {
-                            Instruction::<V>::Assign(dest, _) |
-                            Instruction::<V>::LoadField(dest, _, _) |
-                            Instruction::<V>::Borrow(dest, _) |
-                            Instruction::<V>::BorrowMut(dest, _) |
-                            Instruction::<V>::Deref(dest, _, _) |
-                            Instruction::<V>::HeapAllocate(dest, _) |
-                            Instruction::<V>::StackAllocate(dest, _) |
-                            Instruction::<V>::BinaryOp(dest, _, _, _) |
-                            Instruction::<V>::UnaryOp(dest, _, _) |
-                            Instruction::<V>::Phi(dest, _) => {
-                                used_vars.contains(dest)
-                            }
-                            Instruction::<V>::StoreField(_, _, _) |
-                            Instruction::<V>::Drop(_) |
-                            Instruction::<V>::Call(_, _, _) => true, // Side effects!
+                            Instruction::<V>::Assign(dest, _)
+                            | Instruction::<V>::LoadField(dest, _, _)
+                            | Instruction::<V>::Borrow(dest, _)
+                            | Instruction::<V>::BorrowMut(dest, _)
+                            | Instruction::<V>::Deref(dest, _, _)
+                            | Instruction::<V>::HeapAllocate(dest, _)
+                            | Instruction::<V>::StackAllocate(dest, _)
+                            | Instruction::<V>::BinaryOp(dest, _, _, _)
+                            | Instruction::<V>::UnaryOp(dest, _, _)
+                            | Instruction::<V>::Phi(dest, _) => used_vars.contains(dest),
+                            Instruction::<V>::StoreField(_, _, _)
+                            | Instruction::<V>::Drop(_)
+                            | Instruction::<V>::Call(_, _, _) => true, // Side effects!
                         }
                     });
 

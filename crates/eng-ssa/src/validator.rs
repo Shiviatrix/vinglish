@@ -1,6 +1,6 @@
 use eng_hir::symbol::SsaValueId;
-use std::collections::{HashSet, HashMap};
-use eng_mir::{MirModule, MirFunction, Terminator, Instruction};
+use eng_mir::{Instruction, MirFunction, MirModule, Terminator};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct SSAValidationError {
@@ -20,7 +20,10 @@ impl SSAValidator {
         Self
     }
 
-    pub fn validate(&self, module: &MirModule<eng_hir::symbol::SsaValueId>) -> Result<(), Vec<SSAValidationError>> {
+    pub fn validate(
+        &self,
+        module: &MirModule<eng_hir::symbol::SsaValueId>,
+    ) -> Result<(), Vec<SSAValidationError>> {
         let mut errors = Vec::new();
 
         for func in &module.functions {
@@ -36,7 +39,10 @@ impl SSAValidator {
         }
     }
 
-    fn validate_function(&self, func: &MirFunction<SsaValueId>) -> Result<(), Vec<SSAValidationError>> {
+    fn validate_function(
+        &self,
+        func: &MirFunction<SsaValueId>,
+    ) -> Result<(), Vec<SSAValidationError>> {
         let mut errors = Vec::new();
         let mut assigned_vars = HashSet::new();
 
@@ -48,33 +54,36 @@ impl SSAValidator {
         for block in &func.blocks {
             for instr in &block.instrs {
                 match instr {
-                    Instruction::<SsaValueId>::Assign(dest, _) |
-                    Instruction::<SsaValueId>::LoadField(dest, _, _) |
-                    Instruction::<SsaValueId>::Call(dest, _, _) |
-                    Instruction::<SsaValueId>::HeapAllocate(dest, _) |
-                    Instruction::<SsaValueId>::StackAllocate(dest, _) |
-                    Instruction::<SsaValueId>::BinaryOp(dest, _, _, _) |
-                    Instruction::<SsaValueId>::UnaryOp(dest, _, _) |
-                    Instruction::<SsaValueId>::Borrow(dest, _) |
-                    Instruction::<SsaValueId>::BorrowMut(dest, _) |
-                    Instruction::<SsaValueId>::Deref(dest, _, _) |
-                    Instruction::<SsaValueId>::Phi(dest, _) => {
+                    Instruction::<SsaValueId>::Assign(dest, _)
+                    | Instruction::<SsaValueId>::LoadField(dest, _, _)
+                    | Instruction::<SsaValueId>::Call(dest, _, _)
+                    | Instruction::<SsaValueId>::HeapAllocate(dest, _)
+                    | Instruction::<SsaValueId>::StackAllocate(dest, _)
+                    | Instruction::<SsaValueId>::BinaryOp(dest, _, _, _)
+                    | Instruction::<SsaValueId>::UnaryOp(dest, _, _)
+                    | Instruction::<SsaValueId>::Borrow(dest, _)
+                    | Instruction::<SsaValueId>::BorrowMut(dest, _)
+                    | Instruction::<SsaValueId>::Deref(dest, _, _)
+                    | Instruction::<SsaValueId>::Phi(dest, _) => {
                         if !assigned_vars.insert(*dest) {
                             errors.push(SSAValidationError {
-                                message: format!("Variable var_{} is assigned multiple times in function {}", dest.0, func.name),
+                                message: format!(
+                                    "Variable var_{} is assigned multiple times in function {}",
+                                    dest.0, func.name
+                                ),
                             });
                         }
                     }
-                    Instruction::<SsaValueId>::StoreField(_, _, _) |
-                    Instruction::<SsaValueId>::Drop(_) => {}
+                    Instruction::<SsaValueId>::StoreField(_, _, _)
+                    | Instruction::<SsaValueId>::Drop(_) => {}
                 }
             }
         }
 
-        // 2. Variables must be defined before use (we can check simple reachability in SSA by checking if the use is in `assigned_vars` overall, 
+        // 2. Variables must be defined before use (we can check simple reachability in SSA by checking if the use is in `assigned_vars` overall,
         // since single assignment implies if it's used and it's assigned *somewhere*, dominance usually ensures it's before use.
         // Wait, proper validation checks dominance! But checking definition is simpler first)
-        
+
         // 3. Phi predecessors must match actual CFG predecessors
         let mut preds: HashMap<eng_mir::BlockId, HashSet<eng_mir::BlockId>> = HashMap::new();
         for block in &func.blocks {

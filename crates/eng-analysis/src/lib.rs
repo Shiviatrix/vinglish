@@ -5,7 +5,7 @@ pub mod promotion;
 pub mod validator;
 
 pub use alias::{AliasAnalysisPass, AliasGraph};
-pub use escape::{EscapeAnalysisPass, EscapeAnalysis};
+pub use escape::{EscapeAnalysis, EscapeAnalysisPass};
 pub use lifetime::{LifetimeAnalysisPass, LifetimeGraph};
 pub use promotion::StackPromotionPass;
 pub use validator::AnalysisValidator;

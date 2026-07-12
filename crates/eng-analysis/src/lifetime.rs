@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::fmt;
+use crate::alias::{AliasGraph, AliasId};
 use eng_hir::symbol::SsaValueId;
 use eng_mir::{BlockId, MirFunction, MirModule, Operand};
-use crate::alias::{AliasGraph, AliasId};
+use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Lifetime {
@@ -33,7 +33,7 @@ impl fmt::Display for LifetimeGraph {
         writeln!(f, "--- LIFETIME GRAPH ---")?;
         let mut sorted_aliases: Vec<_> = self.alias_lifetimes.keys().copied().collect();
         sorted_aliases.sort_by_key(|a| a.0);
-        
+
         for alias in sorted_aliases {
             let lifetime = &self.alias_lifetimes[&alias];
             let created_str = if let Some((b, i)) = lifetime.created_at {
@@ -46,8 +46,12 @@ impl fmt::Display for LifetimeGraph {
             } else {
                 "unknown".to_string()
             };
-            
-            writeln!(f, "{} created: {} last_used: {}", alias, created_str, last_used_str)?;
+
+            writeln!(
+                f,
+                "{} created: {} last_used: {}",
+                alias, created_str, last_used_str
+            )?;
         }
         Ok(())
     }
@@ -76,13 +80,18 @@ impl LifetimeAnalysisPass {
         graph
     }
 
-    fn analyze_function(&self, func: &MirFunction<SsaValueId>, alias_graph: &AliasGraph, graph: &mut LifetimeGraph) {
+    fn analyze_function(
+        &self,
+        func: &MirFunction<SsaValueId>,
+        alias_graph: &AliasGraph,
+        graph: &mut LifetimeGraph,
+    ) {
         // Find creation points
         for block in &func.blocks {
             for (idx, instr) in block.instrs.iter().enumerate() {
                 let dests = match instr {
-                    eng_mir::Instruction::HeapAllocate(dest, _) |
-                    eng_mir::Instruction::StackAllocate(dest, _) => Some(*dest),
+                    eng_mir::Instruction::HeapAllocate(dest, _)
+                    | eng_mir::Instruction::StackAllocate(dest, _) => Some(*dest),
                     // In a more complete analysis, we would track creations of all aliases,
                     // but memory allocations are the most critical.
                     _ => None,
@@ -90,7 +99,10 @@ impl LifetimeAnalysisPass {
 
                 if let Some(dest) = dests {
                     if let Some(alias) = alias_graph.get_alias(dest) {
-                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime { created_at: None, last_used_at: None });
+                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
+                            created_at: None,
+                            last_used_at: None,
+                        });
                         if entry.created_at.is_none() {
                             entry.created_at = Some((block.id, idx));
                         }
@@ -107,29 +119,41 @@ impl LifetimeAnalysisPass {
             for (idx, instr) in block.instrs.iter().enumerate() {
                 let mut uses = Vec::new();
                 match instr {
-                    eng_mir::Instruction::Assign(_, op) |
-                    eng_mir::Instruction::UnaryOp(_, _, op) |
-                    eng_mir::Instruction::Borrow(_, op) |
-                    eng_mir::Instruction::BorrowMut(_, op) |
-                    eng_mir::Instruction::LoadField(_, op, _) => {
-                        if let Operand::Var(v) = op { uses.push(*v); }
+                    eng_mir::Instruction::Assign(_, op)
+                    | eng_mir::Instruction::UnaryOp(_, _, op)
+                    | eng_mir::Instruction::Borrow(_, op)
+                    | eng_mir::Instruction::BorrowMut(_, op)
+                    | eng_mir::Instruction::LoadField(_, op, _) => {
+                        if let Operand::Var(v) = op {
+                            uses.push(*v);
+                        }
                     }
                     eng_mir::Instruction::StoreField(obj, _, val) => {
                         uses.push(*obj);
-                        if let Operand::Var(v) = val { uses.push(*v); }
+                        if let Operand::Var(v) = val {
+                            uses.push(*v);
+                        }
                     }
                     eng_mir::Instruction::BinaryOp(_, _, left, right) => {
-                        if let Operand::Var(v) = left { uses.push(*v); }
-                        if let Operand::Var(v) = right { uses.push(*v); }
+                        if let Operand::Var(v) = left {
+                            uses.push(*v);
+                        }
+                        if let Operand::Var(v) = right {
+                            uses.push(*v);
+                        }
                     }
                     eng_mir::Instruction::Call(_, _, args) => {
                         for arg in args {
-                            if let Operand::Var(v) = arg { uses.push(*v); }
+                            if let Operand::Var(v) = arg {
+                                uses.push(*v);
+                            }
                         }
                     }
                     eng_mir::Instruction::Phi(_, args) => {
                         for (op, _) in args {
-                            if let Operand::Var(v) = op { uses.push(*v); }
+                            if let Operand::Var(v) = op {
+                                uses.push(*v);
+                            }
                         }
                     }
                     _ => {}
@@ -137,7 +161,10 @@ impl LifetimeAnalysisPass {
 
                 for u in uses {
                     if let Some(alias) = alias_graph.get_alias(u) {
-                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime { created_at: None, last_used_at: None });
+                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
+                            created_at: None,
+                            last_used_at: None,
+                        });
                         // Update last used. This is a very rough approximation.
                         entry.last_used_at = Some((block.id, idx));
                     }
@@ -147,13 +174,19 @@ impl LifetimeAnalysisPass {
             match &block.terminator {
                 eng_mir::Terminator::Return(Some(Operand::Var(v))) => {
                     if let Some(alias) = alias_graph.get_alias(*v) {
-                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime { created_at: None, last_used_at: None });
+                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
+                            created_at: None,
+                            last_used_at: None,
+                        });
                         entry.last_used_at = Some((block.id, block.instrs.len()));
                     }
                 }
                 eng_mir::Terminator::Branch(Operand::Var(v), _, _) => {
                     if let Some(alias) = alias_graph.get_alias(*v) {
-                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime { created_at: None, last_used_at: None });
+                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
+                            created_at: None,
+                            last_used_at: None,
+                        });
                         entry.last_used_at = Some((block.id, block.instrs.len()));
                     }
                 }

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use eng_mir::{MirModule, MirFunction, Instruction, Operand, Terminator, BlockId};
-use eng_hir::symbol::{SymbolTable, SsaValueId, FunctionId, FieldId};
-use eng_parser::ast::{Literal, BinOp, UnOp};
+use eng_hir::symbol::{FieldId, FunctionId, SsaValueId, SymbolTable};
+use eng_mir::{BlockId, Instruction, MirFunction, MirModule, Operand, Terminator};
+use eng_parser::ast::{BinOp, Literal, UnOp};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Value
@@ -37,39 +37,43 @@ impl fmt::Debug for NativeFn {
 }
 
 impl PartialEq for NativeFn {
-    fn eq(&self, other: &Self) -> bool { self.name == other.name }
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
 }
 
 impl Value {
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Bool(b) => *b,
-            Value::Int(i)  => *i != 0,
-            Value::Unit    => false,
-            _              => true,
+            Value::Int(i) => *i != 0,
+            Value::Unit => false,
+            _ => true,
         }
     }
 
     pub fn to_display(&self) -> String {
         match self {
-            Value::Int(i)   => i.to_string(),
+            Value::Int(i) => i.to_string(),
             Value::Float(f) => {
-                if f.fract() == 0.0 { format!("{:.1}", f) } else { f.to_string() }
+                if f.fract() == 0.0 {
+                    format!("{:.1}", f)
+                } else {
+                    f.to_string()
+                }
             }
-            Value::Bool(b)  => b.to_string(),
-            Value::Text(s)  => s.clone(),
-            Value::Unit     => "()".to_string(),
+            Value::Bool(b) => b.to_string(),
+            Value::Text(s) => s.clone(),
+            Value::Unit => "()".to_string(),
             Value::List(vs) => {
                 let inner: Vec<_> = vs.iter().map(|v| v.to_display()).collect();
                 format!("[{}]", inner.join(", "))
             }
-            Value::Struct(_) => {
-                "<struct>".to_string()
-            }
-            Value::Function(_)       => "<function>".to_string(),
-            Value::NativeFunction(nf)    => format!("<native:{}>", nf.name),
-            Value::Return(v)             => v.to_display(),
-            Value::Reference(v)          => format!("&{}", v.to_display()),
+            Value::Struct(_) => "<struct>".to_string(),
+            Value::Function(_) => "<function>".to_string(),
+            Value::NativeFunction(nf) => format!("<native:{}>", nf.name),
+            Value::Return(v) => v.to_display(),
+            Value::Reference(v) => format!("&{}", v.to_display()),
         }
     }
 }
@@ -85,7 +89,9 @@ pub struct InterpError {
 
 impl InterpError {
     fn new(msg: impl Into<String>) -> Self {
-        Self { message: msg.into() }
+        Self {
+            message: msg.into(),
+        }
     }
 }
 
@@ -107,8 +113,8 @@ pub struct Interpreter<'a> {
     native_functions: HashMap<FunctionId, NativeFn>,
 }
 
-use std::sync::OnceLock;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 
 static NEXT_ADDR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
@@ -132,7 +138,10 @@ impl<'a> Interpreter<'a> {
         interp
     }
 
-    pub fn run_module(&mut self, module: &'a MirModule<eng_hir::symbol::SsaValueId>) -> Result<(), InterpError> {
+    pub fn run_module(
+        &mut self,
+        module: &'a MirModule<eng_hir::symbol::SsaValueId>,
+    ) -> Result<(), InterpError> {
         for func in &module.functions {
             self.functions.insert(func.id, func);
 
@@ -147,20 +156,21 @@ impl<'a> Interpreter<'a> {
                             } else {
                                 Err(InterpError::new("puts: expected string"))
                             }
-                        }
+                        },
                     }),
                     "eng_alloc" => Some(NativeFn {
                         name: "eng_alloc",
                         f: |args| {
                             if let Some(Value::Int(size)) = args.first() {
-                                let addr = NEXT_ADDR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                                let addr =
+                                    NEXT_ADDR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                                 let mut heap = get_heap().lock().unwrap();
                                 heap.insert(addr, vec![Value::Int(0); *size as usize]);
                                 Ok(Value::Int(addr as i64))
                             } else {
                                 Err(InterpError::new("eng_alloc: expected size"))
                             }
-                        }
+                        },
                     }),
                     "eng_free" => Some(NativeFn {
                         name: "eng_free",
@@ -170,7 +180,7 @@ impl<'a> Interpreter<'a> {
                                 heap.remove(&(*addr as u64));
                             }
                             Ok(Value::Unit)
-                        }
+                        },
                     }),
                     "eng_write" => Some(NativeFn {
                         name: "eng_write",
@@ -180,9 +190,15 @@ impl<'a> Interpreter<'a> {
                                     Value::Int(a) => *a as u64,
                                     Value::Reference(r) => match &**r {
                                         Value::Int(a) => *a as u64,
-                                        _ => return Err(InterpError::new("eng_write: expected pointer")),
+                                        _ => {
+                                            return Err(InterpError::new(
+                                                "eng_write: expected pointer",
+                                            ))
+                                        }
+                                    },
+                                    _ => {
+                                        return Err(InterpError::new("eng_write: expected pointer"))
                                     }
-                                    _ => return Err(InterpError::new("eng_write: expected pointer")),
                                 };
                                 let index = match &args[1] {
                                     Value::Int(i) => *i as usize,
@@ -200,7 +216,7 @@ impl<'a> Interpreter<'a> {
                                 }
                             }
                             Ok(Value::Unit)
-                        }
+                        },
                     }),
                     "eng_read" => Some(NativeFn {
                         name: "eng_read",
@@ -210,9 +226,15 @@ impl<'a> Interpreter<'a> {
                                     Value::Int(a) => *a as u64,
                                     Value::Reference(r) => match &**r {
                                         Value::Int(a) => *a as u64,
-                                        _ => return Err(InterpError::new("eng_read: expected pointer")),
+                                        _ => {
+                                            return Err(InterpError::new(
+                                                "eng_read: expected pointer",
+                                            ))
+                                        }
+                                    },
+                                    _ => {
+                                        return Err(InterpError::new("eng_read: expected pointer"))
                                     }
-                                    _ => return Err(InterpError::new("eng_read: expected pointer")),
                                 };
                                 let index = match &args[1] {
                                     Value::Int(i) => *i as usize,
@@ -226,7 +248,7 @@ impl<'a> Interpreter<'a> {
                                 }
                             }
                             Ok(Value::Int(0))
-                        }
+                        },
                     }),
                     _ => None,
                 };
@@ -256,8 +278,11 @@ impl<'a> Interpreter<'a> {
             return (nf.f)(args);
         }
 
-        let func = self.functions.get(&id).ok_or_else(|| InterpError::new("Function not found"))?;
-        
+        let func = self
+            .functions
+            .get(&id)
+            .ok_or_else(|| InterpError::new("Function not found"))?;
+
         let mut locals = HashMap::new();
         // Bind arguments to parameters (the first N locals are parameters)
         for (i, arg) in args.into_iter().enumerate() {
@@ -272,10 +297,15 @@ impl<'a> Interpreter<'a> {
 
         let mut current_block_id = func.blocks[0].id;
         let mut previous_block_id = current_block_id; // For the first block, Phi nodes shouldn't exist, so this is safe.
-        
+
         loop {
-            let block = func.blocks.iter().find(|b| b.id == current_block_id)
-                .ok_or_else(|| InterpError::new(format!("Block {} not found", current_block_id.0)))?;
+            let block = func
+                .blocks
+                .iter()
+                .find(|b| b.id == current_block_id)
+                .ok_or_else(|| {
+                    InterpError::new(format!("Block {} not found", current_block_id.0))
+                })?;
 
             for instr in &block.instrs {
                 self.exec_instr(instr, &mut locals, previous_block_id)?;
@@ -305,7 +335,12 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn exec_instr(&self, instr: &Instruction<SsaValueId>, locals: &mut HashMap<SsaValueId, Value>, previous_block: BlockId) -> Result<(), InterpError> {
+    fn exec_instr(
+        &self,
+        instr: &Instruction<SsaValueId>,
+        locals: &mut HashMap<SsaValueId, Value>,
+        previous_block: BlockId,
+    ) -> Result<(), InterpError> {
         match instr {
             Instruction::<SsaValueId>::Assign(dest, op) => {
                 let val = self.eval_operand(op, locals)?;
@@ -318,7 +353,9 @@ impl<'a> Interpreter<'a> {
                 }
                 if let Value::Struct(struct_id) = obj {
                     let store = get_struct_store().lock().unwrap();
-                    let fields = store.get(&struct_id).ok_or_else(|| InterpError::new("Struct not found in store"))?;
+                    let fields = store
+                        .get(&struct_id)
+                        .ok_or_else(|| InterpError::new("Struct not found in store"))?;
                     let val = fields.get(field_id).cloned().unwrap_or(Value::Unit);
                     locals.insert(*dest, val);
                 } else {
@@ -327,7 +364,10 @@ impl<'a> Interpreter<'a> {
             }
             Instruction::<SsaValueId>::StoreField(obj_var, field_id, val_op) => {
                 let val = self.eval_operand(val_op, locals)?;
-                let mut obj_val = locals.get(obj_var).cloned().ok_or_else(|| InterpError::new("Variable not found"))?;
+                let mut obj_val = locals
+                    .get(obj_var)
+                    .cloned()
+                    .ok_or_else(|| InterpError::new("Variable not found"))?;
                 while let Value::Reference(inner) = obj_val {
                     obj_val = *inner;
                 }
@@ -350,8 +390,8 @@ impl<'a> Interpreter<'a> {
                 let ret = self.call_function(*func_id, args)?;
                 locals.insert(*dest, ret);
             }
-            Instruction::<SsaValueId>::HeapAllocate(dest, _ty) |
-            Instruction::<SsaValueId>::StackAllocate(dest, _ty) => {
+            Instruction::<SsaValueId>::HeapAllocate(dest, _ty)
+            | Instruction::<SsaValueId>::StackAllocate(dest, _ty) => {
                 let addr = NEXT_ADDR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                 let mut store = get_struct_store().lock().unwrap();
                 store.insert(addr, HashMap::new());
@@ -378,7 +418,8 @@ impl<'a> Interpreter<'a> {
                 };
                 locals.insert(*dest, res);
             }
-            Instruction::<SsaValueId>::Borrow(dest, op) | Instruction::<SsaValueId>::BorrowMut(dest, op) => {
+            Instruction::<SsaValueId>::Borrow(dest, op)
+            | Instruction::<SsaValueId>::BorrowMut(dest, op) => {
                 let val = self.eval_operand(op, locals)?;
                 locals.insert(*dest, Value::Reference(Box::new(val)));
             }
@@ -387,7 +428,10 @@ impl<'a> Interpreter<'a> {
                 if let Value::Reference(inner) = val {
                     locals.insert(*dest, *inner);
                 } else {
-                    return Err(InterpError::new(format!("Cannot deref non-reference value: {:?}", val)));
+                    return Err(InterpError::new(format!(
+                        "Cannot deref non-reference value: {:?}",
+                        val
+                    )));
                 }
             }
             Instruction::<SsaValueId>::Drop(var) => {
@@ -405,14 +449,21 @@ impl<'a> Interpreter<'a> {
                     }
                 }
                 if !resolved {
-                    return Err(InterpError::new(format!("Phi node has no argument for predecessor block {}", previous_block.0)));
+                    return Err(InterpError::new(format!(
+                        "Phi node has no argument for predecessor block {}",
+                        previous_block.0
+                    )));
                 }
             }
         }
         Ok(())
     }
 
-    fn eval_operand(&self, op: &Operand<SsaValueId>, locals: &HashMap<SsaValueId, Value>) -> Result<Value, InterpError> {
+    fn eval_operand(
+        &self,
+        op: &Operand<SsaValueId>,
+        locals: &HashMap<SsaValueId, Value>,
+    ) -> Result<Value, InterpError> {
         match op {
             Operand::<SsaValueId>::Constant(lit) => Ok(match lit {
                 Literal::Int(i) => Value::Int(*i),
@@ -421,51 +472,63 @@ impl<'a> Interpreter<'a> {
                 Literal::Text(s) => Value::Text(s.clone()),
                 Literal::Unit => Value::Unit,
             }),
-            Operand::<SsaValueId>::Var(id) => {
-                locals.get(id).cloned().ok_or_else(|| InterpError::new(format!("Variable {} not found", id.0)))
-            }
+            Operand::<SsaValueId>::Var(id) => locals
+                .get(id)
+                .cloned()
+                .ok_or_else(|| InterpError::new(format!("Variable {} not found", id.0))),
         }
     }
 
     fn eval_binop(&self, op: BinOp, lv: Value, rv: Value) -> Result<Value, InterpError> {
         use Value::*;
         match (&lv, op, &rv) {
-            (Int(a),   BinOp::Add, Int(b))   => Ok(Int(a + b)),
-            (Int(a),   BinOp::Sub, Int(b))   => Ok(Int(a - b)),
-            (Int(a),   BinOp::Mul, Int(b))   => Ok(Int(a * b)),
-            (Int(a),   BinOp::Div, Int(b))   => {
-                if *b == 0 { Err(InterpError::new("division by zero")) }
-                else { Ok(Int(a / b)) }
+            (Int(a), BinOp::Add, Int(b)) => Ok(Int(a + b)),
+            (Int(a), BinOp::Sub, Int(b)) => Ok(Int(a - b)),
+            (Int(a), BinOp::Mul, Int(b)) => Ok(Int(a * b)),
+            (Int(a), BinOp::Div, Int(b)) => {
+                if *b == 0 {
+                    Err(InterpError::new("division by zero"))
+                } else {
+                    Ok(Int(a / b))
+                }
             }
-            (Int(a),   BinOp::Mod, Int(b))   => Ok(Int(a % b)),
+            (Int(a), BinOp::Mod, Int(b)) => Ok(Int(a % b)),
             (Float(a), BinOp::Add, Float(b)) => Ok(Float(a + b)),
             (Float(a), BinOp::Sub, Float(b)) => Ok(Float(a - b)),
             (Float(a), BinOp::Mul, Float(b)) => Ok(Float(a * b)),
             (Float(a), BinOp::Div, Float(b)) => Ok(Float(a / b)),
-            (Int(a),   BinOp::Add, Float(b)) => Ok(Float(*a as f64 + b)),
-            (Float(a), BinOp::Add, Int(b))   => Ok(Float(a + *b as f64)),
-            (Int(a),   BinOp::Mul, Float(b)) => Ok(Float(*a as f64 * b)),
-            (Float(a), BinOp::Mul, Int(b))   => Ok(Float(a * *b as f64)),
-            (Int(a),   BinOp::Sub, Float(b)) => Ok(Float(*a as f64 - b)),
-            (Float(a), BinOp::Sub, Int(b))   => Ok(Float(a - *b as f64)),
-            (Text(a), BinOp::Add, Text(b))  => Ok(Text(format!("{}{}", a, b))),
-            (Int(a), BinOp::Eq, Int(b))     => Ok(Bool(a == b)),
-            (Int(a), BinOp::NotEq, Int(b))  => Ok(Bool(a != b)),
+            (Int(a), BinOp::Add, Float(b)) => Ok(Float(*a as f64 + b)),
+            (Float(a), BinOp::Add, Int(b)) => Ok(Float(a + *b as f64)),
+            (Int(a), BinOp::Mul, Float(b)) => Ok(Float(*a as f64 * b)),
+            (Float(a), BinOp::Mul, Int(b)) => Ok(Float(a * *b as f64)),
+            (Int(a), BinOp::Sub, Float(b)) => Ok(Float(*a as f64 - b)),
+            (Float(a), BinOp::Sub, Int(b)) => Ok(Float(a - *b as f64)),
+            (Text(a), BinOp::Add, Text(b)) => Ok(Text(format!("{}{}", a, b))),
+            (Int(a), BinOp::Eq, Int(b)) => Ok(Bool(a == b)),
+            (Int(a), BinOp::NotEq, Int(b)) => Ok(Bool(a != b)),
             (Int(a), BinOp::Lt, Int(b)) | (Int(a), BinOp::IsBelow, Int(b)) => Ok(Bool(a < b)),
-            (Int(a), BinOp::Gt, Int(b)) | (Int(a), BinOp::IsAbove, Int(b)) | (Int(a), BinOp::Exceeds, Int(b)) => Ok(Bool(a > b)),
-            (Int(a), BinOp::LtEq, Int(b))  => Ok(Bool(a <= b)),
-            (Int(a), BinOp::GtEq, Int(b))  => Ok(Bool(a >= b)),
-            (Float(a), BinOp::Eq, Float(b))    => Ok(Bool((a - b).abs() < 1e-10)),
-            (Float(a), BinOp::Lt, Float(b)) | (Float(a), BinOp::IsBelow, Float(b)) => Ok(Bool(a < b)),
-            (Float(a), BinOp::Gt, Float(b)) | (Float(a), BinOp::IsAbove, Float(b)) | (Float(a), BinOp::Exceeds, Float(b)) => Ok(Bool(a > b)),
-            (Bool(a), BinOp::Eq, Bool(b))   => Ok(Bool(a == b)),
-            (Text(a), BinOp::Eq, Text(b))   => Ok(Bool(a == b)),
-            (Text(a), BinOp::NotEq, Text(b))=> Ok(Bool(a != b)),
-            (Bool(a), BinOp::And, Bool(b))  => Ok(Bool(*a && *b)),
-            (Bool(a), BinOp::Or,  Bool(b))  => Ok(Bool(*a || *b)),
+            (Int(a), BinOp::Gt, Int(b))
+            | (Int(a), BinOp::IsAbove, Int(b))
+            | (Int(a), BinOp::Exceeds, Int(b)) => Ok(Bool(a > b)),
+            (Int(a), BinOp::LtEq, Int(b)) => Ok(Bool(a <= b)),
+            (Int(a), BinOp::GtEq, Int(b)) => Ok(Bool(a >= b)),
+            (Float(a), BinOp::Eq, Float(b)) => Ok(Bool((a - b).abs() < 1e-10)),
+            (Float(a), BinOp::Lt, Float(b)) | (Float(a), BinOp::IsBelow, Float(b)) => {
+                Ok(Bool(a < b))
+            }
+            (Float(a), BinOp::Gt, Float(b))
+            | (Float(a), BinOp::IsAbove, Float(b))
+            | (Float(a), BinOp::Exceeds, Float(b)) => Ok(Bool(a > b)),
+            (Bool(a), BinOp::Eq, Bool(b)) => Ok(Bool(a == b)),
+            (Text(a), BinOp::Eq, Text(b)) => Ok(Bool(a == b)),
+            (Text(a), BinOp::NotEq, Text(b)) => Ok(Bool(a != b)),
+            (Bool(a), BinOp::And, Bool(b)) => Ok(Bool(*a && *b)),
+            (Bool(a), BinOp::Or, Bool(b)) => Ok(Bool(*a || *b)),
             _ => Err(InterpError::new(format!(
                 "operator {:?} not supported between `{}` and `{}`",
-                op, lv.to_display(), rv.to_display()
+                op,
+                lv.to_display(),
+                rv.to_display()
             ))),
         }
     }

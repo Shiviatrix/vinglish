@@ -1,8 +1,8 @@
+use crate::{OptimizationPass, PassStats};
+use eng_mir::{Instruction, MirModule, Operand, Terminator};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
-use std::collections::HashMap;
-use eng_mir::{Instruction, MirModule, Operand, Terminator};
-use crate::{OptimizationPass, PassStats};
 
 pub struct CopyPropagationPass;
 
@@ -19,21 +19,20 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
             for block in &func.blocks {
                 for instr in &block.instrs {
                     match instr {
-                        Instruction::<V>::Assign(dest, _) |
-                        Instruction::<V>::LoadField(dest, _, _) |
-                        Instruction::<V>::Call(dest, _, _) |
-                        Instruction::<V>::Borrow(dest, _) |
-                        Instruction::<V>::BorrowMut(dest, _) |
-                        Instruction::<V>::Deref(dest, _, _) |
-                        Instruction::<V>::HeapAllocate(dest, _) |
-                        Instruction::<V>::StackAllocate(dest, _) |
-                        Instruction::<V>::BinaryOp(dest, _, _, _) |
-                        Instruction::<V>::UnaryOp(dest, _, _) |
-                        Instruction::<V>::Phi(dest, _) => {
+                        Instruction::<V>::Assign(dest, _)
+                        | Instruction::<V>::LoadField(dest, _, _)
+                        | Instruction::<V>::Call(dest, _, _)
+                        | Instruction::<V>::Borrow(dest, _)
+                        | Instruction::<V>::BorrowMut(dest, _)
+                        | Instruction::<V>::Deref(dest, _, _)
+                        | Instruction::<V>::HeapAllocate(dest, _)
+                        | Instruction::<V>::StackAllocate(dest, _)
+                        | Instruction::<V>::BinaryOp(dest, _, _, _)
+                        | Instruction::<V>::UnaryOp(dest, _, _)
+                        | Instruction::<V>::Phi(dest, _) => {
                             *assign_counts.entry(*dest).or_insert(0) += 1;
                         }
-                        Instruction::<V>::StoreField(_, _, _) |
-                        Instruction::<V>::Drop(_) => {}
+                        Instruction::<V>::StoreField(_, _, _) | Instruction::<V>::Drop(_) => {}
                     }
                 }
             }
@@ -45,7 +44,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                     if let Instruction::<V>::Assign(dest, Operand::<V>::Var(src)) = instr {
                         // Both dest and src must not be reassigned (assigned <= 1 times).
                         // Parameters are assigned 0 times in MIR (they start with values).
-                        if assign_counts.get(dest) == Some(&1) && assign_counts.get(src).copied().unwrap_or(0) <= 1 {
+                        if assign_counts.get(dest) == Some(&1)
+                            && assign_counts.get(src).copied().unwrap_or(0) <= 1
+                        {
                             copy_vars.insert(*dest, *src);
                         }
                     }
@@ -62,7 +63,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                     }
                     if current != *id {
                         *op = Operand::<V>::Var(current);
-                        // We track it under folded_constants for stats simplicity, 
+                        // We track it under folded_constants for stats simplicity,
                         // but maybe we should just track replaced operands or leave stats empty.
                     }
                 }
@@ -82,8 +83,8 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                         Instruction::<V>::Borrow(_, _) | Instruction::<V>::BorrowMut(_, _) => {}
                         Instruction::<V>::Deref(_, op, _) => replace_operand(op),
                         Instruction::<V>::Drop(_) => {}
-                        Instruction::<V>::HeapAllocate(_, _) |
-                        Instruction::<V>::StackAllocate(_, _) => {}
+                        Instruction::<V>::HeapAllocate(_, _)
+                        | Instruction::<V>::StackAllocate(_, _) => {}
                         Instruction::<V>::BinaryOp(_, _, left, right) => {
                             replace_operand(left);
                             replace_operand(right);

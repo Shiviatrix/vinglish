@@ -1,6 +1,6 @@
 use eng_hir::symbol::VariableId;
+use eng_mir::{BlockId, MirFunction, Terminator};
 use std::collections::{HashMap, HashSet};
-use eng_mir::{MirFunction, BlockId, Terminator};
 
 pub struct DominatorTree {
     pub idom: HashMap<BlockId, BlockId>,
@@ -32,7 +32,7 @@ impl DominatorTree {
                 Terminator::<VariableId>::Branch(_, true_target, false_target) => {
                     preds.entry(*true_target).or_default().push(block.id);
                     succs.entry(block.id).or_default().push(*true_target);
-                    
+
                     preds.entry(*false_target).or_default().push(block.id);
                     succs.entry(block.id).or_default().push(*false_target);
                 }
@@ -59,7 +59,8 @@ impl DominatorTree {
         let mut changed = true;
         while changed {
             changed = false;
-            for &node in rpo.iter().skip(1) { // skip entry node
+            for &node in rpo.iter().skip(1) {
+                // skip entry node
                 let node_preds = preds.get(&node).unwrap();
                 let mut new_idom = None;
 
@@ -87,7 +88,8 @@ impl DominatorTree {
             children.insert(block.id, Vec::new());
         }
         for (&node, &dom) in &idom {
-            if node != dom { // entry node dominates itself in our setup
+            if node != dom {
+                // entry node dominates itself in our setup
                 children.entry(dom).or_default().push(node);
             }
         }
@@ -103,7 +105,10 @@ impl DominatorTree {
                     for &p in node_preds {
                         let mut runner = p;
                         while runner != *idom.get(&block.id).unwrap() {
-                            dominance_frontiers.entry(runner).or_default().insert(block.id);
+                            dominance_frontiers
+                                .entry(runner)
+                                .or_default()
+                                .insert(block.id);
                             if let Some(&next) = idom.get(&runner) {
                                 runner = next;
                             } else {
@@ -146,10 +151,14 @@ impl DominatorTree {
         mut b2: BlockId,
     ) -> BlockId {
         while b1 != b2 {
-            while rpo_index.get(&b1).unwrap_or(&usize::MAX) > rpo_index.get(&b2).unwrap_or(&usize::MAX) {
+            while rpo_index.get(&b1).unwrap_or(&usize::MAX)
+                > rpo_index.get(&b2).unwrap_or(&usize::MAX)
+            {
                 b1 = *idom.get(&b1).unwrap();
             }
-            while rpo_index.get(&b2).unwrap_or(&usize::MAX) > rpo_index.get(&b1).unwrap_or(&usize::MAX) {
+            while rpo_index.get(&b2).unwrap_or(&usize::MAX)
+                > rpo_index.get(&b1).unwrap_or(&usize::MAX)
+            {
                 b2 = *idom.get(&b2).unwrap();
             }
         }

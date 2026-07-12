@@ -11,9 +11,9 @@ pub enum Severity {
 impl std::fmt::Display for Severity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Hint    => write!(f, "hint"),
+            Self::Hint => write!(f, "hint"),
             Self::Warning => write!(f, "warning"),
-            Self::Error   => write!(f, "error"),
+            Self::Error => write!(f, "error"),
         }
     }
 }
@@ -28,7 +28,11 @@ pub struct Suggestion {
 
 impl Suggestion {
     pub fn new(label: impl Into<String>) -> Self {
-        Self { label: label.into(), replacement: None, confidence: None }
+        Self {
+            label: label.into(),
+            replacement: None,
+            confidence: None,
+        }
     }
     pub fn with_replacement(mut self, r: impl Into<String>) -> Self {
         self.replacement = Some(r.into());
@@ -47,7 +51,7 @@ pub struct Diagnostic {
     pub code: String,
     pub message: String,
     pub span: Span,
-    pub source_line: Option<String>,  // The actual source line for display
+    pub source_line: Option<String>, // The actual source line for display
     pub line_number: Option<u32>,
     pub col_number: Option<u32>,
     pub suggestions: Vec<Suggestion>,
@@ -111,7 +115,7 @@ impl Diagnostic {
     pub fn enrich(&mut self, src: &str) {
         let target = self.span.start as usize;
         let mut line_num = 1u32;
-        let mut col_num  = 1u32;
+        let mut col_num = 1u32;
         let mut line_start = 0usize;
 
         for (i, ch) in src.char_indices() {
@@ -119,8 +123,8 @@ impl Diagnostic {
                 break;
             }
             if ch == '\n' {
-                line_num  += 1;
-                col_num    = 1;
+                line_num += 1;
+                col_num = 1;
                 line_start = i + 1;
             } else {
                 col_num += 1;
@@ -128,7 +132,7 @@ impl Diagnostic {
         }
 
         self.line_number = Some(line_num);
-        self.col_number  = Some(col_num);
+        self.col_number = Some(col_num);
 
         // Extract the source line text
         let rest = &src[line_start..];
@@ -139,11 +143,7 @@ impl Diagnostic {
 
 /// Convert lex/parse/type errors into diagnostics, and enrich with intent suggestions.
 /// `symbol_table` is a list of known symbol names for typo detection.
-pub fn from_unknown_ident(
-    name: &str,
-    span: Span,
-    symbol_table: &[&str],
-) -> Diagnostic {
+pub fn from_unknown_ident(name: &str, span: Span, symbol_table: &[&str]) -> Diagnostic {
     use strsim::jaro_winkler;
 
     let mut scored: Vec<(&str, f64)> = symbol_table
@@ -152,11 +152,7 @@ pub fn from_unknown_ident(
         .collect();
     scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-    let mut diag = Diagnostic::error(
-        "E0001",
-        format!("unknown identifier `{}`", name),
-        span,
-    );
+    let mut diag = Diagnostic::error("E0001", format!("unknown identifier `{}`", name), span);
 
     for (candidate, score) in scored.iter().take(3) {
         if *score > 0.8 {
@@ -170,7 +166,8 @@ pub fn from_unknown_ident(
     }
 
     if diag.suggestions.is_empty() {
-        diag.notes.push("check the identifier spelling or import the relevant module".into());
+        diag.notes
+            .push("check the identifier spelling or import the relevant module".into());
     }
 
     diag

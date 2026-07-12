@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use eng_mir::{MirFunction, BlockId, Instruction, Operand, Terminator};
-use eng_hir::symbol::{VariableId, SymbolId};
 use crate::dominators::DominatorTree;
+use eng_hir::symbol::{SymbolId, VariableId};
+use eng_mir::{BlockId, Instruction, MirFunction, Operand, Terminator};
+use std::collections::HashMap;
 
 pub struct Renamer {
     pub next_id: u32,
@@ -25,15 +25,23 @@ impl Renamer {
     }
 
     pub fn current_name(&self, orig: VariableId) -> VariableId {
-        *self.stacks.get(&orig).and_then(|s| s.last()).unwrap_or(&orig)
+        *self
+            .stacks
+            .get(&orig)
+            .and_then(|s| s.last())
+            .unwrap_or(&orig)
     }
 }
 
-pub fn rename_variables(func: &mut MirFunction<VariableId>, dom_tree: &DominatorTree, symbol_table: &mut eng_hir::symbol::SymbolTable) {
+pub fn rename_variables(
+    func: &mut MirFunction<VariableId>,
+    dom_tree: &DominatorTree,
+    symbol_table: &mut eng_hir::symbol::SymbolTable,
+) {
     let mut max_id = 0;
     for &var in &func.locals {
-        if var.0.0 > max_id {
-            max_id = var.0.0;
+        if var.0 .0 > max_id {
+            max_id = var.0 .0;
         }
     }
     let mut renamer = Renamer::new(symbol_table.num_symbols() as u32);
@@ -79,7 +87,15 @@ pub fn rename_variables(func: &mut MirFunction<VariableId>, dom_tree: &Dominator
         return;
     }
     let entry = func.blocks[0].id;
-    rename_block(entry, &mut renamer, func, dom_tree, &succs, &phi_origins, symbol_table);
+    rename_block(
+        entry,
+        &mut renamer,
+        func,
+        dom_tree,
+        &succs,
+        &phi_origins,
+        symbol_table,
+    );
 }
 
 fn rename_block(
@@ -95,28 +111,30 @@ fn rename_block(
 
     // Split func.blocks borrow
     let block_idx = func.blocks.iter().position(|b| b.id == block_id).unwrap();
-    
+
     // 1. Rename Phi node defs
     for (i, instr) in func.blocks[block_idx].instrs.iter_mut().enumerate() {
         if let Instruction::<VariableId>::Phi(dest, _) = instr {
             let orig = phi_origins.get(&(block_id, i)).copied().unwrap();
             let new_dest = renamer.new_name(orig, &mut func.locals);
-            
+
             // Propagate type to new SSA variable
             let mut ty = eng_hir::types::Type::Unit;
-            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) = symbol_table.get(eng_hir::symbol::SymbolId(orig.0.0)) {
+            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) =
+                symbol_table.get(eng_hir::symbol::SymbolId(orig.0 .0))
+            {
                 ty = vs.ty.clone();
             }
             symbol_table.define_var_with_id(
                 new_dest.0,
                 eng_hir::symbol::VariableSymbol {
                     id: new_dest,
-                    name: format!("{}_{}", new_dest.0.0, orig.0.0), // give it some name
+                    name: format!("{}_{}", new_dest.0 .0, orig.0 .0), // give it some name
                     is_mut: false,
                     ty,
-                }
+                },
             );
-            
+
             *pushed_counts.entry(orig).or_default() += 1;
             *dest = new_dest;
         } else {
@@ -147,41 +165,47 @@ fn rename_block(
                 rename_op(left, renamer);
                 rename_op(right, renamer);
             }
-            Instruction::<VariableId>::UnaryOp(_, _, op) |
-            Instruction::<VariableId>::Borrow(_, op) |
-            Instruction::<VariableId>::BorrowMut(_, op) |
-            Instruction::<VariableId>::Deref(_, op, _) => rename_op(op, renamer),
+            Instruction::<VariableId>::UnaryOp(_, _, op)
+            | Instruction::<VariableId>::Borrow(_, op)
+            | Instruction::<VariableId>::BorrowMut(_, op)
+            | Instruction::<VariableId>::Deref(_, op, _) => rename_op(op, renamer),
             Instruction::<VariableId>::Drop(var) => *var = renamer.current_name(*var),
-            Instruction::<VariableId>::HeapAllocate(_, _) | 
-            Instruction::<VariableId>::StackAllocate(_, _) | 
-            Instruction::<VariableId>::Phi(_, _) => {}
+            Instruction::<VariableId>::HeapAllocate(_, _)
+            | Instruction::<VariableId>::StackAllocate(_, _)
+            | Instruction::<VariableId>::Phi(_, _) => {}
         }
 
         // Defs
-        if let Instruction::<VariableId>::Assign(dest, _) | Instruction::<VariableId>::BinaryOp(dest, _, _, _) 
-            | Instruction::<VariableId>::UnaryOp(dest, _, _) | Instruction::<VariableId>::Call(dest, _, _) 
-            | Instruction::<VariableId>::HeapAllocate(dest, _) | Instruction::<VariableId>::StackAllocate(dest, _)
-            | Instruction::<VariableId>::Borrow(dest, _)
-            | Instruction::<VariableId>::BorrowMut(dest, _)
-            | Instruction::<VariableId>::Deref(dest, _, _) = instr {
+        if let Instruction::<VariableId>::Assign(dest, _)
+        | Instruction::<VariableId>::BinaryOp(dest, _, _, _)
+        | Instruction::<VariableId>::UnaryOp(dest, _, _)
+        | Instruction::<VariableId>::Call(dest, _, _)
+        | Instruction::<VariableId>::HeapAllocate(dest, _)
+        | Instruction::<VariableId>::StackAllocate(dest, _)
+        | Instruction::<VariableId>::Borrow(dest, _)
+        | Instruction::<VariableId>::BorrowMut(dest, _)
+        | Instruction::<VariableId>::Deref(dest, _, _) = instr
+        {
             let orig = *dest;
             let new_id = renamer.new_name(orig, &mut func.locals);
-            
+
             // Propagate type to new SSA variable
             let mut ty = eng_hir::types::Type::Unit;
-            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) = symbol_table.get(eng_hir::symbol::SymbolId(orig.0.0)) {
+            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) =
+                symbol_table.get(eng_hir::symbol::SymbolId(orig.0 .0))
+            {
                 ty = vs.ty.clone();
             }
             symbol_table.define_var_with_id(
                 new_id.0,
                 eng_hir::symbol::VariableSymbol {
                     id: new_id,
-                    name: format!("{}_{}", new_id.0.0, orig.0.0), // give it some name
+                    name: format!("{}_{}", new_id.0 .0, orig.0 .0), // give it some name
                     is_mut: false,
                     ty,
-                }
+                },
             );
-            
+
             *pushed_counts.entry(orig).or_default() += 1;
             *dest = new_id;
         }
@@ -204,7 +228,9 @@ fn rename_block(
             // We use a separate loop or indexed access.
             let len = func.blocks[succ_idx].instrs.len();
             while i < len {
-                if let Instruction::<VariableId>::Phi(_, ref mut args) = func.blocks[succ_idx].instrs[i] {
+                if let Instruction::<VariableId>::Phi(_, ref mut args) =
+                    func.blocks[succ_idx].instrs[i]
+                {
                     let orig_var = phi_origins.get(&(succ, i)).copied().unwrap();
                     let current = renamer.current_name(orig_var);
                     args.push((Operand::<VariableId>::Var(current), block_id));
@@ -219,7 +245,15 @@ fn rename_block(
     // 4. Recursive calls to dominated blocks
     if let Some(children) = dom_tree.children.get(&block_id) {
         for &child in children {
-            rename_block(child, renamer, func, dom_tree, succs, phi_origins, symbol_table);
+            rename_block(
+                child,
+                renamer,
+                func,
+                dom_tree,
+                succs,
+                phi_origins,
+                symbol_table,
+            );
         }
     }
 

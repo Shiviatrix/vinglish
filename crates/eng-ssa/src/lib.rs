@@ -22,7 +22,11 @@ impl SSAConversionPass {
         Self
     }
 
-    pub fn run(&mut self, mut module: MirModule<VariableId>, symbol_table: &mut eng_hir::symbol::SymbolTable) -> MirModule<eng_hir::symbol::SsaValueId> {
+    pub fn run(
+        &mut self,
+        mut module: MirModule<VariableId>,
+        symbol_table: &mut eng_hir::symbol::SymbolTable,
+    ) -> MirModule<eng_hir::symbol::SsaValueId> {
         for func in &mut module.functions {
             let dom_tree = DominatorTree::new(func);
             phi::insert_phi_nodes(func, &dom_tree);
@@ -33,10 +37,10 @@ impl SSAConversionPass {
 }
 
 fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<eng_hir::symbol::SsaValueId> {
-    use eng_mir::{MirFunction, BasicBlock, Instruction, Terminator, Operand};
     use eng_hir::symbol::SsaValueId;
+    use eng_mir::{BasicBlock, Instruction, MirFunction, Operand, Terminator};
 
-    let convert_var = |v: VariableId| SsaValueId(v.0.0);
+    let convert_var = |v: VariableId| SsaValueId(v.0 .0);
 
     let convert_operand = |op: Operand<VariableId>| -> Operand<SsaValueId> {
         match op {
@@ -47,19 +51,51 @@ fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<eng_hir::sym
 
     let convert_instr = |instr: Instruction<VariableId>| -> Instruction<SsaValueId> {
         match instr {
-            Instruction::Assign(dest, op) => Instruction::Assign(convert_var(dest), convert_operand(op)),
-            Instruction::BinaryOp(dest, op_kind, left, right) => Instruction::BinaryOp(convert_var(dest), op_kind, convert_operand(left), convert_operand(right)),
-            Instruction::UnaryOp(dest, op_kind, val) => Instruction::UnaryOp(convert_var(dest), op_kind, convert_operand(val)),
-            Instruction::Call(dest, func_id, args) => Instruction::Call(convert_var(dest), func_id, args.into_iter().map(convert_operand).collect()),
-            Instruction::HeapAllocate(dest, type_id) => Instruction::HeapAllocate(convert_var(dest), type_id),
-            Instruction::StackAllocate(dest, type_id) => Instruction::StackAllocate(convert_var(dest), type_id),
-            Instruction::LoadField(dest, obj, field) => Instruction::LoadField(convert_var(dest), convert_operand(obj), field),
-            Instruction::StoreField(obj, field, val) => Instruction::StoreField(convert_var(obj), field, convert_operand(val)),
-            Instruction::Borrow(dest, op) => Instruction::Borrow(convert_var(dest), convert_operand(op)),
-            Instruction::BorrowMut(dest, op) => Instruction::BorrowMut(convert_var(dest), convert_operand(op)),
-            Instruction::Deref(dest, op, ty) => Instruction::Deref(convert_var(dest), convert_operand(op), ty),
+            Instruction::Assign(dest, op) => {
+                Instruction::Assign(convert_var(dest), convert_operand(op))
+            }
+            Instruction::BinaryOp(dest, op_kind, left, right) => Instruction::BinaryOp(
+                convert_var(dest),
+                op_kind,
+                convert_operand(left),
+                convert_operand(right),
+            ),
+            Instruction::UnaryOp(dest, op_kind, val) => {
+                Instruction::UnaryOp(convert_var(dest), op_kind, convert_operand(val))
+            }
+            Instruction::Call(dest, func_id, args) => Instruction::Call(
+                convert_var(dest),
+                func_id,
+                args.into_iter().map(convert_operand).collect(),
+            ),
+            Instruction::HeapAllocate(dest, type_id) => {
+                Instruction::HeapAllocate(convert_var(dest), type_id)
+            }
+            Instruction::StackAllocate(dest, type_id) => {
+                Instruction::StackAllocate(convert_var(dest), type_id)
+            }
+            Instruction::LoadField(dest, obj, field) => {
+                Instruction::LoadField(convert_var(dest), convert_operand(obj), field)
+            }
+            Instruction::StoreField(obj, field, val) => {
+                Instruction::StoreField(convert_var(obj), field, convert_operand(val))
+            }
+            Instruction::Borrow(dest, op) => {
+                Instruction::Borrow(convert_var(dest), convert_operand(op))
+            }
+            Instruction::BorrowMut(dest, op) => {
+                Instruction::BorrowMut(convert_var(dest), convert_operand(op))
+            }
+            Instruction::Deref(dest, op, ty) => {
+                Instruction::Deref(convert_var(dest), convert_operand(op), ty)
+            }
             Instruction::Drop(dest) => Instruction::Drop(convert_var(dest)),
-            Instruction::Phi(dest, args) => Instruction::Phi(convert_var(dest), args.into_iter().map(|(op, b)| (convert_operand(op), b)).collect()),
+            Instruction::Phi(dest, args) => Instruction::Phi(
+                convert_var(dest),
+                args.into_iter()
+                    .map(|(op, b)| (convert_operand(op), b))
+                    .collect(),
+            ),
         }
     };
 
@@ -68,7 +104,9 @@ fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<eng_hir::sym
             Terminator::Return(Some(op)) => Terminator::Return(Some(convert_operand(op))),
             Terminator::Return(None) => Terminator::Return(None),
             Terminator::Jump(tgt) => Terminator::Jump(tgt),
-            Terminator::Branch(cond, t_tgt, f_tgt) => Terminator::Branch(convert_operand(cond), t_tgt, f_tgt),
+            Terminator::Branch(cond, t_tgt, f_tgt) => {
+                Terminator::Branch(convert_operand(cond), t_tgt, f_tgt)
+            }
         }
     };
 

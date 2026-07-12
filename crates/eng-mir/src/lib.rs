@@ -1,8 +1,8 @@
 pub mod validator;
 
+use eng_hir::symbol::{FieldId, FunctionId, TypeId};
+use eng_parser::ast::{BinOp, Literal, UnOp};
 use std::fmt;
-use eng_hir::symbol::{FunctionId, FieldId, TypeId};
-use eng_parser::ast::{BinOp, UnOp, Literal};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct BlockId(pub usize);
@@ -71,22 +71,40 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Instruction::Assign(dest, op) => write!(f, "{} = {}", dest, op),
-            Instruction::LoadField(dest, obj, field) => write!(f, "{} = {}.field_{}", dest, obj, field.0),
-            Instruction::StoreField(obj, field, val) => write!(f, "{}.field_{} = {}", obj, field.0, val),
-            Instruction::Call(dest, func, args) => {
-                let args_str = args.iter().map(|a| a.to_string()).collect::<Vec<_>>().join(", ");
-                write!(f, "{} = call fn_{}({})", dest, func.0.0, args_str)
+            Instruction::LoadField(dest, obj, field) => {
+                write!(f, "{} = {}.field_{}", dest, obj, field.0)
             }
-            Instruction::HeapAllocate(dest, ty) => write!(f, "{} = heap_allocate type_{}", dest, ty.0.0),
-            Instruction::StackAllocate(dest, ty) => write!(f, "{} = stack_allocate type_{}", dest, ty.0.0),
-            Instruction::BinaryOp(dest, op, left, right) => write!(f, "{} = {} {:?} {}", dest, left, op, right),
+            Instruction::StoreField(obj, field, val) => {
+                write!(f, "{}.field_{} = {}", obj, field.0, val)
+            }
+            Instruction::Call(dest, func, args) => {
+                let args_str = args
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "{} = call fn_{}({})", dest, func.0 .0, args_str)
+            }
+            Instruction::HeapAllocate(dest, ty) => {
+                write!(f, "{} = heap_allocate type_{}", dest, ty.0 .0)
+            }
+            Instruction::StackAllocate(dest, ty) => {
+                write!(f, "{} = stack_allocate type_{}", dest, ty.0 .0)
+            }
+            Instruction::BinaryOp(dest, op, left, right) => {
+                write!(f, "{} = {} {:?} {}", dest, left, op, right)
+            }
             Instruction::UnaryOp(dest, op, operand) => write!(f, "{} = {:?} {}", dest, op, operand),
             Instruction::Borrow(dest, src) => write!(f, "{} = &{}", dest, src),
             Instruction::BorrowMut(dest, src) => write!(f, "{} = &mut {}", dest, src),
             Instruction::Deref(dest, src, _) => write!(f, "{} = *{}", dest, src),
             Instruction::Drop(var) => write!(f, "drop({})", var),
             Instruction::Phi(dest, args) => {
-                let args_str = args.iter().map(|(op, block)| format!("{}: {}", block, op)).collect::<Vec<_>>().join(", ");
+                let args_str = args
+                    .iter()
+                    .map(|(op, block)| format!("{}: {}", block, op))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 write!(f, "{} = phi({})", dest, args_str)
             }
         }
@@ -106,7 +124,9 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Terminator<V> {
             Terminator::Return(Some(op)) => write!(f, "return {}", op),
             Terminator::Return(None) => write!(f, "return"),
             Terminator::Jump(block) => write!(f, "jump {}", block),
-            Terminator::Branch(cond, true_block, false_block) => write!(f, "branch {} ? {} : {}", cond, true_block, false_block),
+            Terminator::Branch(cond, true_block, false_block) => {
+                write!(f, "branch {} ? {} : {}", cond, true_block, false_block)
+            }
         }
     }
 }
@@ -124,7 +144,7 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for BasicBlock<V> {
 
 impl<V: Clone + Copy + fmt::Display> fmt::Display for MirFunction<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "fn {} (fn_{}) {{", self.name, self.id.0.0)?;
+        writeln!(f, "fn {} (fn_{}) {{", self.name, self.id.0 .0)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }

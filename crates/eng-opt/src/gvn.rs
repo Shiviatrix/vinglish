@@ -1,6 +1,6 @@
 use crate::{OptimizationPass, PassStats};
-use eng_mir::{MirModule, Instruction, Operand, Terminator};
 use eng_hir::symbol::SsaValueId;
+use eng_mir::{Instruction, MirModule, Operand, Terminator};
 use std::collections::HashMap;
 
 pub struct GlobalValueNumberingPass;
@@ -17,7 +17,11 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
             #[derive(PartialEq, Eq, Hash)]
             enum ValueExpr {
                 Operand(Operand<SsaValueId>),
-                BinaryOp(eng_parser::ast::BinOp, Operand<SsaValueId>, Operand<SsaValueId>),
+                BinaryOp(
+                    eng_parser::ast::BinOp,
+                    Operand<SsaValueId>,
+                    Operand<SsaValueId>,
+                ),
                 UnaryOp(eng_parser::ast::UnOp, Operand<SsaValueId>),
             }
 
@@ -47,12 +51,11 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                                 replace_operand(arg);
                             }
                         }
-                        Instruction::UnaryOp(_, _, val) |
-                        Instruction::Deref(_, val, _) => replace_operand(val),
-                        Instruction::Borrow(_, _) |
-                        Instruction::BorrowMut(_, _) => {}
-                        Instruction::HeapAllocate(_, _) |
-                        Instruction::StackAllocate(_, _) => {}
+                        Instruction::UnaryOp(_, _, val) | Instruction::Deref(_, val, _) => {
+                            replace_operand(val)
+                        }
+                        Instruction::Borrow(_, _) | Instruction::BorrowMut(_, _) => {}
+                        Instruction::HeapAllocate(_, _) | Instruction::StackAllocate(_, _) => {}
                         Instruction::LoadField(_, obj, _) => replace_operand(obj),
                         Instruction::StoreField(obj, _, val) => {
                             if let Some(&new_v) = replacements.get(obj) {
@@ -73,9 +76,16 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                     }
 
                     let (dest, expr) = match &instr {
-                        Instruction::Assign(dest, op) => (Some(*dest), Some(ValueExpr::Operand(op.clone()))),
-                        Instruction::BinaryOp(dest, op_kind, left, right) => (Some(*dest), Some(ValueExpr::BinaryOp(*op_kind, left.clone(), right.clone()))),
-                        Instruction::UnaryOp(dest, op_kind, val) => (Some(*dest), Some(ValueExpr::UnaryOp(*op_kind, val.clone()))),
+                        Instruction::Assign(dest, op) => {
+                            (Some(*dest), Some(ValueExpr::Operand(op.clone())))
+                        }
+                        Instruction::BinaryOp(dest, op_kind, left, right) => (
+                            Some(*dest),
+                            Some(ValueExpr::BinaryOp(*op_kind, left.clone(), right.clone())),
+                        ),
+                        Instruction::UnaryOp(dest, op_kind, val) => {
+                            (Some(*dest), Some(ValueExpr::UnaryOp(*op_kind, val.clone())))
+                        }
                         _ => (None, None),
                     };
 

@@ -1,10 +1,12 @@
-use std::collections::HashMap;
-use eng_parser::ast::{Module as AstModule, Item as AstItem};
-use eng_hir::Module as HirModule;
-use eng_hir::symbol::{SymbolTable, SymbolId, SymbolKind, FunctionSymbol, TypeSymbol, TypeId, FunctionId, VariableId};
 use crate::TypeError;
+use eng_hir::symbol::{
+    FunctionId, FunctionSymbol, SymbolId, SymbolKind, SymbolTable, TypeId, TypeSymbol, VariableId,
+};
 use eng_hir::types::Type;
+use eng_hir::Module as HirModule;
 use eng_parser::ast::Visibility;
+use eng_parser::ast::{Item as AstItem, Module as AstModule};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ScopedId {
@@ -15,13 +17,25 @@ pub enum ScopedId {
 
 impl ScopedId {
     pub fn as_var(&self) -> Option<VariableId> {
-        if let ScopedId::Var(id) = self { Some(*id) } else { None }
+        if let ScopedId::Var(id) = self {
+            Some(*id)
+        } else {
+            None
+        }
     }
     pub fn as_func(&self) -> Option<FunctionId> {
-        if let ScopedId::Func(id) = self { Some(*id) } else { None }
+        if let ScopedId::Func(id) = self {
+            Some(*id)
+        } else {
+            None
+        }
     }
     pub fn as_type(&self) -> Option<TypeId> {
-        if let ScopedId::Type(id) = self { Some(*id) } else { None }
+        if let ScopedId::Type(id) = self {
+            Some(*id)
+        } else {
+            None
+        }
     }
     pub fn as_raw_id(&self) -> SymbolId {
         match self {
@@ -68,9 +82,12 @@ impl CompilerContext {
                         name: name.to_string(),
                         visibility: Visibility::Public,
                         // Builtins take any type (represented by a fresh type variable) and return Unit
-                        ty: Type::Function(vec![Type::Var(eng_hir::types::TypeVar(0))], Box::new(Type::Unit)),
+                        ty: Type::Function(
+                            vec![Type::Var(eng_hir::types::TypeVar(0))],
+                            Box::new(Type::Unit),
+                        ),
                         generic_params: vec![],
-                    }
+                    },
                 );
                 if let Some(fs) = symbol_table.get_func_mut(sym_id) {
                     fs.id = sym_id;
@@ -110,7 +127,7 @@ impl CompilerContext {
                 return Some(*id);
             }
         }
-        
+
         // Fallback to symbol table names if they exist
         if let Some(sym_id) = self.symbol_table.lookup(name) {
             match self.symbol_table.get(sym_id) {
@@ -160,13 +177,14 @@ impl CompilerPass for NameResolutionPass {
                         format!("{}.{}", ctx.current_module, t.name.name)
                     };
 
-                    let mut ts = TypeSymbol::new(eng_hir::symbol::TypeId(SymbolId(0)), qualified_name.clone(), t.visibility);
+                    let mut ts = TypeSymbol::new(
+                        eng_hir::symbol::TypeId(SymbolId(0)),
+                        qualified_name.clone(),
+                        t.visibility,
+                    );
                     ts.generic_params = generic_params;
 
-                    let id = ctx.symbol_table.define_type(
-                        qualified_name.clone(),
-                        ts
-                    );
+                    let id = ctx.symbol_table.define_type(qualified_name.clone(), ts);
                     if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
                         ts.id = id;
                     }
@@ -202,7 +220,7 @@ impl CompilerPass for NameResolutionPass {
                             visibility: f.visibility,
                             ty: Type::Unit, // Will be inferred later
                             generic_params,
-                        }
+                        },
                     );
                     if let Some(fs) = ctx.symbol_table.get_func_mut(id) {
                         fs.id = id;
@@ -217,12 +235,14 @@ impl CompilerPass for NameResolutionPass {
                     let path_parts: Vec<String> = u.path.iter().map(|id| id.name.clone()).collect();
                     let path_str = path_parts.join(".");
                     let prefix = format!("{}.", path_str);
-                    
+
                     let mut imported = Vec::new();
                     for (fq_name, &sym_id) in ctx.symbol_table.names() {
                         if fq_name.starts_with(&prefix) {
                             let is_public = match ctx.symbol_table.get(sym_id) {
-                                Some(SymbolKind::Function(fs)) => fs.visibility == Visibility::Public,
+                                Some(SymbolKind::Function(fs)) => {
+                                    fs.visibility == Visibility::Public
+                                }
                                 Some(SymbolKind::Type(ts)) => ts.visibility == Visibility::Public,
                                 _ => false,
                             };
@@ -232,7 +252,7 @@ impl CompilerPass for NameResolutionPass {
                             }
                         }
                     }
-                    
+
                     for (short_name, fq_name, sym_id) in imported {
                         let scoped_id = match ctx.symbol_table.get(sym_id) {
                             Some(SymbolKind::Function(_)) => ScopedId::Func(FunctionId(sym_id)),

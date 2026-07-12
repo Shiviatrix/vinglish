@@ -1,30 +1,30 @@
-use std::collections::{HashMap, HashSet};
-use eng_mir::{MirFunction, BlockId, Instruction};
-use eng_hir::symbol::VariableId;
 use crate::dominators::DominatorTree;
+use eng_hir::symbol::VariableId;
+use eng_mir::{BlockId, Instruction, MirFunction};
+use std::collections::{HashMap, HashSet};
 
 pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &DominatorTree) {
     // 1. Find blocks where each variable is assigned
     let mut defs: HashMap<VariableId, HashSet<BlockId>> = HashMap::new();
-    
+
     for block in &func.blocks {
         for instr in &block.instrs {
             match instr {
-                Instruction::<VariableId>::Assign(dest, _) |
-                Instruction::<VariableId>::LoadField(dest, _, _) |
-                Instruction::<VariableId>::Call(dest, _, _) |
-                Instruction::<VariableId>::HeapAllocate(dest, _) |
-                Instruction::<VariableId>::StackAllocate(dest, _) |
-                Instruction::<VariableId>::BinaryOp(dest, _, _, _) |
-                Instruction::<VariableId>::UnaryOp(dest, _, _) |
-                Instruction::<VariableId>::Borrow(dest, _) |
-                Instruction::<VariableId>::BorrowMut(dest, _) |
-                Instruction::<VariableId>::Deref(dest, _, _) => {
+                Instruction::<VariableId>::Assign(dest, _)
+                | Instruction::<VariableId>::LoadField(dest, _, _)
+                | Instruction::<VariableId>::Call(dest, _, _)
+                | Instruction::<VariableId>::HeapAllocate(dest, _)
+                | Instruction::<VariableId>::StackAllocate(dest, _)
+                | Instruction::<VariableId>::BinaryOp(dest, _, _, _)
+                | Instruction::<VariableId>::UnaryOp(dest, _, _)
+                | Instruction::<VariableId>::Borrow(dest, _)
+                | Instruction::<VariableId>::BorrowMut(dest, _)
+                | Instruction::<VariableId>::Deref(dest, _, _) => {
                     defs.entry(*dest).or_default().insert(block.id);
                 }
-                Instruction::<VariableId>::StoreField(_, _, _) |
-                Instruction::<VariableId>::Drop(_) |
-                Instruction::<VariableId>::Phi(_, _) => {}
+                Instruction::<VariableId>::StoreField(_, _, _)
+                | Instruction::<VariableId>::Drop(_)
+                | Instruction::<VariableId>::Phi(_, _) => {}
             }
         }
     }
@@ -44,7 +44,9 @@ pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &Dominator
                         // Insert Phi node in block y
                         if let Some(block) = func.blocks.iter_mut().find(|b| b.id == y) {
                             // We initialize with empty predecessors; they will be filled during renaming.
-                            block.instrs.insert(0, Instruction::<VariableId>::Phi(var, Vec::new()));
+                            block
+                                .instrs
+                                .insert(0, Instruction::<VariableId>::Phi(var, Vec::new()));
                         }
                         has_phi.insert(y);
 

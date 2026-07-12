@@ -67,8 +67,7 @@ pub fn tokenize(src: &str) -> (Vec<Spanned<Token>>, Vec<LexError>) {
 
             // ── Lex the content of this line ──────────────────────────────────
             let content_start = byte_offset + indent as u32;
-            let (mut line_toks, mut line_errs) =
-                lex_line(trimmed, content_start);
+            let (mut line_toks, mut line_errs) = lex_line(trimmed, content_start);
             tokens.append(&mut line_toks);
             errors.append(&mut line_errs);
         }
@@ -90,7 +89,10 @@ pub fn tokenize(src: &str) -> (Vec<Spanned<Token>>, Vec<LexError>) {
         ));
     }
 
-    tokens.push(Spanned::new(Token::EOF, Span::new(byte_offset, byte_offset)));
+    tokens.push(Spanned::new(
+        Token::EOF,
+        Span::new(byte_offset, byte_offset),
+    ));
 
     (tokens, errors)
 }
@@ -160,10 +162,7 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
             if !closed {
                 errors.push(LexError::UnterminatedString { offset: start_offs });
             } else {
-                tokens.push(Spanned::new(
-                    Token::StringLit(s),
-                    span_from!(start_offs),
-                ));
+                tokens.push(Spanned::new(Token::StringLit(s), span_from!(start_offs)));
             }
             continue;
         }
@@ -181,7 +180,10 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                     pos += 1; // separator, ignore
                 } else if c == '.'
                     && !is_float
-                    && chars.get(pos + 1).map(|p| p.is_ascii_digit()).unwrap_or(false)
+                    && chars
+                        .get(pos + 1)
+                        .map(|p| p.is_ascii_digit())
+                        .unwrap_or(false)
                 {
                     is_float = true;
                     num.push('.');
@@ -229,39 +231,83 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
         let next = chars.get(pos).copied();
         let tok = match ch {
             '+' => {
-                if next == Some('=') { pos += 1; Token::PlusEq } else { Token::Plus }
+                if next == Some('=') {
+                    pos += 1;
+                    Token::PlusEq
+                } else {
+                    Token::Plus
+                }
             }
             '-' => {
-                if next == Some('>') { pos += 1; Token::Arrow }
-                else if next == Some('=') { pos += 1; Token::MinusEq }
-                else { Token::Minus }
+                if next == Some('>') {
+                    pos += 1;
+                    Token::Arrow
+                } else if next == Some('=') {
+                    pos += 1;
+                    Token::MinusEq
+                } else {
+                    Token::Minus
+                }
             }
             '*' => {
-                if next == Some('=') { pos += 1; Token::StarEq } else { Token::Star }
+                if next == Some('=') {
+                    pos += 1;
+                    Token::StarEq
+                } else {
+                    Token::Star
+                }
             }
             '/' => {
-                if next == Some('=') { pos += 1; Token::SlashEq }
-                else if next == Some('/') { break } // C-style comment
-                else { Token::Slash }
+                if next == Some('=') {
+                    pos += 1;
+                    Token::SlashEq
+                } else if next == Some('/') {
+                    break;
+                }
+                // C-style comment
+                else {
+                    Token::Slash
+                }
             }
             '%' => Token::Percent,
             '=' => {
-                if next == Some('=') { pos += 1; Token::Eq }
-                else if next == Some('>') { pos += 1; Token::FatArrow }
-                else { Token::Be } // bare `=` treated as `be`
+                if next == Some('=') {
+                    pos += 1;
+                    Token::Eq
+                } else if next == Some('>') {
+                    pos += 1;
+                    Token::FatArrow
+                } else {
+                    Token::Be
+                } // bare `=` treated as `be`
             }
             '!' => {
-                if next == Some('=') { pos += 1; Token::NotEq }
-                else {
-                    errors.push(LexError::UnexpectedChar { ch: '!', offset: start_offs });
+                if next == Some('=') {
+                    pos += 1;
+                    Token::NotEq
+                } else {
+                    errors.push(LexError::UnexpectedChar {
+                        ch: '!',
+                        offset: start_offs,
+                    });
                     continue;
                 }
             }
             '<' => {
-                if next == Some('=') { pos += 1; Token::LtEq } else { Token::Lt }
+                if next == Some('=') {
+                    pos += 1;
+                    Token::LtEq
+                } else {
+                    Token::Lt
+                }
             }
             '>' => {
-                if next == Some('=') { pos += 1; Token::GtEq } else { Token::Gt }
+                if next == Some('=') {
+                    pos += 1;
+                    Token::GtEq
+                } else {
+                    Token::Gt
+                }
             }
             '.' => Token::Dot,
             ',' => Token::Comma,
@@ -322,7 +368,12 @@ mod tests {
         let result = toks("let age be 25");
         assert_eq!(
             result,
-            vec![Token::Let, Token::Ident("age".into()), Token::Be, Token::Integer(25)]
+            vec![
+                Token::Let,
+                Token::Ident("age".into()),
+                Token::Be,
+                Token::Integer(25)
+            ]
         );
     }
 
@@ -372,7 +423,12 @@ mod tests {
         let result = toks("let x be 1 -- this is a comment");
         assert_eq!(
             result,
-            vec![Token::Let, Token::Ident("x".into()), Token::Be, Token::Integer(1)]
+            vec![
+                Token::Let,
+                Token::Ident("x".into()),
+                Token::Be,
+                Token::Integer(1)
+            ]
         );
     }
 }

@@ -1,7 +1,7 @@
-use inkwell::context::Context;
-use inkwell::types::{BasicTypeEnum, BasicMetadataTypeEnum, StructType};
-use eng_hir::symbol::{SymbolTable, TypeId, SymbolKind};
+use eng_hir::symbol::{SymbolKind, SymbolTable, TypeId};
 use eng_hir::types::Type;
+use inkwell::context::Context;
+use inkwell::types::{BasicMetadataTypeEnum, BasicTypeEnum, StructType};
 
 pub struct TypeLowering<'ctx> {
     context: &'ctx Context,
@@ -17,9 +17,11 @@ impl<'ctx> TypeLowering<'ctx> {
             Type::Int => Some(self.context.i64_type().into()),
             Type::Float => Some(self.context.f64_type().into()),
             Type::Bool => Some(self.context.bool_type().into()),
-            Type::Text => {
-                Some(self.context.ptr_type(inkwell::AddressSpace::default()).into())
-            }
+            Type::Text => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
             Type::Unit => None, // void
             Type::Named(name, _) => {
                 if let Some(type_id) = symbol_table.lookup(name) {
@@ -30,20 +32,30 @@ impl<'ctx> TypeLowering<'ctx> {
                 let struct_type = self.context.opaque_struct_type(name);
                 Some(struct_type.into())
             }
-            Type::List(_) | Type::Dict(_, _) | Type::Optional(_) | Type::Result(_, _) => {
-                Some(self.context.ptr_type(inkwell::AddressSpace::default()).into())
-            }
-            Type::Function(_, _) => {
-                Some(self.context.ptr_type(inkwell::AddressSpace::default()).into())
-            }
-            Type::Reference(_, _) | Type::Pointer(_) => {
-                Some(self.context.ptr_type(inkwell::AddressSpace::default()).into())
-            }
+            Type::List(_) | Type::Dict(_, _) | Type::Optional(_) | Type::Result(_, _) => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
+            Type::Function(_, _) => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
+            Type::Reference(_, _) | Type::Pointer(_) => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
             Type::Var(_) => None,
         }
     }
 
-    pub fn lower_struct_type(&self, symbol_table: &SymbolTable, type_id: TypeId) -> StructType<'ctx> {
+    pub fn lower_struct_type(
+        &self,
+        symbol_table: &SymbolTable,
+        type_id: TypeId,
+    ) -> StructType<'ctx> {
         if let Some(ts) = symbol_table.get_type(type_id) {
             let name = &ts.name;
             if let Some(existing) = self.context.get_struct_type(name) {
@@ -53,9 +65,14 @@ impl<'ctx> TypeLowering<'ctx> {
             }
             let struct_type = self.context.opaque_struct_type(name);
 
-            let field_types: Vec<BasicTypeEnum<'ctx>> = ts.fields.iter().map(|f| {
-                self.lower_type(&f.ty, symbol_table).unwrap_or(self.context.i64_type().into())
-            }).collect();
+            let field_types: Vec<BasicTypeEnum<'ctx>> = ts
+                .fields
+                .iter()
+                .map(|f| {
+                    self.lower_type(&f.ty, symbol_table)
+                        .unwrap_or(self.context.i64_type().into())
+                })
+                .collect();
 
             struct_type.set_body(&field_types, false);
             struct_type
@@ -65,13 +82,16 @@ impl<'ctx> TypeLowering<'ctx> {
     }
 
     /// Convert a type to a `BasicMetadataTypeEnum` for function parameter types.
-    pub fn lower_to_metadata_type(&self, ty: &Type, symbol_table: &SymbolTable) -> BasicMetadataTypeEnum<'ctx> {
+    pub fn lower_to_metadata_type(
+        &self,
+        ty: &Type,
+        symbol_table: &SymbolTable,
+    ) -> BasicMetadataTypeEnum<'ctx> {
         match self.lower_type(ty, symbol_table) {
             Some(t) => t.into(),
             None => self.context.i64_type().into(), // fallback for Unit params
         }
     }
-
 
     pub fn i64_type(&self) -> BasicTypeEnum<'ctx> {
         self.context.i64_type().into()
@@ -86,6 +106,8 @@ impl<'ctx> TypeLowering<'ctx> {
     }
 
     pub fn ptr_type(&self) -> BasicTypeEnum<'ctx> {
-        self.context.ptr_type(inkwell::AddressSpace::default()).into()
+        self.context
+            .ptr_type(inkwell::AddressSpace::default())
+            .into()
     }
 }

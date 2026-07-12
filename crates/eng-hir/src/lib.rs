@@ -1,9 +1,9 @@
-pub mod types;
 pub mod symbol;
+pub mod types;
 
+use crate::symbol::{FieldId, FunctionId, TypeId, VariableId};
 use eng_lexer::span::Span;
-use eng_parser::ast::{BinOp, UnOp, Literal, Visibility};
-use crate::symbol::{TypeId, FunctionId, VariableId, FieldId};
+use eng_parser::ast::{BinOp, Literal, UnOp, Visibility};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Module {

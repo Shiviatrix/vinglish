@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use eng_hir::symbol::SsaValueId;
 use crate::state::OwnershipState;
+use eng_hir::symbol::SsaValueId;
+use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Debug, Default)]
@@ -23,7 +23,10 @@ impl OwnershipGraph {
     }
 
     pub fn get_state(&self, var: SsaValueId) -> OwnershipState {
-        self.states.get(&var).cloned().unwrap_or(OwnershipState::Uninitialized)
+        self.states
+            .get(&var)
+            .cloned()
+            .unwrap_or(OwnershipState::Uninitialized)
     }
 
     pub fn is_owned(&self, var: SsaValueId) -> bool {
@@ -35,7 +38,7 @@ impl fmt::Display for OwnershipGraph {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut vars: Vec<_> = self.history.keys().copied().collect();
         vars.sort_by_key(|v| v.0);
-        
+
         for var in vars {
             writeln!(f, "var_{}", var.0)?;
             let hist = &self.history[&var];

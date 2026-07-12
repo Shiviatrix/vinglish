@@ -1,17 +1,16 @@
 use crate::diagnostic::{Diagnostic, Severity};
 
-const RESET:  &str = "\x1b[0m";
-const BOLD:   &str = "\x1b[1m";
-const RED:    &str = "\x1b[31m";
+const RESET: &str = "\x1b[0m";
+const BOLD: &str = "\x1b[1m";
+const RED: &str = "\x1b[31m";
 const YELLOW: &str = "\x1b[33m";
-const CYAN:   &str = "\x1b[36m";
-const BLUE:   &str = "\x1b[34m";
-const GREEN:  &str = "\x1b[32m";
-const DIM:    &str = "\x1b[2m";
+const CYAN: &str = "\x1b[36m";
+const BLUE: &str = "\x1b[34m";
+const GREEN: &str = "\x1b[32m";
+const DIM: &str = "\x1b[2m";
 
 fn use_color() -> bool {
-    std::env::var("NO_COLOR").is_err()
-        && std::env::var("TERM").map(|t| t != "dumb").unwrap_or(true)
+    std::env::var("NO_COLOR").is_err() && std::env::var("TERM").map(|t| t != "dumb").unwrap_or(true)
 }
 
 /// Render a list of diagnostics to a string, with full ANSI formatting.
@@ -29,9 +28,9 @@ pub fn render(diagnostics: &[Diagnostic], filename: &str) -> String {
 
 fn render_one(diag: &Diagnostic, filename: &str, color: bool, out: &mut String) {
     let (sev_color, sev_label) = match diag.severity {
-        Severity::Error   => (RED,    "error"),
+        Severity::Error => (RED, "error"),
         Severity::Warning => (YELLOW, "warning"),
-        Severity::Hint    => (CYAN,   "hint"),
+        Severity::Hint => (CYAN, "hint"),
     };
 
     // ── Header: `error[E0001]: message` ──────────────────────────────────────
@@ -50,7 +49,8 @@ fn render_one(diag: &Diagnostic, filename: &str, color: bool, out: &mut String) 
             out.push_str(&format!(
                 "  {BLUE}-->{RESET} {DIM}{}{}:{}{RESET}\n",
                 filename,
-                format_args!(":{line}"), col
+                format_args!(":{line}"),
+                col
             ));
         } else {
             out.push_str(&format!("  --> {}:{}:{}\n", filename, line, col));
@@ -76,9 +76,9 @@ fn render_one(diag: &Diagnostic, filename: &str, color: bool, out: &mut String) 
 
             // Underline the span
             let col_start = (col as usize).saturating_sub(1);
-            let span_len  = (diag.span.end.saturating_sub(diag.span.start) as usize).max(1);
-            let spaces    = " ".repeat(col_start);
-            let squig     = "^".repeat(span_len);
+            let span_len = (diag.span.end.saturating_sub(diag.span.start) as usize).max(1);
+            let spaces = " ".repeat(col_start);
+            let squig = "^".repeat(span_len);
 
             if color {
                 out.push_str(&format!(
@@ -92,7 +92,8 @@ fn render_one(diag: &Diagnostic, filename: &str, color: bool, out: &mut String) 
 
     // ── Suggestions ───────────────────────────────────────────────────────────
     for sug in &diag.suggestions {
-        let conf = sug.confidence
+        let conf = sug
+            .confidence
             .map(|c| format!(" (confidence: {:.1}%)", c))
             .unwrap_or_default();
         if color {

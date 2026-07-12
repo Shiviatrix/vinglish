@@ -34,13 +34,13 @@ pub enum Type {
     Text,
     Unit,
     Reference(Box<Type>, bool), // bool is true if mutable
-    Pointer(Box<Type>), // Raw pointer address<T>
+    Pointer(Box<Type>),         // Raw pointer address<T>
 
     // ── Composite types ───────────────────────────────────────────────────────
     List(Box<Type>),
     Dict(Box<Type>, Box<Type>),
     Optional(Box<Type>),
-    Result(Box<Type>, Box<Type>),  // Ok(T), Err(E)
+    Result(Box<Type>, Box<Type>), // Ok(T), Err(E)
 
     // ── Function type ─────────────────────────────────────────────────────────
     Function(Vec<Type>, Box<Type>),
@@ -53,12 +53,22 @@ pub enum Type {
 }
 
 impl Type {
-
     /// Returns true if this type has copy semantics (no ownership transfer on assignment/call).
     pub fn is_copy(&self) -> bool {
         match self {
+<<<<<<< Updated upstream
             Type::Int | Type::Float | Type::Bool | Type::Unit | Type::Pointer(_) => true,
             _ => false, // Lists, dicts, strings, structs are moved
+=======
+            // `text` is an immutable pointer ABI. Its ownership is currently
+            // explicit at the std.string API boundary, so passing it does not
+            // invalidate the source value. Heap containers and structs remain
+            // move-only.
+            Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit | Type::Pointer(_) => {
+                true
+            }
+            _ => false,
+>>>>>>> Stashed changes
         }
     }
 
@@ -87,15 +97,25 @@ impl Type {
         match self {
             Type::Var(v) => acc.push(*v),
             Type::List(t) => t.collect_vars(acc),
-            Type::Dict(k, v) => { k.collect_vars(acc); v.collect_vars(acc); }
+            Type::Dict(k, v) => {
+                k.collect_vars(acc);
+                v.collect_vars(acc);
+            }
             Type::Optional(t) => t.collect_vars(acc),
-            Type::Result(ok, err) => { ok.collect_vars(acc); err.collect_vars(acc); }
+            Type::Result(ok, err) => {
+                ok.collect_vars(acc);
+                err.collect_vars(acc);
+            }
             Type::Function(args, ret) => {
-                for a in args { a.collect_vars(acc); }
+                for a in args {
+                    a.collect_vars(acc);
+                }
                 ret.collect_vars(acc);
             }
             Type::Named(_, args) => {
-                for a in args { a.collect_vars(acc); }
+                for a in args {
+                    a.collect_vars(acc);
+                }
             }
             _ => {}
         }
@@ -105,11 +125,11 @@ impl Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::Int     => write!(f, "number"),
-            Type::Float   => write!(f, "decimal"),
-            Type::Bool    => write!(f, "boolean"),
-            Type::Text    => write!(f, "text"),
-            Type::Unit    => write!(f, "unit"),
+            Type::Int => write!(f, "number"),
+            Type::Float => write!(f, "decimal"),
+            Type::Bool => write!(f, "boolean"),
+            Type::Text => write!(f, "text"),
+            Type::Unit => write!(f, "unit"),
             Type::Reference(inner, mutable) => {
                 if *mutable {
                     write!(f, "borrow mutable {inner}")
@@ -120,12 +140,14 @@ impl std::fmt::Display for Type {
             Type::Pointer(inner) => write!(f, "address<{inner}>"),
             Type::List(t) => write!(f, "List of {t}"),
             Type::Dict(k, v) => write!(f, "Dictionary from {k} to {v}"),
-            Type::Optional(t)     => write!(f, "{t}?"),
+            Type::Optional(t) => write!(f, "{t}?"),
             Type::Result(ok, err) => write!(f, "Result<{ok}, {err}>"),
             Type::Function(args, ret) => {
                 write!(f, "(")?;
                 for (i, a) in args.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{a}")?;
                 }
                 write!(f, ") -> {ret}")
@@ -136,7 +158,9 @@ impl std::fmt::Display for Type {
                 } else {
                     write!(f, "{n}<")?;
                     for (i, a) in args.iter().enumerate() {
-                        if i > 0 { write!(f, ", ")?; }
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
                         write!(f, "{a}")?;
                     }
                     write!(f, ">")

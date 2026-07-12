@@ -1,8 +1,8 @@
+use crate::{OptimizationPass, PassStats};
+use eng_mir::{BlockId, MirModule, Terminator};
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::hash::Hash;
-use std::collections::{HashMap, HashSet};
-use eng_mir::{BlockId, MirModule, Terminator};
-use crate::{OptimizationPass, PassStats};
 
 pub struct CfgSimplifyPass;
 
@@ -24,7 +24,8 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CfgSimplifyP
                 for block in &func.blocks {
                     if block.instrs.is_empty() {
                         if let Terminator::<V>::Jump(target) = block.terminator {
-                            if target != block.id { // avoid infinite loop on self-jump
+                            if target != block.id {
+                                // avoid infinite loop on self-jump
                                 jump_map.insert(block.id, target);
                             }
                         }
@@ -39,7 +40,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CfgSimplifyP
                     let mut visited = HashSet::new();
                     visited.insert(src);
                     while let Some(&next) = jump_map.get(&current) {
-                        if !visited.insert(next) { break; } // loop detected
+                        if !visited.insert(next) {
+                            break;
+                        } // loop detected
                         current = next;
                     }
                     resolved_jump_map.insert(src, current);
@@ -77,7 +80,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CfgSimplifyP
                 for block in &func.blocks {
                     let successors = match &block.terminator {
                         Terminator::<V>::Jump(target) => vec![target],
-                        Terminator::<V>::Branch(_, true_target, false_target) => vec![true_target, false_target],
+                        Terminator::<V>::Branch(_, true_target, false_target) => {
+                            vec![true_target, false_target]
+                        }
                         Terminator::<V>::Return(_) => vec![],
                     };
                     for succ in successors {
@@ -91,7 +96,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CfgSimplifyP
                     if let Terminator::<V>::Jump(target) = block.terminator {
                         if target != block.id && preds.get(&target).map_or(0, |p| p.len()) == 1 {
                             // Target's only predecessor is `block`
-                            // We can't merge if `target` is the entry block (bb0), but entry block has no predecessors if it's bb0! 
+                            // We can't merge if `target` is the entry block (bb0), but entry block has no predecessors if it's bb0!
                             // Actually bb0 has 0 predecessors, so it won't be matched since len() == 1.
                             merge_pair = Some((block.id, target));
                             break;

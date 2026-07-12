@@ -22,7 +22,11 @@ struct Parser<'t> {
 
 impl<'t> Parser<'t> {
     fn new(tokens: &'t [Spanned<Token>]) -> Self {
-        Self { tokens, pos: 0, errors: Vec::new() }
+        Self {
+            tokens,
+            pos: 0,
+            errors: Vec::new(),
+        }
     }
 
     // ── Token navigation ──────────────────────────────────────────────────────
@@ -48,9 +52,9 @@ impl<'t> Parser<'t> {
             .unwrap_or(&Token::EOF)
     }
 
-
     fn advance(&mut self) -> &Token {
-        let tok = self.tokens
+        let tok = self
+            .tokens
             .get(self.pos)
             .map(|s| &s.node)
             .unwrap_or(&Token::EOF);
@@ -92,11 +96,8 @@ impl<'t> Parser<'t> {
             true
         } else {
             let span = self.current_span();
-            self.errors.push(ParseError::expected(
-                tok.describe(),
-                self.current(),
-                span,
-            ));
+            self.errors
+                .push(ParseError::expected(tok.describe(), self.current(), span));
             false
         }
     }
@@ -110,12 +111,25 @@ impl<'t> Parser<'t> {
                 Some(Ident::new(name, span))
             }
             // Allow type-name keywords as identifiers when used in function names
-            Token::Number   => { self.advance(); Some(Ident::new("number", span)) }
-            Token::Text     => { self.advance(); Some(Ident::new("text", span)) }
-            Token::Decimal  => { self.advance(); Some(Ident::new("decimal", span)) }
-            Token::Boolean  => { self.advance(); Some(Ident::new("boolean", span)) }
+            Token::Number => {
+                self.advance();
+                Some(Ident::new("number", span))
+            }
+            Token::Text => {
+                self.advance();
+                Some(Ident::new("text", span))
+            }
+            Token::Decimal => {
+                self.advance();
+                Some(Ident::new("decimal", span))
+            }
+            Token::Boolean => {
+                self.advance();
+                Some(Ident::new("boolean", span))
+            }
             ref other => {
-                self.errors.push(ParseError::expected("identifier", other, span));
+                self.errors
+                    .push(ParseError::expected("identifier", other, span));
                 None
             }
         }
@@ -145,7 +159,10 @@ impl<'t> Parser<'t> {
         }
 
         let end = self.current_span();
-        Module { items, span: start.merge(end) }
+        Module {
+            items,
+            span: start.merge(end),
+        }
     }
 
     fn parse_item(&mut self) -> Option<Item> {
@@ -159,12 +176,12 @@ impl<'t> Parser<'t> {
                 Some(Item::Function(self.parse_function(vis, true)))
             }
             Token::Function => Some(Item::Function(self.parse_function(vis, false))),
-            Token::Type     => Some(Item::Type(self.parse_type_def(vis))),
-            Token::Package  => Some(Item::Package(self.parse_package())),
-            Token::Module   => Some(Item::Module(self.parse_module_decl())),
-            Token::Use      => Some(Item::Use(self.parse_use())),
-            Token::Route    => Some(Item::Route(self.parse_route())),
-            Token::EOF      => None,
+            Token::Type => Some(Item::Type(self.parse_type_def(vis))),
+            Token::Package => Some(Item::Package(self.parse_package())),
+            Token::Module => Some(Item::Module(self.parse_module_decl())),
+            Token::Use => Some(Item::Use(self.parse_use())),
+            Token::Route => Some(Item::Route(self.parse_route())),
+            Token::EOF => None,
             _ => {
                 // Script-mode: top-level statements
                 self.parse_stmt().map(Item::Statement)
@@ -174,10 +191,19 @@ impl<'t> Parser<'t> {
 
     fn parse_visibility(&mut self) -> Visibility {
         match self.current() {
-            Token::Public   => { self.advance(); Visibility::Public }
-            Token::Private  => { self.advance(); Visibility::Private }
-            Token::Internal => { self.advance(); Visibility::Internal }
-            _               => Visibility::Private,
+            Token::Public => {
+                self.advance();
+                Visibility::Public
+            }
+            Token::Private => {
+                self.advance();
+                Visibility::Private
+            }
+            Token::Internal => {
+                self.advance();
+                Visibility::Internal
+            }
+            _ => Visibility::Private,
         }
     }
 
@@ -204,9 +230,11 @@ impl<'t> Parser<'t> {
     fn try_parse_generic_args(&mut self) -> Option<Vec<TypeExpr>> {
         let saved_pos = self.pos;
         let saved_errors = self.errors.len();
-        
-        if !self.eat(&Token::Lt) { return None; }
-        
+
+        if !self.eat(&Token::Lt) {
+            return None;
+        }
+
         let mut args = vec![];
         loop {
             self.skip_newlines();
@@ -238,7 +266,9 @@ impl<'t> Parser<'t> {
         let start = self.current_span();
         self.expect(&Token::Function);
 
-        let name = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        let name = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         let type_params = self.parse_type_params();
 
         // Optional `on TargetType` for methods
@@ -281,7 +311,18 @@ impl<'t> Parser<'t> {
         };
         let span = start.merge(body.span);
 
-        FunctionDef { visibility, is_foreign, name, type_params, target_type, params, ret_type, effects, body, span }
+        FunctionDef {
+            visibility,
+            is_foreign,
+            name,
+            type_params,
+            target_type,
+            params,
+            ret_type,
+            effects,
+            body,
+            span,
+        }
     }
 
     fn parse_param_list(&mut self) -> Vec<Param> {
@@ -344,7 +385,10 @@ impl<'t> Parser<'t> {
             let mut stmts = Vec::new();
             loop {
                 // In explicit begin/end, ignore structural whitespace tokens
-                while matches!(self.current(), Token::Newline | Token::Indent | Token::Dedent) {
+                while matches!(
+                    self.current(),
+                    Token::Newline | Token::Indent | Token::Dedent
+                ) {
                     self.advance();
                 }
                 if matches!(self.current(), Token::End | Token::EOF) {
@@ -358,7 +402,10 @@ impl<'t> Parser<'t> {
             }
             let end = self.current_span();
             self.eat(&Token::End);
-            Block { stmts, span: start.merge(end) }
+            Block {
+                stmts,
+                span: start.merge(end),
+            }
         } else if self.eat(&Token::Indent) {
             // Indented block
             let mut stmts = Vec::new();
@@ -375,7 +422,10 @@ impl<'t> Parser<'t> {
             }
             let end = self.current_span();
             self.eat(&Token::Dedent);
-            Block { stmts, span: start.merge(end) }
+            Block {
+                stmts,
+                span: start.merge(end),
+            }
         } else {
             // Single-statement "block" (e.g., `if x then return y`)
             let mut stmts = Vec::new();
@@ -383,7 +433,10 @@ impl<'t> Parser<'t> {
                 stmts.push(s);
             }
             let end = self.current_span();
-            Block { stmts, span: start.merge(end) }
+            Block {
+                stmts,
+                span: start.merge(end),
+            }
         }
     }
 
@@ -399,34 +452,39 @@ impl<'t> Parser<'t> {
             return None;
         }
         match self.current() {
-            Token::Let        => Some(self.parse_let()),
-            Token::Return     => Some(self.parse_return()),
-            Token::If         => Some(self.parse_if()),
-            Token::When       => Some(self.parse_when()),
-            Token::Repeat     => Some(self.parse_repeat(false)),
-            Token::Parallel   => Some(self.parse_parallel()),
-            Token::Match      => Some(self.parse_match()),
-            Token::Spawn      => Some(self.parse_spawn()),
-            Token::Send       => Some(self.parse_send()),
-            Token::Receive    => Some(self.parse_receive()),
-            Token::Transaction=> Some(self.parse_transaction()),
+            Token::Let => Some(self.parse_let()),
+            Token::Return => Some(self.parse_return()),
+            Token::If => Some(self.parse_if()),
+            Token::When => Some(self.parse_when()),
+            Token::Repeat => Some(self.parse_repeat(false)),
+            Token::Parallel => Some(self.parse_parallel()),
+            Token::Match => Some(self.parse_match()),
+            Token::Spawn => Some(self.parse_spawn()),
+            Token::Send => Some(self.parse_send()),
+            Token::Receive => Some(self.parse_receive()),
+            Token::Transaction => Some(self.parse_transaction()),
             _ => {
                 // Could be an expression or assignment
                 let expr = self.parse_expr()?;
                 // Check for assignment
                 let op = match self.current() {
-                    Token::Be       => Some(AssignOp::Assign),
-                    Token::PlusEq   => Some(AssignOp::AddAssign),
-                    Token::MinusEq  => Some(AssignOp::SubAssign),
-                    Token::StarEq   => Some(AssignOp::MulAssign),
-                    Token::SlashEq  => Some(AssignOp::DivAssign),
-                    _               => None,
+                    Token::Be => Some(AssignOp::Assign),
+                    Token::PlusEq => Some(AssignOp::AddAssign),
+                    Token::MinusEq => Some(AssignOp::SubAssign),
+                    Token::StarEq => Some(AssignOp::MulAssign),
+                    Token::SlashEq => Some(AssignOp::DivAssign),
+                    _ => None,
                 };
                 if let Some(op) = op {
                     self.advance();
                     let value = self.parse_expr()?;
                     let span = expr.span().merge(value.span());
-                    Some(Stmt::Assign(AssignStmt { target: expr, op, value, span }))
+                    Some(Stmt::Assign(AssignStmt {
+                        target: expr,
+                        op,
+                        value,
+                        span,
+                    }))
                 } else {
                     Some(Stmt::Expr(expr))
                 }
@@ -438,7 +496,9 @@ impl<'t> Parser<'t> {
         let start = self.current_span();
         self.expect(&Token::Let);
         let mutable = self.eat(&Token::Mutable);
-        let name = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        let name = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
 
         self.eat(&Token::Be); // consume `be`
 
@@ -447,7 +507,13 @@ impl<'t> Parser<'t> {
         // treat it as a type-only declaration.
         let (ty, value) = self.parse_let_rhs();
         let span = start.merge(self.current_span());
-        Stmt::Let(LetStmt { name, ty, value, mutable, span })
+        Stmt::Let(LetStmt {
+            name,
+            ty,
+            value,
+            mutable,
+            span,
+        })
     }
 
     fn parse_let_rhs(&mut self) -> (Option<TypeExpr>, Option<Expr>) {
@@ -461,8 +527,10 @@ impl<'t> Parser<'t> {
                 // Otherwise might be a value with type keyword used as ident.
                 let ty = self.parse_type_expr();
                 // If there's an `=` or further expression after, parse value too
-                if matches!(self.current(), Token::Newline | Token::Dedent | Token::EOF
-                    | Token::End | Token::Otherwise) {
+                if matches!(
+                    self.current(),
+                    Token::Newline | Token::Dedent | Token::EOF | Token::End | Token::Otherwise
+                ) {
                     return (ty, None);
                 }
                 (ty, self.parse_expr())
@@ -507,7 +575,12 @@ impl<'t> Parser<'t> {
             None
         };
         let span = start.merge(self.current_span());
-        Stmt::If(IfStmt { condition, then_block, otherwise, span })
+        Stmt::If(IfStmt {
+            condition,
+            then_block,
+            otherwise,
+            span,
+        })
     }
 
     fn parse_when(&mut self) -> Stmt {
@@ -527,7 +600,12 @@ impl<'t> Parser<'t> {
             None
         };
         let span = start.merge(self.current_span());
-        Stmt::When(WhenStmt { condition, then_block, otherwise, span })
+        Stmt::When(WhenStmt {
+            condition,
+            then_block,
+            otherwise,
+            span,
+        })
     }
 
     fn parse_parallel(&mut self) -> Stmt {
@@ -559,12 +637,18 @@ impl<'t> Parser<'t> {
             self.skip_newlines();
             let body = self.parse_block();
             let span = start.merge(body.span);
-            RepeatStmt::While { condition, body, span }
+            RepeatStmt::While {
+                condition,
+                body,
+                span,
+            }
         } else {
             // `for every x` or `for every x in iterable`
             self.eat(&Token::For);
             self.eat(&Token::Every);
-            let var = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
+            let var = self
+                .expect_ident()
+                .unwrap_or_else(|| Ident::new("_", Span::dummy()));
             // Optional `in expr` (shorthand — iterable is just the var name pluralised otherwise)
             let iterable = if matches!(self.current(), Token::Ident(_)) {
                 self.parse_expr().unwrap_or(Expr::Ident(var.clone()))
@@ -575,7 +659,12 @@ impl<'t> Parser<'t> {
             self.skip_newlines();
             let body = self.parse_block();
             let span = start.merge(body.span);
-            RepeatStmt::ForEvery { var, iterable, body, span }
+            RepeatStmt::ForEvery {
+                var,
+                iterable,
+                body,
+                span,
+            }
         }
     }
 
@@ -601,11 +690,17 @@ impl<'t> Parser<'t> {
                     self.advance();
                     let pattern = self.parse_pattern();
                     // Eat optional `=>` or `then`
-                    if !self.eat(&Token::FatArrow) { self.eat(&Token::Then); }
+                    if !self.eat(&Token::FatArrow) {
+                        self.eat(&Token::Then);
+                    }
                     self.skip_newlines();
                     let body = self.parse_block();
                     let span = case_start.merge(body.span);
-                    cases.push(MatchCase { pattern, body, span });
+                    cases.push(MatchCase {
+                        pattern,
+                        body,
+                        span,
+                    });
                 }
                 Token::Otherwise => {
                     self.advance();
@@ -614,12 +709,19 @@ impl<'t> Parser<'t> {
                     otherwise = Some(self.parse_block());
                 }
                 Token::Dedent | Token::EOF => break,
-                _ => { self.advance(); } // recover
+                _ => {
+                    self.advance();
+                } // recover
             }
         }
         self.eat(&Token::Dedent);
         let span = start.merge(self.current_span());
-        Stmt::Match(MatchStmt { subject, cases, otherwise, span })
+        Stmt::Match(MatchStmt {
+            subject,
+            cases,
+            otherwise,
+            span,
+        })
     }
 
     fn parse_pattern(&mut self) -> Pattern {
@@ -628,7 +730,12 @@ impl<'t> Parser<'t> {
             Token::Ident(name) => {
                 self.advance();
                 // If it starts with uppercase, it's a constructor
-                if name.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) {
+                if name
+                    .chars()
+                    .next()
+                    .map(|c| c.is_uppercase())
+                    .unwrap_or(false)
+                {
                     Pattern::Constructor(Ident::new(name, span))
                 } else if name == "_" {
                     Pattern::Wildcard(span)
@@ -636,11 +743,26 @@ impl<'t> Parser<'t> {
                     Pattern::Bind(Ident::new(name, span))
                 }
             }
-            Token::Integer(i) => { self.advance(); Pattern::Literal(Literal::Int(i)) }
-            Token::Float(f)   => { self.advance(); Pattern::Literal(Literal::Float(f)) }
-            Token::StringLit(s) => { self.advance(); Pattern::Literal(Literal::Text(s)) }
-            Token::True  => { self.advance(); Pattern::Literal(Literal::Bool(true)) }
-            Token::False => { self.advance(); Pattern::Literal(Literal::Bool(false)) }
+            Token::Integer(i) => {
+                self.advance();
+                Pattern::Literal(Literal::Int(i))
+            }
+            Token::Float(f) => {
+                self.advance();
+                Pattern::Literal(Literal::Float(f))
+            }
+            Token::StringLit(s) => {
+                self.advance();
+                Pattern::Literal(Literal::Text(s))
+            }
+            Token::True => {
+                self.advance();
+                Pattern::Literal(Literal::Bool(true))
+            }
+            Token::False => {
+                self.advance();
+                Pattern::Literal(Literal::Bool(false))
+            }
             _ => Pattern::Wildcard(span),
         }
     }
@@ -648,8 +770,13 @@ impl<'t> Parser<'t> {
     fn parse_spawn(&mut self) -> Stmt {
         let start = self.current_span();
         self.expect(&Token::Spawn);
-        let actor = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
-        Stmt::Spawn(SpawnStmt { actor, span: start.merge(self.current_span()) })
+        let actor = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        Stmt::Spawn(SpawnStmt {
+            actor,
+            span: start.merge(self.current_span()),
+        })
     }
 
     fn parse_send(&mut self) -> Stmt {
@@ -659,14 +786,20 @@ impl<'t> Parser<'t> {
             value: Literal::Unit,
             span: Span::dummy(),
         });
-        Stmt::Send(SendStmt { message, span: start.merge(self.current_span()) })
+        Stmt::Send(SendStmt {
+            message,
+            span: start.merge(self.current_span()),
+        })
     }
 
     fn parse_receive(&mut self) -> Stmt {
         let start = self.current_span();
         self.expect(&Token::Receive);
         let binding = self.expect_ident();
-        Stmt::Receive(ReceiveStmt { binding, span: start.merge(self.current_span()) })
+        Stmt::Receive(ReceiveStmt {
+            binding,
+            span: start.merge(self.current_span()),
+        })
     }
 
     fn parse_transaction(&mut self) -> Stmt {
@@ -693,7 +826,12 @@ impl<'t> Parser<'t> {
             self.advance();
             let right = self.parse_and_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
-            left = Expr::BinOp { left: Box::new(left), op: BinOp::Or, right: Box::new(right), span };
+            left = Expr::BinOp {
+                left: Box::new(left),
+                op: BinOp::Or,
+                right: Box::new(right),
+                span,
+            };
         }
         Some(left)
     }
@@ -705,7 +843,12 @@ impl<'t> Parser<'t> {
             self.advance();
             let right = self.parse_comparison()?;
             let span = left.span().merge(right.span()).merge(op_span);
-            left = Expr::BinOp { left: Box::new(left), op: BinOp::And, right: Box::new(right), span };
+            left = Expr::BinOp {
+                left: Box::new(left),
+                op: BinOp::And,
+                right: Box::new(right),
+                span,
+            };
         }
         Some(left)
     }
@@ -714,34 +857,51 @@ impl<'t> Parser<'t> {
         let mut left = self.parse_add_expr()?;
         loop {
             let op = match self.current() {
-                Token::Eq     => BinOp::Eq,
-                Token::NotEq  => BinOp::NotEq,
-                Token::Lt     => BinOp::Lt,
-                Token::Gt     => BinOp::Gt,
-                Token::LtEq   => BinOp::LtEq,
-                Token::GtEq   => BinOp::GtEq,
-                Token::Exceeds=> BinOp::Exceeds,
-                Token::Is     => {
+                Token::Eq => BinOp::Eq,
+                Token::NotEq => BinOp::NotEq,
+                Token::Lt => BinOp::Lt,
+                Token::Gt => BinOp::Gt,
+                Token::LtEq => BinOp::LtEq,
+                Token::GtEq => BinOp::GtEq,
+                Token::Exceeds => BinOp::Exceeds,
+                Token::Is => {
                     // `is below`, `is above`
                     self.advance();
                     match self.current() {
-                        Token::Below => { self.advance();
+                        Token::Below => {
+                            self.advance();
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
-                            left = Expr::BinOp { left: Box::new(left), op: BinOp::IsBelow, right: Box::new(right), span };
+                            left = Expr::BinOp {
+                                left: Box::new(left),
+                                op: BinOp::IsBelow,
+                                right: Box::new(right),
+                                span,
+                            };
                             continue;
                         }
-                        Token::Above => { self.advance();
+                        Token::Above => {
+                            self.advance();
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
-                            left = Expr::BinOp { left: Box::new(left), op: BinOp::IsAbove, right: Box::new(right), span };
+                            left = Expr::BinOp {
+                                left: Box::new(left),
+                                op: BinOp::IsAbove,
+                                right: Box::new(right),
+                                span,
+                            };
                             continue;
                         }
                         _ => {
                             // just `is` — equality
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
-                            left = Expr::BinOp { left: Box::new(left), op: BinOp::Eq, right: Box::new(right), span };
+                            left = Expr::BinOp {
+                                left: Box::new(left),
+                                op: BinOp::Eq,
+                                right: Box::new(right),
+                                span,
+                            };
                             continue;
                         }
                     }
@@ -752,7 +912,12 @@ impl<'t> Parser<'t> {
             self.advance();
             let right = self.parse_add_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
-            left = Expr::BinOp { left: Box::new(left), op, right: Box::new(right), span };
+            left = Expr::BinOp {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+                span,
+            };
         }
         Some(left)
     }
@@ -761,15 +926,20 @@ impl<'t> Parser<'t> {
         let mut left = self.parse_mul_expr()?;
         loop {
             let op = match self.current() {
-                Token::Plus  => BinOp::Add,
+                Token::Plus => BinOp::Add,
                 Token::Minus => BinOp::Sub,
-                _            => break,
+                _ => break,
             };
             let op_span = self.current_span();
             self.advance();
             let right = self.parse_mul_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
-            left = Expr::BinOp { left: Box::new(left), op, right: Box::new(right), span };
+            left = Expr::BinOp {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+                span,
+            };
         }
         Some(left)
     }
@@ -778,16 +948,21 @@ impl<'t> Parser<'t> {
         let mut left = self.parse_unary()?;
         loop {
             let op = match self.current() {
-                Token::Star    => BinOp::Mul,
-                Token::Slash   => BinOp::Div,
+                Token::Star => BinOp::Mul,
+                Token::Slash => BinOp::Div,
                 Token::Percent => BinOp::Mod,
-                _              => break,
+                _ => break,
             };
             let op_span = self.current_span();
             self.advance();
             let right = self.parse_unary()?;
             let span = left.span().merge(right.span()).merge(op_span);
-            left = Expr::BinOp { left: Box::new(left), op, right: Box::new(right), span };
+            left = Expr::BinOp {
+                left: Box::new(left),
+                op,
+                right: Box::new(right),
+                span,
+            };
         }
         Some(left)
     }
@@ -799,26 +974,42 @@ impl<'t> Parser<'t> {
                 self.advance();
                 let operand = self.parse_unary()?;
                 let span = start.merge(operand.span());
-                Some(Expr::UnOp { op: UnOp::Neg, operand: Box::new(operand), span })
+                Some(Expr::UnOp {
+                    op: UnOp::Neg,
+                    operand: Box::new(operand),
+                    span,
+                })
             }
             Token::Not => {
                 self.advance();
                 let operand = self.parse_unary()?;
                 let span = start.merge(operand.span());
-                Some(Expr::UnOp { op: UnOp::Not, operand: Box::new(operand), span })
+                Some(Expr::UnOp {
+                    op: UnOp::Not,
+                    operand: Box::new(operand),
+                    span,
+                })
             }
             Token::Borrow => {
                 self.advance();
                 let mutable = self.eat(&Token::Mutable);
                 let operand = self.parse_unary()?;
                 let span = start.merge(operand.span());
-                Some(Expr::UnOp { op: UnOp::Borrow(mutable), operand: Box::new(operand), span })
+                Some(Expr::UnOp {
+                    op: UnOp::Borrow(mutable),
+                    operand: Box::new(operand),
+                    span,
+                })
             }
             Token::Deref => {
                 self.advance();
                 let operand = self.parse_unary()?;
                 let span = start.merge(operand.span());
-                Some(Expr::UnOp { op: UnOp::Deref, operand: Box::new(operand), span })
+                Some(Expr::UnOp {
+                    op: UnOp::Deref,
+                    operand: Box::new(operand),
+                    span,
+                })
             }
             _ => self.parse_postfix(),
         }
@@ -832,7 +1023,11 @@ impl<'t> Parser<'t> {
                     self.advance();
                     let field = self.expect_ident()?;
                     let span = expr.span().merge(field.span);
-                    expr = Expr::Field { object: Box::new(expr), field, span };
+                    expr = Expr::Field {
+                        object: Box::new(expr),
+                        field,
+                        span,
+                    };
                 }
                 Token::LParen => {
                     let call_start = self.current_span();
@@ -849,14 +1044,22 @@ impl<'t> Parser<'t> {
                     let end = self.current_span();
                     self.expect(&Token::RParen);
                     let span = call_start.merge(end);
-                    expr = Expr::Call { callee: Box::new(expr), args, span };
+                    expr = Expr::Call {
+                        callee: Box::new(expr),
+                        args,
+                        span,
+                    };
                 }
                 Token::LBracket => {
                     self.advance();
                     let index = self.parse_expr()?;
                     let span = expr.span().merge(self.current_span());
                     self.expect(&Token::RBracket);
-                    expr = Expr::Index { object: Box::new(expr), index: Box::new(index), span };
+                    expr = Expr::Index {
+                        object: Box::new(expr),
+                        index: Box::new(index),
+                        span,
+                    };
                 }
                 // Natural-language call: `calculate tax for order`
                 // If ident follows ident, treat it as function call with next token as arg
@@ -877,29 +1080,48 @@ impl<'t> Parser<'t> {
             }
             Token::Integer(i) => {
                 self.advance();
-                Some(Expr::Lit { value: Literal::Int(i), span })
+                Some(Expr::Lit {
+                    value: Literal::Int(i),
+                    span,
+                })
             }
             Token::Float(f) => {
                 self.advance();
-                Some(Expr::Lit { value: Literal::Float(f), span })
+                Some(Expr::Lit {
+                    value: Literal::Float(f),
+                    span,
+                })
             }
             Token::StringLit(s) => {
                 self.advance();
-                Some(Expr::Lit { value: Literal::Text(s), span })
+                Some(Expr::Lit {
+                    value: Literal::Text(s),
+                    span,
+                })
             }
             Token::True => {
                 self.advance();
-                Some(Expr::Lit { value: Literal::Bool(true), span })
+                Some(Expr::Lit {
+                    value: Literal::Bool(true),
+                    span,
+                })
             }
             Token::False => {
                 self.advance();
-                Some(Expr::Lit { value: Literal::Bool(false), span })
+                Some(Expr::Lit {
+                    value: Literal::Bool(false),
+                    span,
+                })
             }
             Token::Ident(name) => {
                 self.advance();
                 let ident = Ident::new(name, span);
                 let expr = if let Some(args) = self.try_parse_generic_args() {
-                    Expr::GenericInst { base: ident.clone(), args, span: span.merge(self.current_span()) }
+                    Expr::GenericInst {
+                        base: ident.clone(),
+                        args,
+                        span: span.merge(self.current_span()),
+                    }
                 } else {
                     Expr::Ident(ident.clone())
                 };
@@ -908,7 +1130,10 @@ impl<'t> Parser<'t> {
                     let mut fields = Vec::new();
                     loop {
                         // Skip newlines, indents, and dedents inside struct literals
-                        while matches!(self.current(), Token::Newline | Token::Indent | Token::Dedent) {
+                        while matches!(
+                            self.current(),
+                            Token::Newline | Token::Indent | Token::Dedent
+                        ) {
                             self.advance();
                         }
                         if matches!(self.current(), Token::RBrace | Token::EOF) {
@@ -927,7 +1152,11 @@ impl<'t> Parser<'t> {
                     }
                     let end = self.current_span();
                     self.expect(&Token::RBrace);
-                    Some(Expr::StructLit { ty: Box::new(expr), fields, span: span.merge(end) })
+                    Some(Expr::StructLit {
+                        ty: Box::new(expr),
+                        fields,
+                        span: span.merge(end),
+                    })
                 } else {
                     Some(expr)
                 }
@@ -945,13 +1174,28 @@ impl<'t> Parser<'t> {
                 }
                 let end = self.current_span();
                 self.expect(&Token::RBracket);
-                Some(Expr::List { elements, span: span.merge(end) })
+                Some(Expr::List {
+                    elements,
+                    span: span.merge(end),
+                })
             }
             // Type-name keywords can appear as identifiers in expressions
-            Token::Number  => { self.advance(); Some(Expr::Ident(Ident::new("number",  span))) }
-            Token::Text    => { self.advance(); Some(Expr::Ident(Ident::new("text",    span))) }
-            Token::Decimal => { self.advance(); Some(Expr::Ident(Ident::new("decimal", span))) }
-            Token::Boolean => { self.advance(); Some(Expr::Ident(Ident::new("boolean", span))) }
+            Token::Number => {
+                self.advance();
+                Some(Expr::Ident(Ident::new("number", span)))
+            }
+            Token::Text => {
+                self.advance();
+                Some(Expr::Ident(Ident::new("text", span)))
+            }
+            Token::Decimal => {
+                self.advance();
+                Some(Expr::Ident(Ident::new("decimal", span)))
+            }
+            Token::Boolean => {
+                self.advance();
+                Some(Expr::Ident(Ident::new("boolean", span)))
+            }
             _other => {
                 // Not an expression start — record error but don't panic
                 self.errors.push(ParseError::InvalidExpr { span });
@@ -982,10 +1226,22 @@ impl<'t> Parser<'t> {
             }
         }
         match self.current().clone() {
-            Token::Number  => { self.advance(); Some(TypeExpr::Named(Ident::new("number",  span))) }
-            Token::Text    => { self.advance(); Some(TypeExpr::Named(Ident::new("text",    span))) }
-            Token::Decimal => { self.advance(); Some(TypeExpr::Named(Ident::new("decimal", span))) }
-            Token::Boolean => { self.advance(); Some(TypeExpr::Named(Ident::new("boolean", span))) }
+            Token::Number => {
+                self.advance();
+                Some(TypeExpr::Named(Ident::new("number", span)))
+            }
+            Token::Text => {
+                self.advance();
+                Some(TypeExpr::Named(Ident::new("text", span)))
+            }
+            Token::Decimal => {
+                self.advance();
+                Some(TypeExpr::Named(Ident::new("decimal", span)))
+            }
+            Token::Boolean => {
+                self.advance();
+                Some(TypeExpr::Named(Ident::new("boolean", span)))
+            }
             Token::Ident(s) => {
                 self.advance();
                 let base = Ident::new(s, span);
@@ -993,7 +1249,9 @@ impl<'t> Parser<'t> {
                     let mut args = vec![];
                     loop {
                         self.skip_newlines();
-                        if self.eat(&Token::Gt) || self.current() == &Token::EOF { break; }
+                        if self.eat(&Token::Gt) || self.current() == &Token::EOF {
+                            break;
+                        }
                         if let Some(ty) = self.parse_type_expr() {
                             args.push(ty);
                         }
@@ -1022,7 +1280,9 @@ impl<'t> Parser<'t> {
     fn parse_type_def(&mut self, visibility: Visibility) -> TypeDef {
         let start = self.current_span();
         self.expect(&Token::Type);
-        let name = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        let name = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         let type_params = self.parse_type_params();
         self.skip_newlines();
         let capabilities = if self.eat(&Token::Requires) {
@@ -1031,7 +1291,7 @@ impl<'t> Parser<'t> {
             vec![]
         };
         self.skip_newlines();
-        
+
         // Parse fields (if any) using a block-like structure, but not actually a Block of Stmt.
         let mut fields = Vec::new();
         if self.eat(&Token::Indent) || self.eat(&Token::Begin) {
@@ -1041,29 +1301,38 @@ impl<'t> Parser<'t> {
                 if matches!(self.current(), Token::Dedent | Token::End | Token::EOF) {
                     break;
                 }
-                
+
                 // Parse a field definition, which looks like a param: `name: type` or `type name`
                 let start_idx = self.current_span().start;
-                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon) {
+                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon)
+                {
                     if let Some(fname) = self.expect_ident() {
                         self.eat(&Token::Colon);
                         if let Some(ty) = self.parse_type_expr() {
-                            fields.push(Param { ty, name: fname.clone(), span: fname.span });
+                            fields.push(Param {
+                                ty,
+                                name: fname.clone(),
+                                span: fname.span,
+                            });
                         }
                     }
                 } else {
                     if let Some(ty) = self.parse_type_expr() {
                         if let Some(fname) = self.expect_ident() {
-                            fields.push(Param { ty, name: fname.clone(), span: fname.span });
+                            fields.push(Param {
+                                ty,
+                                name: fname.clone(),
+                                span: fname.span,
+                            });
                         }
                     }
                 }
-                
+
                 if self.current_span().start == start_idx {
                     // Nothing was consumed, break or advance to prevent infinite loop
                     self.advance();
                 }
-                
+
                 // Optional comma (usually newline separated)
                 self.eat(&Token::Comma);
                 self.skip_newlines();
@@ -1072,21 +1341,35 @@ impl<'t> Parser<'t> {
                 self.eat(&Token::End);
             }
         }
-        
-        TypeDef { visibility, name, type_params, fields, capabilities, span: start.merge(self.current_span()) }
+
+        TypeDef {
+            visibility,
+            name,
+            type_params,
+            fields,
+            capabilities,
+            span: start.merge(self.current_span()),
+        }
     }
 
     fn parse_package(&mut self) -> PackageDecl {
         let start = self.current_span();
         self.expect(&Token::Package);
-        let name = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
-        PackageDecl { name, span: start.merge(self.current_span()) }
+        let name = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        PackageDecl {
+            name,
+            span: start.merge(self.current_span()),
+        }
     }
 
     fn parse_module_decl(&mut self) -> ModuleDecl {
         let start = self.current_span();
         self.expect(&Token::Module);
-        let mut name = self.expect_ident().unwrap_or_else(|| Ident::new("_", Span::dummy()));
+        let mut name = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         while self.eat(&Token::Dot) {
             if let Some(id) = self.expect_ident() {
                 name.name.push('.');
@@ -1096,7 +1379,10 @@ impl<'t> Parser<'t> {
                 break;
             }
         }
-        ModuleDecl { name, span: start.merge(self.current_span()) }
+        ModuleDecl {
+            name,
+            span: start.merge(self.current_span()),
+        }
     }
 
     fn parse_use(&mut self) -> UseDecl {
@@ -1113,7 +1399,10 @@ impl<'t> Parser<'t> {
                 break;
             }
         }
-        UseDecl { path, span: start.merge(self.current_span()) }
+        UseDecl {
+            path,
+            span: start.merge(self.current_span()),
+        }
     }
 
     fn parse_route(&mut self) -> RouteDecl {
@@ -1130,7 +1419,11 @@ impl<'t> Parser<'t> {
         self.eat(&Token::Returns);
         self.skip_newlines();
         let handler = self.parse_block();
-        RouteDecl { path, handler, span: start.merge(self.current_span()) }
+        RouteDecl {
+            path,
+            handler,
+            span: start.merge(self.current_span()),
+        }
     }
 }
 

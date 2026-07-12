@@ -1,13 +1,13 @@
-pub mod types;
 pub mod builtins;
 pub mod codegen;
 pub mod emit;
+pub mod types;
 
 use std::path::Path;
 
-use inkwell::context::Context;
-use eng_hir::symbol::{SymbolTable, SsaValueId};
+use eng_hir::symbol::{SsaValueId, SymbolTable};
 use eng_mir::MirModule;
+use inkwell::context::Context;
 
 /// Compile a MIR module to LLVM IR text.
 pub fn compile_to_llvm_ir(

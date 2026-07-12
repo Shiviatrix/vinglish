@@ -1,5 +1,5 @@
-use eng_hir::symbol::{SymbolId, SymbolKind, SymbolTable, VariableId, VariableSymbol, TypeId};
-use eng_hir::{Expr as HirExpr, Stmt as HirStmt, Module as HirModule, Item as HirItem};
+use eng_hir::symbol::{SymbolId, SymbolKind, SymbolTable, TypeId, VariableId, VariableSymbol};
+use eng_hir::{Expr as HirExpr, Item as HirItem, Module as HirModule, Stmt as HirStmt};
 use eng_mir::{BasicBlock, BlockId, Instruction, MirFunction, MirModule, Operand, Terminator};
 
 pub struct MirLowerer<'a> {
@@ -29,7 +29,11 @@ impl<'a> MirLowerer<'a> {
             id: VariableId(SymbolId(0)),
             name: name.clone(),
             is_mut: true,
-            ty: self.symbol_table.get_interned_type(ty).cloned().unwrap_or(eng_hir::types::Type::Unit),
+            ty: self
+                .symbol_table
+                .get_interned_type(ty)
+                .cloned()
+                .unwrap_or(eng_hir::types::Type::Unit),
         };
         // Define it in the symbol table to get a valid VariableId
         let id = self.symbol_table.define_var(name, symbol);
@@ -90,7 +94,7 @@ impl<'a> MirLowerer<'a> {
         self.switch_to_block(entry);
 
         let ret_val = self.lower_expr(&f.body);
-        
+
         if self.current_block.is_some() {
             self.end_block(Terminator::Return(Some(ret_val)));
         }
@@ -109,12 +113,14 @@ impl<'a> MirLowerer<'a> {
         match expr {
             HirExpr::Lit { value, .. } => Operand::Constant(value.clone()),
             HirExpr::VarRef { id, .. } => Operand::Var(*id),
-            HirExpr::Call { callee, args, ty, .. } => {
+            HirExpr::Call {
+                callee, args, ty, ..
+            } => {
                 let mut lowered_args = Vec::new();
                 for arg in args {
                     lowered_args.push(self.lower_expr(arg));
                 }
-                
+
                 let func_id = if let HirExpr::VarRef { id, .. } = &**callee {
                     // Function calls resolve to VarRef(FunctionId) actually because of ScopedId
                     // We need to fetch FunctionId.
@@ -128,38 +134,44 @@ impl<'a> MirLowerer<'a> {
                 self.push_instr(Instruction::Call(temp, func_id, lowered_args));
                 Operand::Var(temp)
             }
-            HirExpr::BinOp { left, op, right, ty, .. } => {
+            HirExpr::BinOp {
+                left,
+                op,
+                right,
+                ty,
+                ..
+            } => {
                 let l = self.lower_expr(left);
-                
+
                 // Handle short-circuiting for And/Or
                 if *op == eng_parser::ast::BinOp::And {
                     let rhs_block = self.new_block();
                     let merge_block = self.new_block();
                     let temp = self.new_temp(*ty);
-                    
+
                     self.push_instr(Instruction::Assign(temp, l.clone()));
                     self.end_block(Terminator::Branch(l, rhs_block, merge_block));
-                    
+
                     self.switch_to_block(rhs_block);
                     let r = self.lower_expr(right);
                     self.push_instr(Instruction::Assign(temp, r));
                     self.end_block(Terminator::Jump(merge_block));
-                    
+
                     self.switch_to_block(merge_block);
                     return Operand::Var(temp);
                 } else if *op == eng_parser::ast::BinOp::Or {
                     let rhs_block = self.new_block();
                     let merge_block = self.new_block();
                     let temp = self.new_temp(*ty);
-                    
+
                     self.push_instr(Instruction::Assign(temp, l.clone()));
                     self.end_block(Terminator::Branch(l, merge_block, rhs_block));
-                    
+
                     self.switch_to_block(rhs_block);
                     let r = self.lower_expr(right);
                     self.push_instr(Instruction::Assign(temp, r));
                     self.end_block(Terminator::Jump(merge_block));
-                    
+
                     self.switch_to_block(merge_block);
                     return Operand::Var(temp);
                 }
@@ -169,7 +181,9 @@ impl<'a> MirLowerer<'a> {
                 self.push_instr(Instruction::BinaryOp(temp, *op, l, r));
                 Operand::Var(temp)
             }
-            HirExpr::UnOp { op, operand, ty, .. } => {
+            HirExpr::UnOp {
+                op, operand, ty, ..
+            } => {
                 let op_val = self.lower_expr(operand);
                 let temp = self.new_temp(*ty);
                 match op {
@@ -211,7 +225,12 @@ impl<'a> MirLowerer<'a> {
                 }
                 Operand::Var(temp)
             }
-            HirExpr::FieldIndex { object, field_id, ty, .. } => {
+            HirExpr::FieldIndex {
+                object,
+                field_id,
+                ty,
+                ..
+            } => {
                 let obj_op = self.lower_expr(object);
                 let temp = self.new_temp(*ty);
                 self.push_instr(Instruction::LoadField(temp, obj_op, *field_id));
@@ -232,12 +251,19 @@ impl<'a> MirLowerer<'a> {
                 let val = self.lower_expr(value);
                 if let HirExpr::VarRef { id, .. } = target {
                     self.push_instr(Instruction::Assign(*id, val));
-                } else if let HirExpr::FieldIndex { object, field_id, .. } = target {
+                } else if let HirExpr::FieldIndex {
+                    object, field_id, ..
+                } = target
+                {
                     let obj_op = self.lower_expr(object);
                     self.push_instr(Instruction::StoreField(
-                        if let Operand::Var(v) = obj_op { v } else { VariableId(SymbolId(0)) }, 
-                        *field_id, 
-                        val
+                        if let Operand::Var(v) = obj_op {
+                            v
+                        } else {
+                            VariableId(SymbolId(0))
+                        },
+                        *field_id,
+                        val,
                     ));
                 }
             }
@@ -250,7 +276,12 @@ impl<'a> MirLowerer<'a> {
                 let new_block = self.new_block();
                 self.switch_to_block(new_block);
             }
-            HirStmt::If { condition, then_block, otherwise, .. } => {
+            HirStmt::If {
+                condition,
+                then_block,
+                otherwise,
+                ..
+            } => {
                 let cond_op = self.lower_expr(condition);
                 let then_b = self.new_block();
                 let else_b = self.new_block();
@@ -288,7 +319,9 @@ impl<'a> MirLowerer<'a> {
 
                 self.switch_to_block(merge_b);
             }
-            HirStmt::RepeatWhile { condition, body, .. } => {
+            HirStmt::RepeatWhile {
+                condition, body, ..
+            } => {
                 let cond_b = self.new_block();
                 let body_b = self.new_block();
                 let merge_b = self.new_block();

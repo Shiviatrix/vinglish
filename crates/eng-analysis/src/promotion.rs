@@ -1,7 +1,7 @@
-use eng_hir::symbol::SsaValueId;
-use eng_mir::{Instruction, MirModule};
 use crate::alias::AliasGraph;
 use crate::escape::EscapeAnalysis;
+use eng_hir::symbol::SsaValueId;
+use eng_mir::{Instruction, MirModule};
 
 pub struct StackPromotionPass;
 
@@ -16,7 +16,12 @@ impl StackPromotionPass {
         Self
     }
 
-    pub fn run(&self, module: &mut MirModule<SsaValueId>, alias_graph: &AliasGraph, escape_analysis: &EscapeAnalysis) {
+    pub fn run(
+        &self,
+        module: &mut MirModule<SsaValueId>,
+        alias_graph: &AliasGraph,
+        escape_analysis: &EscapeAnalysis,
+    ) {
         for func in &mut module.functions {
             for block in &mut func.blocks {
                 for instr in &mut block.instrs {

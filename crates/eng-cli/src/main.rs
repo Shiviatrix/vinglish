@@ -1,20 +1,31 @@
+use std::fs;
 use std::path::{Path, PathBuf};
+<<<<<<< Updated upstream
 use std::process::Command;
 use std::fs;
+=======
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+>>>>>>> Stashed changes
 
 use clap::{Parser, Subcommand};
 
-use eng_lexer::tokenize;
-use eng_parser::parse;
-use eng_types::{MirLowerer, CompilerContext, passes::{NameResolutionPass, CompilerPass}, type_pass::TypeInferencePass, validator::HirValidatorPass};
+use eng_codegen::{emit_c, Interpreter};
+use eng_diagnostics::{render, Diagnostic};
+use eng_fmt::format_module;
 use eng_hir::symbol::{SymbolTable, VariableId};
 use eng_hir::Module as HirModule;
-use eng_mir::MirModule;
+use eng_lexer::tokenize;
 use eng_mir::validator::MirValidatorPass;
+use eng_mir::MirModule;
 use eng_ownership::check_module;
-use eng_diagnostics::{render, Diagnostic};
-use eng_codegen::{Interpreter, emit_c};
-use eng_fmt::format_module;
+use eng_parser::parse;
+use eng_types::{
+    passes::{CompilerPass, NameResolutionPass},
+    type_pass::TypeInferencePass,
+    validator::HirValidatorPass,
+    CompilerContext, MirLowerer,
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,7 +86,12 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Build { file, output, backend, emit } => {
+        Commands::Build {
+            file,
+            output,
+            backend,
+            emit,
+        } => {
             if let Err(e) = cmd_build(&file, &output, &backend, emit) {
                 eprintln!("{}", e);
                 std::process::exit(1);
@@ -89,11 +105,15 @@ fn main() {
         }
         Commands::Check { file } => {
             let ok = cmd_check(&file);
-            if !ok { std::process::exit(1); }
+            if !ok {
+                std::process::exit(1);
+            }
         }
         Commands::Fmt { files, check } => {
             let ok = cmd_fmt(&files, check);
-            if !ok { std::process::exit(1); }
+            if !ok {
+                std::process::exit(1);
+            }
         }
         Commands::Version => {
             println!(
@@ -148,7 +168,7 @@ fn load_module_graph(
 
     let src = fs::read_to_string(&file_path)
         .map_err(|e| format!("cannot read '{}': {}", file_path.display(), e))?;
-    
+
     let (tokens, lex_errors) = tokenize(&src);
     if !lex_errors.is_empty() {
         for e in &lex_errors {
@@ -156,7 +176,7 @@ fn load_module_graph(
         }
         return Err(format!("Lex errors in module '{}'", module_name));
     }
-    
+
     let (module, parse_errors) = parse(&tokens);
     if !parse_errors.is_empty() {
         for e in &parse_errors {
@@ -171,7 +191,7 @@ fn load_module_graph(
             let path_parts: Vec<String> = u.path.iter().map(|id| id.name.clone()).collect();
             let dep_name = path_parts.join(".");
             module_deps.push(dep_name.clone());
-            
+
             let dep_path = resolve_dep_path(&file_path, &path_parts)?;
             load_module_graph(dep_name, dep_path, parsed, deps)?;
         }
@@ -242,13 +262,19 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         }
 
         let mut ctx = CompilerContext::with_symbol_table(symbol_table);
-        ctx.current_module = if module_name == &entry_name { String::new() } else { module_name.clone() };
+        ctx.current_module = if module_name == &entry_name {
+            String::new()
+        } else {
+            module_name.clone()
+        };
 
         let mut name_pass = NameResolutionPass::new();
         name_pass.run(ast, &mut ctx);
 
         let mut type_pass = TypeInferencePass::new();
-        let hir = type_pass.run(ast, &mut ctx).unwrap_or_else(|| HirModule { items: vec![] });
+        let hir = type_pass
+            .run(ast, &mut ctx)
+            .unwrap_or_else(|| HirModule { items: vec![] });
 
         let validator = HirValidatorPass::new();
         validator.validate(&mut ctx, &hir);
@@ -300,7 +326,9 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 
     Ok(CompileResult {
         symbol_table,
-        mir_module: MirModule { functions: mir_functions },
+        mir_module: MirModule {
+            functions: mir_functions,
+        },
         entry_src,
         entry_filename,
         combined_ast,
@@ -327,7 +355,10 @@ fn cmd_run(file: &Path) -> Result<(), String> {
     let mut pre_pm = eng_opt::pre_ssa_pipeline();
     if let Err(errors) = pre_pm.run_all(&mut mir_module, &symbol_table) {
         for e in &errors {
-            eprintln!("MIR validation error after pre-SSA optimization: {}", e.message);
+            eprintln!(
+                "MIR validation error after pre-SSA optimization: {}",
+                e.message
+            );
         }
         return Err("Pre-SSA optimization validation failed".into());
     }
@@ -346,14 +377,17 @@ fn cmd_run(file: &Path) -> Result<(), String> {
     let mut post_pm = eng_opt::post_ssa_pipeline();
     if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
         for e in &errors {
-            eprintln!("MIR validation error after post-SSA optimization: {}", e.message);
+            eprintln!(
+                "MIR validation error after post-SSA optimization: {}",
+                e.message
+            );
         }
         return Err("Post-SSA optimization validation failed".into());
     }
 
     let own_analyzer = eng_own::OwnershipAnalysisPass::new();
     let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
-    
+
     let own_validator = eng_own::OwnershipValidator::new();
     if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
         for e in &errors {
@@ -366,14 +400,21 @@ fn cmd_run(file: &Path) -> Result<(), String> {
     }
 
     let mut interp = Interpreter::new(&symbol_table);
-    interp.run_module(&ssa_module).map_err(|e| format!("runtime error: {}", e.message))
+    interp
+        .run_module(&ssa_module)
+        .map_err(|e| format!("runtime error: {}", e.message))
 }
 
-fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) -> Result<(), String> {
+fn cmd_build(
+    file: &Path,
+    output: &Path,
+    backend: &str,
+    emit: Option<String>,
+) -> Result<(), String> {
     let compile_res = compile_project(file)?;
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
-    
+
     // Collect runtime paths
     let mut runtime_paths = Vec::new();
     let rt_dir = std::env::current_dir().unwrap_or_default().join("rt");
@@ -403,7 +444,10 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
         Ok(s) => s,
         Err(errors) => {
             for e in &errors {
-                eprintln!("MIR validation error after pre-SSA optimization: {}", e.message);
+                eprintln!(
+                    "MIR validation error after pre-SSA optimization: {}",
+                    e.message
+                );
             }
             return Err("Pre-SSA optimization validation failed".into());
         }
@@ -426,7 +470,10 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
         Ok(s) => s,
         Err(errors) => {
             for e in &errors {
-                eprintln!("MIR validation error after post-SSA optimization: {}", e.message);
+                eprintln!(
+                    "MIR validation error after post-SSA optimization: {}",
+                    e.message
+                );
             }
             return Err("Post-SSA optimization validation failed".into());
         }
@@ -447,7 +494,14 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
             }
             "mir-stats" => {
                 println!("--- MIR OPTIMIZATION STATS ---");
-                println!("Total variables: {}", mir_before.functions.iter().map(|f| f.locals.len()).sum::<usize>());
+                println!(
+                    "Total variables: {}",
+                    mir_before
+                        .functions
+                        .iter()
+                        .map(|f| f.locals.len())
+                        .sum::<usize>()
+                );
                 println!("Functions: {}", ssa_module.functions.len());
                 println!("CFG Simplification:");
                 println!("  Merged blocks: {}", stats.merged_blocks);
@@ -468,7 +522,7 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
 
     let own_analyzer = eng_own::OwnershipAnalysisPass::new();
     let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
-    
+
     let own_validator = eng_own::OwnershipValidator::new();
     if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
         for e in &errors {
@@ -498,25 +552,27 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
     }
 
     if backend == "c" {
-        let c_src = emit_c(&compile_res.combined_ast).map_err(|e| format!("code generation error: {}", e))?;
+        let c_src = emit_c(&compile_res.combined_ast)
+            .map_err(|e| format!("code generation error: {}", e))?;
         let c_file = output.with_extension("c");
         fs::write(&c_file, &c_src).map_err(|e| format!("cannot write C source: {}", e))?;
-        eprintln!("  \x1b[32m✓\x1b[0m  Generated C source: {}", c_file.display());
+        eprintln!(
+            "  \x1b[32m✓\x1b[0m  Generated C source: {}",
+            c_file.display()
+        );
 
         let cc = std::env::var("CC").unwrap_or_else(|_| "cc".into());
         let mut cmd = Command::new(&cc);
-        cmd.arg("-O2")
-            .arg("-o")
-            .arg(output)
-            .arg(&c_file);
-            
+        cmd.arg("-O2").arg("-o").arg(output).arg(&c_file);
+
         for rt_path in &runtime_paths {
             cmd.arg(rt_path);
         }
-        
+
         cmd.arg("-lm");
-        
-        let status = cmd.status()
+
+        let status = cmd
+            .status()
             .map_err(|e| format!("cannot invoke C compiler `{}`: {}", cc, e))?;
 
         if !status.success() {
@@ -530,7 +586,7 @@ fn cmd_build(file: &Path, output: &Path, backend: &str, emit: Option<String>) ->
         eprintln!("  \x1b[32m✓\x1b[0m  Binary: {}", output.display());
         return Ok(());
     }
-    
+
     Err(format!("unknown backend: {}", backend))
 }
 
@@ -595,6 +651,72 @@ fn cmd_fmt(files: &[PathBuf], check: bool) -> bool {
     all_ok
 }
 
+<<<<<<< Updated upstream
+=======
+fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
+    if runs == 0 {
+        return Err("--runs must be at least 1".into());
+    }
+    let mut files: Vec<PathBuf> = fs::read_dir(directory)
+        .map_err(|e| {
+            format!(
+                "cannot read benchmark directory '{}': {}",
+                directory.display(),
+                e
+            )
+        })?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "eng"))
+        .collect();
+    files.sort();
+    if files.is_empty() {
+        return Err(format!(
+            "no .eng benchmarks found in '{}'",
+            directory.display()
+        ));
+    }
+
+    let temp_dir = std::env::temp_dir().join(format!("englist-bench-{}", std::process::id()));
+    fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("cannot create temporary directory: {}", e))?;
+    let mut results: Vec<(String, Duration)> = Vec::new();
+
+    for file in files {
+        let name = file
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or("benchmark")
+            .to_string();
+        let output = temp_dir.join(&name);
+        cmd_build(&file, &output, "c", None)?;
+
+        let mut elapsed = Duration::ZERO;
+        for _ in 0..runs {
+            let start = Instant::now();
+            let status = Command::new(&output)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map_err(|e| format!("cannot run '{}': {}", name, e))?;
+            if !status.success() {
+                return Err(format!("benchmark '{}' exited with {}", name, status));
+            }
+            elapsed += start.elapsed();
+        }
+        results.push((name, elapsed / runs));
+    }
+
+    println!("{:<28} Average time", "Algorithm");
+    println!("{:-<28} ------------", "");
+    for (name, elapsed) in results {
+        println!("{:<28} {:.3} ms", name, elapsed.as_secs_f64() * 1_000.0);
+    }
+    let _ = fs::remove_dir_all(temp_dir);
+    Ok(())
+}
+
+>>>>>>> Stashed changes
 fn rustc_version() -> String {
     let output = std::process::Command::new("rustc").arg("-V").output().ok();
     if let Some(out) = output {

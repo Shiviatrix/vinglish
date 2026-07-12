@@ -1,8 +1,7 @@
 use eng_hir::symbol::SsaValueId;
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum OwnershipState {
     #[default]
     Uninitialized,
@@ -13,14 +12,17 @@ pub enum OwnershipState {
     Dropped,
 }
 
-
 impl fmt::Display for OwnershipState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OwnershipState::Uninitialized => write!(f, "Uninitialized"),
             OwnershipState::Owned => write!(f, "Owned"),
             OwnershipState::BorrowedShared(by) => {
-                let ids = by.iter().map(|id| format!("var_{}", id.0)).collect::<Vec<_>>().join(", ");
+                let ids = by
+                    .iter()
+                    .map(|id| format!("var_{}", id.0))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 write!(f, "BorrowedShared by [{}]", ids)
             }
             OwnershipState::BorrowedMutable(by) => write!(f, "BorrowedMutable by var_{}", by.0),

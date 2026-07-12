@@ -1,8 +1,8 @@
+use crate::{OptimizationPass, PassStats};
+use eng_mir::{Instruction, MirModule, Operand, Terminator};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
-use std::collections::HashMap;
-use eng_mir::{Instruction, MirModule, Operand, Terminator};
-use crate::{OptimizationPass, PassStats};
 
 pub struct ConstantPropagationPass;
 
@@ -20,21 +20,20 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for ConstantProp
             for block in &func.blocks {
                 for instr in &block.instrs {
                     match instr {
-                        Instruction::<V>::Assign(dest, _) |
-                        Instruction::<V>::LoadField(dest, _, _) |
-                        Instruction::<V>::Call(dest, _, _) |
-                        Instruction::<V>::Borrow(dest, _) |
-                        Instruction::<V>::BorrowMut(dest, _) |
-                        Instruction::<V>::Deref(dest, _, _) |
-                        Instruction::<V>::HeapAllocate(dest, _) |
-                        Instruction::<V>::StackAllocate(dest, _) |
-                        Instruction::<V>::BinaryOp(dest, _, _, _) |
-                        Instruction::<V>::UnaryOp(dest, _, _) |
-                        Instruction::<V>::Phi(dest, _) => {
+                        Instruction::<V>::Assign(dest, _)
+                        | Instruction::<V>::LoadField(dest, _, _)
+                        | Instruction::<V>::Call(dest, _, _)
+                        | Instruction::<V>::Borrow(dest, _)
+                        | Instruction::<V>::BorrowMut(dest, _)
+                        | Instruction::<V>::Deref(dest, _, _)
+                        | Instruction::<V>::HeapAllocate(dest, _)
+                        | Instruction::<V>::StackAllocate(dest, _)
+                        | Instruction::<V>::BinaryOp(dest, _, _, _)
+                        | Instruction::<V>::UnaryOp(dest, _, _)
+                        | Instruction::<V>::Phi(dest, _) => {
                             *assign_counts.entry(*dest).or_insert(0) += 1;
                         }
-                        Instruction::<V>::StoreField(_, _, _) |
-                        Instruction::<V>::Drop(_) => {} // doesn't assign to a var
+                        Instruction::<V>::StoreField(_, _, _) | Instruction::<V>::Drop(_) => {} // doesn't assign to a var
                     }
                 }
             }
@@ -75,8 +74,8 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for ConstantProp
                         Instruction::<V>::Borrow(_, _) | Instruction::<V>::BorrowMut(_, _) => {}
                         Instruction::<V>::Deref(_, op, _) => replace_operand(op),
                         Instruction::<V>::Drop(_) => {}
-                        Instruction::<V>::HeapAllocate(_, _) |
-                        Instruction::<V>::StackAllocate(_, _) => {}
+                        Instruction::<V>::HeapAllocate(_, _)
+                        | Instruction::<V>::StackAllocate(_, _) => {}
                         Instruction::<V>::BinaryOp(_, _, left, right) => {
                             replace_operand(left);
                             replace_operand(right);

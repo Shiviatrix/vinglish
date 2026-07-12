@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-use crate::{MirModule, MirFunction, Terminator};
+use crate::{MirFunction, MirModule, Terminator};
 use eng_hir::symbol::SymbolTable;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct MirValidationError {
@@ -20,7 +20,11 @@ impl MirValidatorPass {
         Self
     }
 
-    pub fn validate<V: Clone + Copy + std::fmt::Display>(&self, symbol_table: &SymbolTable, module: &MirModule<V>) -> Result<(), Vec<MirValidationError>> {
+    pub fn validate<V: Clone + Copy + std::fmt::Display>(
+        &self,
+        symbol_table: &SymbolTable,
+        module: &MirModule<V>,
+    ) -> Result<(), Vec<MirValidationError>> {
         let mut errors = Vec::new();
 
         for func in &module.functions {
@@ -36,7 +40,11 @@ impl MirValidatorPass {
         }
     }
 
-    fn validate_function<V: Clone + Copy + std::fmt::Display>(&self, symbol_table: &SymbolTable, func: &MirFunction<V>) -> Result<(), Vec<MirValidationError>> {
+    fn validate_function<V: Clone + Copy + std::fmt::Display>(
+        &self,
+        symbol_table: &SymbolTable,
+        func: &MirFunction<V>,
+    ) -> Result<(), Vec<MirValidationError>> {
         let mut errors = Vec::new();
 
         if symbol_table.get_func(func.id).is_none() {
@@ -74,19 +82,28 @@ impl MirValidatorPass {
                 Terminator::Jump(target) => {
                     if !block_ids.contains(target) {
                         errors.push(MirValidationError {
-                            message: format!("Dangling jump to {} in function {}", target, func.name),
+                            message: format!(
+                                "Dangling jump to {} in function {}",
+                                target, func.name
+                            ),
                         });
                     }
                 }
                 Terminator::Branch(_, true_target, false_target) => {
                     if !block_ids.contains(true_target) {
                         errors.push(MirValidationError {
-                            message: format!("Dangling true branch to {} in function {}", true_target, func.name),
+                            message: format!(
+                                "Dangling true branch to {} in function {}",
+                                true_target, func.name
+                            ),
                         });
                     }
                     if !block_ids.contains(false_target) {
                         errors.push(MirValidationError {
-                            message: format!("Dangling false branch to {} in function {}", false_target, func.name),
+                            message: format!(
+                                "Dangling false branch to {} in function {}",
+                                false_target, func.name
+                            ),
                         });
                     }
                 }

@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-use std::fmt;
+use crate::alias::{AliasGraph, AliasId};
 use eng_hir::symbol::SsaValueId;
 use eng_mir::{Instruction, MirFunction, MirModule, Operand, Terminator};
-use crate::alias::{AliasGraph, AliasId};
+use std::collections::HashSet;
+use std::fmt;
 
 pub struct EscapeAnalysis {
     pub escaped_aliases: HashSet<AliasId>,
@@ -68,8 +68,12 @@ impl EscapeAnalysisPass {
                     for instr in &block.instrs {
                         if let Instruction::StoreField(obj, _, val) = instr {
                             if let Operand::Var(val_src) = val {
-                                if let (Some(obj_alias), Some(val_alias)) = (alias_graph.get_alias(*obj), alias_graph.get_alias(*val_src)) {
-                                    if analysis.is_escaped(obj_alias) && !analysis.is_escaped(val_alias) {
+                                if let (Some(obj_alias), Some(val_alias)) =
+                                    (alias_graph.get_alias(*obj), alias_graph.get_alias(*val_src))
+                                {
+                                    if analysis.is_escaped(obj_alias)
+                                        && !analysis.is_escaped(val_alias)
+                                    {
                                         analysis.escaped_aliases.insert(val_alias);
                                         changed = true;
                                     }
@@ -84,7 +88,12 @@ impl EscapeAnalysisPass {
         analysis
     }
 
-    fn analyze_function(&self, func: &MirFunction<SsaValueId>, alias_graph: &AliasGraph, analysis: &mut EscapeAnalysis) {
+    fn analyze_function(
+        &self,
+        func: &MirFunction<SsaValueId>,
+        alias_graph: &AliasGraph,
+        analysis: &mut EscapeAnalysis,
+    ) {
         for block in &func.blocks {
             for instr in &block.instrs {
                 if let Instruction::Call(_, _, args) = instr {

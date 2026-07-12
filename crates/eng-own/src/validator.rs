@@ -1,9 +1,9 @@
-use eng_hir::symbol::SsaValueId;
-use eng_mir::{MirModule, Instruction, Operand};
-use eng_hir::symbol::SymbolTable;
-use eng_diagnostics::Diagnostic;
-use crate::graph::OwnershipGraph;
 use crate::diagnostics;
+use crate::graph::OwnershipGraph;
+use eng_diagnostics::Diagnostic;
+use eng_hir::symbol::SsaValueId;
+use eng_hir::symbol::SymbolTable;
+use eng_mir::{Instruction, MirModule, Operand};
 use std::collections::HashSet;
 
 pub struct OwnershipValidator;
@@ -19,11 +19,18 @@ impl OwnershipValidator {
         Self
     }
 
-    pub fn validate(&self, symbol_table: &SymbolTable, module: &MirModule<eng_hir::symbol::SsaValueId>, _graph: &OwnershipGraph) -> Result<(), Vec<Diagnostic>> {
+    pub fn validate(
+        &self,
+        symbol_table: &SymbolTable,
+        module: &MirModule<eng_hir::symbol::SsaValueId>,
+        _graph: &OwnershipGraph,
+    ) -> Result<(), Vec<Diagnostic>> {
         let mut errors = Vec::new();
 
         let is_move = |var_id: SsaValueId| -> bool {
-            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) = symbol_table.get(eng_hir::symbol::SymbolId(var_id.0)) {
+            if let Some(eng_hir::symbol::SymbolKind::Variable(vs)) =
+                symbol_table.get(eng_hir::symbol::SymbolId(var_id.0))
+            {
                 !vs.ty.is_copy()
             } else {
                 true
@@ -35,7 +42,9 @@ impl OwnershipValidator {
 
             for block in &func.blocks {
                 for instr in &block.instrs {
-                    let mut check_op = |op: &Operand<SsaValueId>, is_val: bool, dest: SsaValueId| {
+                    let mut check_op = |op: &Operand<SsaValueId>,
+                                        is_val: bool,
+                                        dest: SsaValueId| {
                         if let Operand::<SsaValueId>::Var(src) = op {
                             if moved.contains(src) {
                                 errors.push(diagnostics::use_after_move(symbol_table, *src, dest));
@@ -46,8 +55,8 @@ impl OwnershipValidator {
                     };
 
                     match instr {
-                        Instruction::<SsaValueId>::Assign(dest, op) | 
-                        Instruction::<SsaValueId>::UnaryOp(dest, _, op) => {
+                        Instruction::<SsaValueId>::Assign(dest, op)
+                        | Instruction::<SsaValueId>::UnaryOp(dest, _, op) => {
                             check_op(op, true, *dest);
                         }
                         Instruction::<SsaValueId>::LoadField(dest, op, _) => {

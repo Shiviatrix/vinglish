@@ -1,8 +1,8 @@
+pub mod cfg_simplify;
 pub mod constant_folding;
 pub mod constant_prop;
 pub mod copy_prop;
 pub mod dce;
-pub mod cfg_simplify;
 pub mod gvn;
 
 use eng_mir::MirModule;
@@ -50,14 +50,18 @@ impl<V: Clone + Copy + Display + Eq + Hash> PassManager<V> {
         self.passes.push(pass);
     }
 
-    pub fn run_all(&mut self, module: &mut MirModule<V>, symbol_table: &eng_hir::symbol::SymbolTable) -> Result<PassStats, Vec<eng_mir::validator::MirValidationError>> {
+    pub fn run_all(
+        &mut self,
+        module: &mut MirModule<V>,
+        symbol_table: &eng_hir::symbol::SymbolTable,
+    ) -> Result<PassStats, Vec<eng_mir::validator::MirValidationError>> {
         let mut total_stats = PassStats::default();
         let validator = eng_mir::validator::MirValidatorPass::new();
-        
+
         for pass in &mut self.passes {
             let stats = pass.run(module);
             total_stats.add(&stats);
-            
+
             validator.validate(symbol_table, module)?;
         }
         Ok(total_stats)

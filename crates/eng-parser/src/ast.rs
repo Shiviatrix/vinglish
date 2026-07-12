@@ -12,7 +12,10 @@ pub struct Ident {
 
 impl Ident {
     pub fn new(name: impl Into<String>, span: Span) -> Self {
-        Self { name: name.into(), span }
+        Self {
+            name: name.into(),
+            span,
+        }
     }
 }
 
@@ -45,7 +48,10 @@ pub enum TypeExpr {
     /// `List of T`
     List(Box<TypeExpr>),
     /// `Dictionary from K to V`
-    Dict { key: Box<TypeExpr>, val: Box<TypeExpr> },
+    Dict {
+        key: Box<TypeExpr>,
+        val: Box<TypeExpr>,
+    },
     /// `Optional T` / `T?`
     Optional(Box<TypeExpr>),
     /// `Result of T` (error type is inferred)
@@ -96,19 +102,48 @@ pub enum Expr {
     /// A simple identifier reference
     Ident(Ident),
     /// Generic instantiation: `vector_new<number>`
-    GenericInst { base: Ident, args: Vec<TypeExpr>, span: Span },
+    GenericInst {
+        base: Ident,
+        args: Vec<TypeExpr>,
+        span: Span,
+    },
     /// Function call: `f(a, b)` or `calculate tax for order`
-    Call { callee: Box<Expr>, args: Vec<Expr>, span: Span },
+    Call {
+        callee: Box<Expr>,
+        args: Vec<Expr>,
+        span: Span,
+    },
     /// Binary operation: `a + b`, `balance is below 0`
-    BinOp { left: Box<Expr>, op: BinOp, right: Box<Expr>, span: Span },
+    BinOp {
+        left: Box<Expr>,
+        op: BinOp,
+        right: Box<Expr>,
+        span: Span,
+    },
     /// Unary operation: `not x`, `-x`
-    UnOp { op: UnOp, operand: Box<Expr>, span: Span },
+    UnOp {
+        op: UnOp,
+        operand: Box<Expr>,
+        span: Span,
+    },
     /// Field access: `account.balance`
-    Field { object: Box<Expr>, field: Ident, span: Span },
+    Field {
+        object: Box<Expr>,
+        field: Ident,
+        span: Span,
+    },
     /// Index: `list[i]`
-    Index { object: Box<Expr>, index: Box<Expr>, span: Span },
+    Index {
+        object: Box<Expr>,
+        index: Box<Expr>,
+        span: Span,
+    },
     /// Struct Literal: `Point { x: 10, y: 20 }` or `Pair<number> { first: 10, second: 20 }`
-    StructLit { ty: Box<Expr>, fields: Vec<(Ident, Expr)>, span: Span },
+    StructLit {
+        ty: Box<Expr>,
+        fields: Vec<(Ident, Expr)>,
+        span: Span,
+    },
     /// A block used as an expression (rare but valid)
     Block(Box<Block>),
     /// List literal: `[1, 2, 3]`
@@ -125,7 +160,7 @@ impl Expr {
             | Expr::Field { span, .. }
             | Expr::Index { span, .. }
             | Expr::StructLit { span, .. }
-            | Expr::List { span, .. } 
+            | Expr::List { span, .. }
             | Expr::GenericInst { span, .. } => *span,
             Expr::Ident(id) => id.span,
             Expr::Block(b) => b.span,
@@ -135,11 +170,22 @@ impl Expr {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BinOp {
-    Add, Sub, Mul, Div, Mod,
-    Eq, NotEq,
-    Lt, Gt, LtEq, GtEq,
-    And, Or,
-    IsBelow, IsAbove, Exceeds,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Eq,
+    NotEq,
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    And,
+    Or,
+    IsBelow,
+    IsAbove,
+    Exceeds,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -187,19 +233,18 @@ pub enum Stmt {
 impl Stmt {
     pub fn span(&self) -> Span {
         match self {
-            Stmt::Let(s)             => s.span,
-            Stmt::Return(s)          => s.span,
-            Stmt::If(s)              => s.span,
-            Stmt::When(s)            => s.span,
-            Stmt::Repeat(s)
-            | Stmt::ParallelRepeat(s) => s.span(),
-            Stmt::Match(s)           => s.span,
-            Stmt::Assign(s)          => s.span,
-            Stmt::Spawn(s)           => s.span,
-            Stmt::Send(s)            => s.span,
-            Stmt::Receive(s)         => s.span,
-            Stmt::Transaction(s)     => s.span,
-            Stmt::Expr(e)            => e.span(),
+            Stmt::Let(s) => s.span,
+            Stmt::Return(s) => s.span,
+            Stmt::If(s) => s.span,
+            Stmt::When(s) => s.span,
+            Stmt::Repeat(s) | Stmt::ParallelRepeat(s) => s.span(),
+            Stmt::Match(s) => s.span,
+            Stmt::Assign(s) => s.span,
+            Stmt::Spawn(s) => s.span,
+            Stmt::Send(s) => s.span,
+            Stmt::Receive(s) => s.span,
+            Stmt::Transaction(s) => s.span,
+            Stmt::Expr(e) => e.span(),
         }
     }
 }
@@ -290,7 +335,11 @@ pub struct AssignStmt {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssignOp {
-    Assign, AddAssign, SubAssign, MulAssign, DivAssign,
+    Assign,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -329,7 +378,10 @@ pub struct Block {
 
 impl Block {
     pub fn empty(span: Span) -> Self {
-        Self { stmts: vec![], span }
+        Self {
+            stmts: vec![],
+            span,
+        }
     }
 }
 
@@ -364,7 +416,7 @@ pub struct TypeDef {
     pub name: Ident,
     pub type_params: Vec<Ident>,
     pub fields: Vec<Param>,
-    pub capabilities: Vec<Ident>,  // `requires draw(), serialize()`
+    pub capabilities: Vec<Ident>, // `requires draw(), serialize()`
     pub span: Span,
 }
 
@@ -409,11 +461,11 @@ impl Item {
     pub fn span(&self) -> Span {
         match self {
             Item::Function(f) => f.span,
-            Item::Type(t)     => t.span,
-            Item::Package(p)  => p.span,
-            Item::Module(m)   => m.span,
-            Item::Use(u)      => u.span,
-            Item::Route(r)    => r.span,
+            Item::Type(t) => t.span,
+            Item::Package(p) => p.span,
+            Item::Module(m) => m.span,
+            Item::Use(u) => u.span,
+            Item::Route(r) => r.span,
             Item::Statement(s) => s.span(),
         }
     }

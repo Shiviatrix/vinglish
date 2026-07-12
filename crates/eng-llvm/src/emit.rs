@@ -13,7 +13,9 @@ pub fn emit_ir(module: &Module) -> String {
 
 /// Write LLVM IR to a file.
 pub fn emit_ir_to_file(module: &Module, path: &Path) -> Result<(), String> {
-    module.print_to_file(path).map_err(|e| format!("Failed to write LLVM IR: {}", e.to_string()))
+    module
+        .print_to_file(path)
+        .map_err(|e| format!("Failed to write LLVM IR: {}", e.to_string()))
 }
 
 /// Write a native object file.
@@ -26,7 +28,11 @@ pub fn emit_object_file(module: &Module, path: &Path) -> Result<(), String> {
 }
 
 /// Compile to a native executable by emitting an object file and linking.
-pub fn emit_executable(module: &Module, output: &Path, runtime_paths: &[std::path::PathBuf]) -> Result<(), String> {
+pub fn emit_executable(
+    module: &Module,
+    output: &Path,
+    runtime_paths: &[std::path::PathBuf],
+) -> Result<(), String> {
     let obj_path = output.with_extension("o");
 
     emit_object_file(module, &obj_path)?;
@@ -34,17 +40,16 @@ pub fn emit_executable(module: &Module, output: &Path, runtime_paths: &[std::pat
     // Link with system C compiler
     let cc = std::env::var("CC").unwrap_or_else(|_| "cc".into());
     let mut cmd = std::process::Command::new(&cc);
-    cmd.arg("-o")
-       .arg(output)
-       .arg(&obj_path);
-       
+    cmd.arg("-o").arg(output).arg(&obj_path);
+
     for rt_path in runtime_paths {
         cmd.arg(rt_path);
     }
-    
+
     cmd.arg("-lc");
-    
-    let status = cmd.status()
+
+    let status = cmd
+        .status()
         .map_err(|e| format!("Cannot invoke linker `{}`: {}", cc, e))?;
 
     if !status.success() {

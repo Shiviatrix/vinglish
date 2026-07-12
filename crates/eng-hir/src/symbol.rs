@@ -1,7 +1,7 @@
+use crate::types::{Type, TypeVar};
+use eng_parser::ast::Visibility;
 use std::collections::HashMap;
 use std::fmt;
-use eng_parser::ast::Visibility;
-use crate::types::{Type, TypeVar};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SymbolId(pub u32);
@@ -17,7 +17,7 @@ pub struct VariableId(pub SymbolId);
 
 impl fmt::Display for VariableId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "var_{}", self.0.0)
+        write!(f, "var_{}", self.0 .0)
     }
 }
 
@@ -79,7 +79,7 @@ impl SymbolTable {
     }
 
     pub fn get_interned_type(&self, id: TypeId) -> Option<&Type> {
-        match self.symbols.get(id.0.0 as usize) {
+        match self.symbols.get(id.0 .0 as usize) {
             Some(SymbolKind::InternedType(ty)) => Some(ty),
             Some(SymbolKind::Type(_ts)) => {
                 // Should Named types return themselves?
@@ -126,7 +126,8 @@ impl SymbolTable {
     pub fn define_var_with_id(&mut self, id: SymbolId, symbol: VariableSymbol) {
         let idx = id.0 as usize;
         if idx >= self.symbols.len() {
-            self.symbols.resize(idx + 1, SymbolKind::Variable(symbol.clone()));
+            self.symbols
+                .resize(idx + 1, SymbolKind::Variable(symbol.clone()));
         }
         self.symbols[idx] = SymbolKind::Variable(symbol);
     }
@@ -136,7 +137,7 @@ impl SymbolTable {
     }
 
     pub fn get_type(&self, id: TypeId) -> Option<&TypeSymbol> {
-        if let Some(SymbolKind::Type(ts)) = self.symbols.get(id.0.0 as usize) {
+        if let Some(SymbolKind::Type(ts)) = self.symbols.get(id.0 .0 as usize) {
             Some(ts)
         } else {
             None
@@ -144,7 +145,7 @@ impl SymbolTable {
     }
 
     pub fn get_func(&self, id: FunctionId) -> Option<&FunctionSymbol> {
-        if let Some(SymbolKind::Function(fs)) = self.symbols.get(id.0.0 as usize) {
+        if let Some(SymbolKind::Function(fs)) = self.symbols.get(id.0 .0 as usize) {
             Some(fs)
         } else {
             None
@@ -152,7 +153,7 @@ impl SymbolTable {
     }
 
     pub fn get_var(&self, id: VariableId) -> Option<&VariableSymbol> {
-        if let Some(SymbolKind::Variable(vs)) = self.symbols.get(id.0.0 as usize) {
+        if let Some(SymbolKind::Variable(vs)) = self.symbols.get(id.0 .0 as usize) {
             Some(vs)
         } else {
             None
@@ -160,7 +161,7 @@ impl SymbolTable {
     }
 
     pub fn get_type_mut(&mut self, id: TypeId) -> Option<&mut TypeSymbol> {
-        if let Some(SymbolKind::Type(ts)) = self.symbols.get_mut(id.0.0 as usize) {
+        if let Some(SymbolKind::Type(ts)) = self.symbols.get_mut(id.0 .0 as usize) {
             Some(ts)
         } else {
             None
@@ -168,7 +169,7 @@ impl SymbolTable {
     }
 
     pub fn get_func_mut(&mut self, id: FunctionId) -> Option<&mut FunctionSymbol> {
-        if let Some(SymbolKind::Function(fs)) = self.symbols.get_mut(id.0.0 as usize) {
+        if let Some(SymbolKind::Function(fs)) = self.symbols.get_mut(id.0 .0 as usize) {
             Some(fs)
         } else {
             None
@@ -176,7 +177,7 @@ impl SymbolTable {
     }
 
     pub fn get_var_mut(&mut self, id: VariableId) -> Option<&mut VariableSymbol> {
-        if let Some(SymbolKind::Variable(vs)) = self.symbols.get_mut(id.0.0 as usize) {
+        if let Some(SymbolKind::Variable(vs)) = self.symbols.get_mut(id.0 .0 as usize) {
             Some(vs)
         } else {
             None

@@ -1,10 +1,10 @@
-use eng_diagnostics::Diagnostic;
-use eng_lexer::Span;
-use eng_hir::symbol::SsaValueId;
-use eng_mir::{Instruction, MirModule};
 use crate::alias::AliasGraph;
 use crate::escape::EscapeAnalysis;
 use crate::lifetime::LifetimeGraph;
+use eng_diagnostics::Diagnostic;
+use eng_hir::symbol::SsaValueId;
+use eng_lexer::Span;
+use eng_mir::{Instruction, MirModule};
 
 pub struct AnalysisValidator;
 
@@ -37,7 +37,7 @@ impl AnalysisValidator {
                                 let diag = Diagnostic::error(
                                     "E_ANALYSIS",
                                     format!("Stack allocation {} escapes the function", dest),
-                                    Span::default()
+                                    Span::default(),
                                 );
                                 errors.push(diag);
                             }

@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt;
 use eng_hir::symbol::SsaValueId;
 use eng_mir::{Instruction, MirFunction, MirModule, Operand};
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AliasId(pub usize);
@@ -57,7 +57,7 @@ impl fmt::Display for AliasGraph {
         writeln!(f, "--- ALIAS GRAPH ---")?;
         let mut sorted_aliases: Vec<_> = self.alias_to_values.keys().collect();
         sorted_aliases.sort_by_key(|k| k.0);
-        
+
         for alias in sorted_aliases {
             let values = &self.alias_to_values[alias];
             if values.is_empty() {
@@ -68,11 +68,15 @@ impl fmt::Display for AliasGraph {
             } else {
                 "".to_string()
             };
-            
+
             let mut sorted_vals: Vec<_> = values.iter().collect();
             sorted_vals.sort_by_key(|v| v.0);
-            let vals_str = sorted_vals.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
-            
+            let vals_str = sorted_vals
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
             writeln!(f, "{}{}: {}", alias, alloc_str, vals_str)?;
         }
         Ok(())
@@ -118,9 +122,9 @@ impl AliasAnalysisPass {
                         graph.assign_alias(*dest, id);
                         graph.allocations.insert(id, *dest);
                     }
-                    Instruction::Assign(dest, op) |
-                    Instruction::Borrow(dest, op) |
-                    Instruction::BorrowMut(dest, op) => {
+                    Instruction::Assign(dest, op)
+                    | Instruction::Borrow(dest, op)
+                    | Instruction::BorrowMut(dest, op) => {
                         if let Operand::Var(src) = op {
                             if let Some(mut alias) = graph.get_alias(*src) {
                                 while let Some(&mapped) = alias_replacements.get(&alias) {
@@ -152,9 +156,9 @@ impl AliasAnalysisPass {
                             graph.assign_alias(*dest, id);
                         }
                     }
-                    Instruction::Call(dest, _, _) |
-                    Instruction::BinaryOp(dest, _, _, _) |
-                    Instruction::UnaryOp(dest, _, _) => {
+                    Instruction::Call(dest, _, _)
+                    | Instruction::BinaryOp(dest, _, _, _)
+                    | Instruction::UnaryOp(dest, _, _) => {
                         let id = graph.new_alias();
                         graph.assign_alias(*dest, id);
                     }
@@ -186,10 +190,13 @@ impl AliasAnalysisPass {
             while let Some(&mapped) = alias_replacements.get(&alias) {
                 alias = mapped;
             }
-            final_graph.alias_to_values.entry(alias).or_insert_with(HashSet::new);
+            final_graph
+                .alias_to_values
+                .entry(alias)
+                .or_insert_with(HashSet::new);
             final_graph.assign_alias(value, alias);
         }
-        
+
         let allocations = graph.allocations.clone();
         for (alias, alloc) in allocations {
             let mut resolved = alias;

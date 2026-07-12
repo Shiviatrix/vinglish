@@ -17,42 +17,60 @@ const INDENT: &str = "    "; // 4 spaces
 
 impl Formatter {
     fn new() -> Self {
-        Self { output: String::new(), indent: 0 }
+        Self {
+            output: String::new(),
+            indent: 0,
+        }
     }
 
     fn line(&mut self, s: &str) {
         if s.is_empty() {
             self.output.push('\n');
         } else {
-            for _ in 0..self.indent { self.output.push_str(INDENT); }
+            for _ in 0..self.indent {
+                self.output.push_str(INDENT);
+            }
             self.output.push_str(s);
             self.output.push('\n');
         }
     }
 
-    fn blank(&mut self) { self.output.push('\n'); }
+    fn blank(&mut self) {
+        self.output.push('\n');
+    }
 
-    fn indent(&mut self)   { self.indent += 1; }
-    fn dedent(&mut self)   { self.indent = self.indent.saturating_sub(1); }
+    fn indent(&mut self) {
+        self.indent += 1;
+    }
+    fn dedent(&mut self) {
+        self.indent = self.indent.saturating_sub(1);
+    }
 
     fn fmt_module(&mut self, module: &Module) {
         for (i, item) in module.items.iter().enumerate() {
-            if i > 0 { self.blank(); }
+            if i > 0 {
+                self.blank();
+            }
             self.fmt_item(item);
         }
     }
 
     fn fmt_item(&mut self, item: &Item) {
         match item {
-            Item::Package(p)  => self.line(&format!("package {}", p.name)),
-            Item::Module(m)   => self.line(&format!("module {}", m.name)),
-            Item::Use(u)      => {
-                let path = u.path.iter().map(|id| id.name.as_str()).collect::<Vec<_>>().join(".");
+            Item::Package(p) => self.line(&format!("package {}", p.name)),
+            Item::Module(m) => self.line(&format!("module {}", m.name)),
+            Item::Use(u) => {
+                let path = u
+                    .path
+                    .iter()
+                    .map(|id| id.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(".");
                 self.line(&format!("use {}", path));
             }
             Item::Function(f) => self.fmt_function(f),
-            Item::Type(t)     => self.fmt_type_def(t),
-            Item::Route(r)    => {
+            Item::Type(t) => self.fmt_type_def(t),
+            Item::Route(r) => {
                 self.line(&format!("route \"{}\"", r.path));
                 self.indent();
                 self.line("returns");
@@ -65,11 +83,13 @@ impl Formatter {
 
     fn fmt_function(&mut self, f: &FunctionDef) {
         let vis = match f.visibility {
-            Visibility::Public   => "public ",
-            Visibility::Private  => "",
+            Visibility::Public => "public ",
+            Visibility::Private => "",
             Visibility::Internal => "internal ",
         };
-        let params = f.params.iter()
+        let params = f
+            .params
+            .iter()
             .map(|p| format!("{} {}", fmt_type(&p.ty), p.name.name))
             .collect::<Vec<_>>()
             .join(", ");
@@ -117,14 +137,18 @@ impl Formatter {
         match stmt {
             Stmt::Let(l) => {
                 let mut parts = vec!["let".to_string()];
-                if l.mutable { parts.push("mutable".into()); }
+                if l.mutable {
+                    parts.push("mutable".into());
+                }
                 parts.push(l.name.name.clone());
                 parts.push("be".into());
                 if let Some(ty) = &l.ty {
                     parts.push(fmt_type(ty));
                 }
                 if let Some(val) = &l.value {
-                    if l.ty.is_some() { parts.push("=".into()); }
+                    if l.ty.is_some() {
+                        parts.push("=".into());
+                    }
                     parts.push(fmt_expr(val));
                 }
                 self.line(&parts.join(" "));
@@ -170,18 +194,27 @@ impl Formatter {
             }
             Stmt::Assign(a) => {
                 let op = match a.op {
-                    AssignOp::Assign    => "be",
+                    AssignOp::Assign => "be",
                     AssignOp::AddAssign => "+=",
                     AssignOp::SubAssign => "-=",
                     AssignOp::MulAssign => "*=",
                     AssignOp::DivAssign => "/=",
                 };
-                self.line(&format!("{} {} {}", fmt_expr(&a.target), op, fmt_expr(&a.value)));
+                self.line(&format!(
+                    "{} {} {}",
+                    fmt_expr(&a.target),
+                    op,
+                    fmt_expr(&a.value)
+                ));
             }
-            Stmt::Spawn(s)   => self.line(&format!("spawn {}", s.actor.name)),
-            Stmt::Send(s)    => self.line(&format!("send {}", fmt_expr(&s.message))),
+            Stmt::Spawn(s) => self.line(&format!("spawn {}", s.actor.name)),
+            Stmt::Send(s) => self.line(&format!("send {}", fmt_expr(&s.message))),
             Stmt::Receive(r) => {
-                let binding = r.binding.as_ref().map(|b| format!(" {}", b.name)).unwrap_or_default();
+                let binding = r
+                    .binding
+                    .as_ref()
+                    .map(|b| format!(" {}", b.name))
+                    .unwrap_or_default();
                 self.line(&format!("receive{}", binding));
             }
             Stmt::Transaction(t) => {
@@ -196,11 +229,23 @@ impl Formatter {
     fn fmt_repeat(&mut self, r: &RepeatStmt, parallel: bool) {
         let prefix = if parallel { "parallel " } else { "" };
         match r {
-            RepeatStmt::ForEvery { var, iterable, body, .. } => {
-                self.line(&format!("{}repeat for every {} {}", prefix, var.name, fmt_expr(iterable)));
+            RepeatStmt::ForEvery {
+                var,
+                iterable,
+                body,
+                ..
+            } => {
+                self.line(&format!(
+                    "{}repeat for every {} {}",
+                    prefix,
+                    var.name,
+                    fmt_expr(iterable)
+                ));
                 self.fmt_block_begin_end(body);
             }
-            RepeatStmt::While { condition, body, .. } => {
+            RepeatStmt::While {
+                condition, body, ..
+            } => {
                 self.line(&format!("{}repeat while {}", prefix, fmt_expr(condition)));
                 self.fmt_block_begin_end(body);
             }
@@ -219,11 +264,11 @@ impl Formatter {
 fn fmt_expr(expr: &Expr) -> String {
     match expr {
         Expr::Lit { value, .. } => match value {
-            Literal::Int(i)   => i.to_string(),
+            Literal::Int(i) => i.to_string(),
             Literal::Float(f) => f.to_string(),
-            Literal::Bool(b)  => b.to_string(),
-            Literal::Text(s)  => format!("\"{}\"", s),
-            Literal::Unit     => "()".into(),
+            Literal::Bool(b) => b.to_string(),
+            Literal::Text(s) => format!("\"{}\"", s),
+            Literal::Unit => "()".into(),
         },
         Expr::Ident(id) => id.name.clone(),
         Expr::GenericInst { base, args, .. } => {
@@ -234,17 +279,26 @@ fn fmt_expr(expr: &Expr) -> String {
             let args_str = args.iter().map(fmt_expr).collect::<Vec<_>>().join(", ");
             format!("{}({})", fmt_expr(callee), args_str)
         }
-        Expr::BinOp { left, op, right, .. } => {
+        Expr::BinOp {
+            left, op, right, ..
+        } => {
             let op_str = match op {
-                BinOp::Add => "+",  BinOp::Sub => "-",
-                BinOp::Mul => "*",  BinOp::Div => "/", BinOp::Mod => "%",
-                BinOp::Eq  => "==", BinOp::NotEq => "!=",
-                BinOp::Lt  => "<",  BinOp::Gt  => ">",
-                BinOp::LtEq => "<=", BinOp::GtEq => ">=",
-                BinOp::And => "and", BinOp::Or => "or",
-                BinOp::IsBelow  => "is below",
-                BinOp::IsAbove  => "is above",
-                BinOp::Exceeds  => "exceeds",
+                BinOp::Add => "+",
+                BinOp::Sub => "-",
+                BinOp::Mul => "*",
+                BinOp::Div => "/",
+                BinOp::Mod => "%",
+                BinOp::Eq => "==",
+                BinOp::NotEq => "!=",
+                BinOp::Lt => "<",
+                BinOp::Gt => ">",
+                BinOp::LtEq => "<=",
+                BinOp::GtEq => ">=",
+                BinOp::And => "and",
+                BinOp::Or => "or",
+                BinOp::IsBelow => "is below",
+                BinOp::IsAbove => "is above",
+                BinOp::Exceeds => "exceeds",
             };
             format!("{} {} {}", fmt_expr(left), op_str, fmt_expr(right))
         }
@@ -270,7 +324,8 @@ fn fmt_expr(expr: &Expr) -> String {
         }
         Expr::Block(_) => "( block )".into(),
         Expr::StructLit { ty, fields, .. } => {
-            let fields_str = fields.iter()
+            let fields_str = fields
+                .iter()
                 .map(|(id, expr)| format!("{}: {}", id.name, fmt_expr(expr)))
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -282,10 +337,12 @@ fn fmt_expr(expr: &Expr) -> String {
 fn fmt_type(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => id.name.clone(),
-        TypeExpr::List(t)   => format!("List of {}", fmt_type(t)),
-        TypeExpr::Dict { key, val } => format!("Dictionary from {} to {}", fmt_type(key), fmt_type(val)),
-        TypeExpr::Optional(t)   => format!("{}?", fmt_type(t)),
-        TypeExpr::Result(t)     => format!("Result of {}", fmt_type(t)),
+        TypeExpr::List(t) => format!("List of {}", fmt_type(t)),
+        TypeExpr::Dict { key, val } => {
+            format!("Dictionary from {} to {}", fmt_type(key), fmt_type(val))
+        }
+        TypeExpr::Optional(t) => format!("{}?", fmt_type(t)),
+        TypeExpr::Result(t) => format!("Result of {}", fmt_type(t)),
         TypeExpr::Generic { base, args } => {
             let inner = args.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
             format!("{}<{}>", base.name, inner)
@@ -302,12 +359,12 @@ fn fmt_type(ty: &TypeExpr) -> String {
 
 fn fmt_pattern(pat: &Pattern) -> String {
     match pat {
-        Pattern::Constructor(id)  => id.name.clone(),
-        Pattern::Bind(id)         => id.name.clone(),
-        Pattern::Wildcard(_)      => "_".into(),
-        Pattern::Literal(Literal::Int(i))   => i.to_string(),
-        Pattern::Literal(Literal::Bool(b))  => b.to_string(),
-        Pattern::Literal(Literal::Text(s))  => format!("\"{}\"", s),
-        Pattern::Literal(_)       => "_".into(),
+        Pattern::Constructor(id) => id.name.clone(),
+        Pattern::Bind(id) => id.name.clone(),
+        Pattern::Wildcard(_) => "_".into(),
+        Pattern::Literal(Literal::Int(i)) => i.to_string(),
+        Pattern::Literal(Literal::Bool(b)) => b.to_string(),
+        Pattern::Literal(Literal::Text(s)) => format!("\"{}\"", s),
+        Pattern::Literal(_) => "_".into(),
     }
 }

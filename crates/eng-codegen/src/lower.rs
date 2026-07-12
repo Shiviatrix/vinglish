@@ -46,10 +46,16 @@ impl CEmitter {
         self.output.push('\n');
     }
 
-    fn blank(&mut self) { self.output.push('\n'); }
+    fn blank(&mut self) {
+        self.output.push('\n');
+    }
 
-    fn indent(&mut self)   { self.indent += 1; }
-    fn dedent(&mut self)   { self.indent = self.indent.saturating_sub(1); }
+    fn indent(&mut self) {
+        self.indent += 1;
+    }
+    fn dedent(&mut self) {
+        self.indent = self.indent.saturating_sub(1);
+    }
 
     fn emit_module(&mut self, module: &Module) -> Result<(), CEmitError> {
         FOREIGN_FNS.with(|fns| {
@@ -102,11 +108,22 @@ impl CEmitter {
         }
 
         // If no main function, wrap top-level statements
-        let has_main = module.items.iter().any(|i| matches!(i, Item::Function(f) if f.name.name == "main"));
+        let has_main = module
+            .items
+            .iter()
+            .any(|i| matches!(i, Item::Function(f) if f.name.name == "main"));
         if !has_main {
-            let stmts: Vec<&Stmt> = module.items.iter().filter_map(|i| {
-                if let Item::Statement(s) = i { Some(s) } else { None }
-            }).collect();
+            let stmts: Vec<&Stmt> = module
+                .items
+                .iter()
+                .filter_map(|i| {
+                    if let Item::Statement(s) = i {
+                        Some(s)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
             if !stmts.is_empty() {
                 self.emit("int main() {\n");
                 self.indent();
@@ -142,8 +159,8 @@ impl CEmitter {
     fn emit_fn_forward(&mut self, f: &FunctionDef) -> Result<(), CEmitError> {
         if f.is_foreign {
             let std_fns = [
-                "pow", "sin", "cos", "tan", "sqrt", "log", "log10", "exp",
-                "ceil", "floor", "round", "puts", "free", "malloc", "print", "println"
+                "pow", "sin", "cos", "tan", "sqrt", "log", "log10", "exp", "ceil", "floor",
+                "round", "puts", "free", "malloc", "print", "println",
             ];
             if std_fns.contains(&f.name.name.as_str()) {
                 return Ok(());
@@ -154,11 +171,17 @@ impl CEmitter {
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
         };
-        let params = f.params.iter()
+        let params = f
+            .params
+            .iter()
             .map(|p| format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)))
             .collect::<Vec<_>>()
             .join(", ");
-        let name = if f.name.name == "main" { "main".to_string() } else { c_ident(&f.name.name) };
+        let name = if f.name.name == "main" {
+            "main".to_string()
+        } else {
+            c_ident(&f.name.name)
+        };
         self.emit(&format!("{} {}({});\n", ret, name, params));
         Ok(())
     }
@@ -183,7 +206,9 @@ impl CEmitter {
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
         };
-        let params = f.params.iter()
+        let params = f
+            .params
+            .iter()
             .map(|p| format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)))
             .collect::<Vec<_>>()
             .join(", ");
@@ -206,7 +231,7 @@ impl CEmitter {
             Stmt::Let(l) => {
                 let ty = l.ty.as_ref().map(type_to_c).unwrap_or("__auto_type".into());
                 let name = c_ident(&l.name.name);
-                
+
                 let is_ptr = match &l.ty {
                     Some(TypeExpr::Reference { .. }) => true,
                     Some(TypeExpr::Generic { base, .. }) if base.name == "address" => true,
@@ -220,7 +245,10 @@ impl CEmitter {
                                         false
                                     }
                                 }
-                                Expr::UnOp { op: UnOp::Borrow(_), .. } => true,
+                                Expr::UnOp {
+                                    op: UnOp::Borrow(_),
+                                    ..
+                                } => true,
                                 _ => false,
                             }
                         } else {
@@ -255,12 +283,16 @@ impl CEmitter {
                 let cond = self.emit_expr(&i.condition)?;
                 self.line(&format!("if ({}) {{", cond));
                 self.indent();
-                for s in &i.then_block.stmts { self.emit_stmt(s)?; }
+                for s in &i.then_block.stmts {
+                    self.emit_stmt(s)?;
+                }
                 self.dedent();
                 if let Some(else_block) = &i.otherwise {
                     self.line("} else {");
                     self.indent();
-                    for s in &else_block.stmts { self.emit_stmt(s)?; }
+                    for s in &else_block.stmts {
+                        self.emit_stmt(s)?;
+                    }
                     self.dedent();
                 }
                 self.line("}");
@@ -271,12 +303,16 @@ impl CEmitter {
                 let cond = self.emit_expr(&w.condition)?;
                 self.line(&format!("if ({}) {{", cond));
                 self.indent();
-                for s in &w.then_block.stmts { self.emit_stmt(s)?; }
+                for s in &w.then_block.stmts {
+                    self.emit_stmt(s)?;
+                }
                 self.dedent();
                 if let Some(else_block) = &w.otherwise {
                     self.line("} else {");
                     self.indent();
-                    for s in &else_block.stmts { self.emit_stmt(s)?; }
+                    for s in &else_block.stmts {
+                        self.emit_stmt(s)?;
+                    }
                     self.dedent();
                 }
                 self.line("}");
@@ -285,22 +321,37 @@ impl CEmitter {
 
             Stmt::Repeat(r) | Stmt::ParallelRepeat(r) => {
                 match r {
-                    RepeatStmt::While { condition, body, .. } => {
+                    RepeatStmt::While {
+                        condition, body, ..
+                    } => {
                         let cond = self.emit_expr(condition)?;
                         self.line(&format!("while ({}) {{", cond));
                         self.indent();
-                        for s in &body.stmts { self.emit_stmt(s)?; }
+                        for s in &body.stmts {
+                            self.emit_stmt(s)?;
+                        }
                         self.dedent();
                         self.line("}");
                     }
-                    RepeatStmt::ForEvery { var, iterable, body, .. } => {
+                    RepeatStmt::ForEvery {
+                        var,
+                        iterable,
+                        body,
+                        ..
+                    } => {
                         // Emit as C for-range over array
                         let iter = self.emit_expr(iterable)?;
                         self.line(&format!("/* repeat for every {} */", var.name));
                         self.line(&format!("for (long _i = 0; _i < _len({}); _i++) {{", iter));
                         self.indent();
-                        self.line(&format!("long {} = _get({}, _i);", c_ident(&var.name), iter));
-                        for s in &body.stmts { self.emit_stmt(s)?; }
+                        self.line(&format!(
+                            "long {} = _get({}, _i);",
+                            c_ident(&var.name),
+                            iter
+                        ));
+                        for s in &body.stmts {
+                            self.emit_stmt(s)?;
+                        }
                         self.dedent();
                         self.line("}");
                     }
@@ -308,7 +359,9 @@ impl CEmitter {
                         let n = self.emit_expr(times)?;
                         self.line(&format!("for (long _i = 0; _i < {}; _i++) {{", n));
                         self.indent();
-                        for s in &body.stmts { self.emit_stmt(s)?; }
+                        for s in &body.stmts {
+                            self.emit_stmt(s)?;
+                        }
                         self.dedent();
                         self.line("}");
                     }
@@ -329,7 +382,9 @@ impl CEmitter {
                         self.line(&format!("}} else if ({}) {{", cond));
                     }
                     self.indent();
-                    for s in &case.body.stmts { self.emit_stmt(s)?; }
+                    for s in &case.body.stmts {
+                        self.emit_stmt(s)?;
+                    }
                     self.dedent();
                 }
                 if let Some(otherwise) = &m.otherwise {
@@ -339,7 +394,9 @@ impl CEmitter {
                         self.line("} else {");
                     }
                     self.indent();
-                    for s in &otherwise.stmts { self.emit_stmt(s)?; }
+                    for s in &otherwise.stmts {
+                        self.emit_stmt(s)?;
+                    }
                     self.dedent();
                 }
                 if !first || m.otherwise.is_some() {
@@ -350,9 +407,9 @@ impl CEmitter {
 
             Stmt::Assign(a) => {
                 let target = self.emit_expr(&a.target)?;
-                let val    = self.emit_expr(&a.value)?;
+                let val = self.emit_expr(&a.value)?;
                 let op = match a.op {
-                    AssignOp::Assign    => "=",
+                    AssignOp::Assign => "=",
                     AssignOp::AddAssign => "+=",
                     AssignOp::SubAssign => "-=",
                     AssignOp::MulAssign => "*=",
@@ -370,7 +427,9 @@ impl CEmitter {
 
             Stmt::Transaction(t) => {
                 self.line("/* transaction begin */");
-                for s in &t.body.stmts { self.emit_stmt(s)?; }
+                for s in &t.body.stmts {
+                    self.emit_stmt(s)?;
+                }
                 self.line("/* transaction commit */");
                 Ok(())
             }
@@ -382,11 +441,17 @@ impl CEmitter {
     fn emit_expr(&mut self, expr: &Expr) -> Result<String, CEmitError> {
         match expr {
             Expr::Lit { value, .. } => Ok(match value {
-                Literal::Int(i)   => i.to_string(),
+                Literal::Int(i) => i.to_string(),
                 Literal::Float(f) => format!("{:.}", f),
-                Literal::Bool(b)  => if *b { "1".into() } else { "0".into() },
-                Literal::Text(s)  => format!("\"{}\"", s.replace('"', "\\\"").replace('\n', "\\n")),
-                Literal::Unit     => "0".into(),
+                Literal::Bool(b) => {
+                    if *b {
+                        "1".into()
+                    } else {
+                        "0".into()
+                    }
+                }
+                Literal::Text(s) => format!("\"{}\"", s.replace('"', "\\\"").replace('\n', "\\n")),
+                Literal::Unit => "0".into(),
             }),
 
             Expr::Ident(id) => Ok(c_ident(&id.name)),
@@ -394,23 +459,32 @@ impl CEmitter {
 
             Expr::Call { callee, args, .. } => {
                 let callee_str = self.emit_expr(callee)?;
-                let arg_strs: Vec<String> = args.iter()
+                let arg_strs: Vec<String> = args
+                    .iter()
                     .map(|a| self.emit_expr(a))
                     .collect::<Result<_, _>>()?;
                 Ok(format!("{}({})", callee_str, arg_strs.join(", ")))
             }
 
-            Expr::BinOp { left, op, right, .. } => {
+            Expr::BinOp {
+                left, op, right, ..
+            } => {
                 let l = self.emit_expr(left)?;
                 let r = self.emit_expr(right)?;
                 let op_str = match op {
-                    BinOp::Add => "+", BinOp::Sub => "-",
-                    BinOp::Mul => "*", BinOp::Div => "/", BinOp::Mod => "%",
-                    BinOp::Eq  => "==", BinOp::NotEq => "!=",
-                    BinOp::Lt  | BinOp::IsBelow => "<",
-                    BinOp::Gt  | BinOp::IsAbove | BinOp::Exceeds => ">",
-                    BinOp::LtEq => "<=", BinOp::GtEq => ">=",
-                    BinOp::And => "&&", BinOp::Or => "||",
+                    BinOp::Add => "+",
+                    BinOp::Sub => "-",
+                    BinOp::Mul => "*",
+                    BinOp::Div => "/",
+                    BinOp::Mod => "%",
+                    BinOp::Eq => "==",
+                    BinOp::NotEq => "!=",
+                    BinOp::Lt | BinOp::IsBelow => "<",
+                    BinOp::Gt | BinOp::IsAbove | BinOp::Exceeds => ">",
+                    BinOp::LtEq => "<=",
+                    BinOp::GtEq => ">=",
+                    BinOp::And => "&&",
+                    BinOp::Or => "||",
                 };
                 Ok(format!("({} {} {})", l, op_str, r))
             }
@@ -421,14 +495,18 @@ impl CEmitter {
                     UnOp::Neg => "-",
                     UnOp::Not => "!",
                     UnOp::Borrow(_) => "&",
-                    UnOp::Deref     => "*",
+                    UnOp::Deref => "*",
                 };
                 Ok(format!("({}{})", op_str, inner))
             }
 
             Expr::Field { object, field, .. } => {
                 let obj = self.emit_expr(object)?;
-                let op = if self.pointer_vars.contains(&obj) { "->" } else { "." };
+                let op = if self.pointer_vars.contains(&obj) {
+                    "->"
+                } else {
+                    "."
+                };
                 Ok(format!("{}{}{}", obj, op, c_ident(&field.name)))
             }
 
@@ -440,7 +518,8 @@ impl CEmitter {
 
             Expr::List { elements, .. } => {
                 // Emit as C array literal (simplified — proper heap arrays in Stage 1)
-                let elems: Vec<String> = elements.iter()
+                let elems: Vec<String> = elements
+                    .iter()
                     .map(|e| self.emit_expr(e))
                     .collect::<Result<_, _>>()?;
                 Ok(format!("{{ {} }}", elems.join(", ")))
@@ -452,10 +531,18 @@ impl CEmitter {
                     Expr::GenericInst { base, .. } => base.name.clone(),
                     _ => "unknown".to_string(),
                 };
-                let fs: Vec<String> = fields.iter()
-                    .map(|(id, expr)| self.emit_expr(expr).map(|e| format!(".{} = {}", c_ident(&id.name), e)))
+                let fs: Vec<String> = fields
+                    .iter()
+                    .map(|(id, expr)| {
+                        self.emit_expr(expr)
+                            .map(|e| format!(".{} = {}", c_ident(&id.name), e))
+                    })
                     .collect::<Result<_, _>>()?;
-                Ok(format!("(struct {}){{ {} }}", c_ident(&name), fs.join(", ")))
+                Ok(format!(
+                    "(struct {}){{ {} }}",
+                    c_ident(&name),
+                    fs.join(", ")
+                ))
             }
 
             Expr::Block(_b) => {
@@ -475,11 +562,11 @@ fn type_to_c(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => match id.name.as_str() {
             "number" | "integer" | "int" => "long".into(),
-            "decimal" | "float"          => "double".into(),
-            "text" | "string"            => "const char*".into(),
-            "boolean" | "bool"           => "int".into(),
-            "unit"                       => "void".into(),
-            other                        => {
+            "decimal" | "float" => "double".into(),
+            "text" | "string" => "const char*".into(),
+            "boolean" | "bool" => "int".into(),
+            "unit" => "void".into(),
+            other => {
                 if other.len() == 1 && other.chars().next().unwrap().is_uppercase() {
                     "long".into()
                 } else {
@@ -487,10 +574,10 @@ fn type_to_c(ty: &TypeExpr) -> String {
                 }
             }
         },
-        TypeExpr::List(_)    => "void*".into(),
-        TypeExpr::Dict { .. }=> "void*".into(),
-        TypeExpr::Optional(t)=> type_to_c(t),
-        TypeExpr::Result(t)  => type_to_c(t),
+        TypeExpr::List(_) => "void*".into(),
+        TypeExpr::Dict { .. } => "void*".into(),
+        TypeExpr::Optional(t) => type_to_c(t),
+        TypeExpr::Result(t) => type_to_c(t),
         TypeExpr::Generic { base, args } => match base.name.as_str() {
             "List" => "void*".into(),
             "address" => {
@@ -500,7 +587,7 @@ fn type_to_c(ty: &TypeExpr) -> String {
                     "void*".into()
                 }
             }
-            other  => {
+            other => {
                 if other.len() == 1 && other.chars().next().unwrap().is_uppercase() {
                     "long".into()
                 } else {
@@ -516,19 +603,26 @@ fn type_to_c(ty: &TypeExpr) -> String {
 
 fn c_ident(name: &str) -> String {
     // Replace hyphens and spaces with underscores, prefix reserved words
-    let safe: String = name.chars().map(|c| {
-        if c.is_alphanumeric() || c == '_' { c } else { '_' }
-    }).collect();
+    let safe: String = name
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
     let is_foreign = FOREIGN_FNS.with(|fns| fns.borrow().contains(name));
     if is_foreign {
         return safe;
     }
     // Avoid C keywords
     match safe.as_str() {
-        "int" | "long" | "double" | "void" | "char" | "return" |
-        "if" | "else" | "while" | "for" | "switch" | "case" | "break" |
-        "default" | "struct" | "typedef" | "static" | "extern" |
-        "free" | "abs" | "puts" | "pow" | "sin" | "cos" | "tan" | "sqrt" | "log" | "log10" | "exp" | "ceil" | "floor" | "round" => {
+        "int" | "long" | "double" | "void" | "char" | "return" | "if" | "else" | "while"
+        | "for" | "switch" | "case" | "break" | "default" | "struct" | "typedef" | "static"
+        | "extern" | "free" | "abs" | "puts" | "pow" | "sin" | "cos" | "tan" | "sqrt" | "log"
+        | "log10" | "exp" | "ceil" | "floor" | "round" => {
             format!("eng_{}", safe)
         }
         _ => safe,
@@ -539,7 +633,7 @@ fn pattern_to_c(pat: &Pattern, subject: &str) -> String {
     match pat {
         Pattern::Wildcard(_) | Pattern::Bind(_) => "1".into(),
         Pattern::Constructor(id) => format!("strcmp({}, \"{}\")==0", subject, id.name),
-        Pattern::Literal(Literal::Int(i))  => format!("{} == {}", subject, i),
+        Pattern::Literal(Literal::Int(i)) => format!("{} == {}", subject, i),
         Pattern::Literal(Literal::Bool(b)) => format!("{} == {}", subject, if *b { 1 } else { 0 }),
         Pattern::Literal(Literal::Text(s)) => format!("strcmp({}, \"{}\")==0", subject, s),
         _ => "1".into(),

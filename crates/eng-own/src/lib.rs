@@ -1,15 +1,18 @@
-pub mod state;
-pub mod graph;
 pub mod analysis;
-pub mod validator;
 pub mod diagnostics;
+pub mod graph;
+pub mod state;
+pub mod validator;
 
-pub use state::OwnershipState;
-pub use graph::OwnershipGraph;
 pub use analysis::OwnershipAnalysisPass;
+pub use graph::OwnershipGraph;
+pub use state::OwnershipState;
 pub use validator::OwnershipValidator;
 
-pub fn analyze_ownership(mut module: eng_mir::MirModule<eng_hir::symbol::SsaValueId>, symbol_table: &eng_hir::symbol::SymbolTable) -> Result<eng_mir::MirModule<eng_hir::symbol::SsaValueId>, Vec<eng_diagnostics::Diagnostic>> {
+pub fn analyze_ownership(
+    mut module: eng_mir::MirModule<eng_hir::symbol::SsaValueId>,
+    symbol_table: &eng_hir::symbol::SymbolTable,
+) -> Result<eng_mir::MirModule<eng_hir::symbol::SsaValueId>, Vec<eng_diagnostics::Diagnostic>> {
     let pass = analysis::OwnershipAnalysisPass::new();
     let graph = pass.run(&mut module, symbol_table);
 

@@ -21,7 +21,11 @@ pub struct OwnershipError {
 
 impl OwnershipError {
     fn new(msg: impl Into<String>, span: Span) -> Self {
-        Self { message: msg.into(), span, note: None }
+        Self {
+            message: msg.into(),
+            span,
+            note: None,
+        }
     }
     fn with_note(mut self, note: impl Into<String>) -> Self {
         self.note = Some(note.into());
@@ -67,8 +71,12 @@ impl Checker {
         None
     }
 
-    fn push(&mut self) { self.scopes.push(HashMap::new()); }
-    fn pop(&mut self)  { self.scopes.pop(); }
+    fn push(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+    fn pop(&mut self) {
+        self.scopes.pop();
+    }
 
     fn check_module(&mut self, module: &Module) {
         for item in &module.items {
@@ -78,9 +86,11 @@ impl Checker {
 
     fn check_item(&mut self, item: &Item) {
         match item {
-            Item::Function(f)  => self.check_function(f),
-            Item::Statement(s) => { self.check_stmt(s); }
-            _                  => {}
+            Item::Function(f) => self.check_function(f),
+            Item::Statement(s) => {
+                self.check_stmt(s);
+            }
+            _ => {}
         }
     }
 
@@ -132,25 +142,30 @@ impl Checker {
                     self.check_block(else_block);
                 }
             }
-            Stmt::Repeat(r) | Stmt::ParallelRepeat(r) => {
-                match r {
-                    RepeatStmt::ForEvery { var, iterable, body, .. } => {
-                        self.check_expr_use(iterable);
-                        self.push();
-                        self.define(&var.name, VarState::Owned);
-                        self.check_block(body);
-                        self.pop();
-                    }
-                    RepeatStmt::While { condition, body, .. } => {
-                        self.check_expr_use(condition);
-                        self.check_block(body);
-                    }
-                    RepeatStmt::Count { times, body, .. } => {
-                        self.check_expr_use(times);
-                        self.check_block(body);
-                    }
+            Stmt::Repeat(r) | Stmt::ParallelRepeat(r) => match r {
+                RepeatStmt::ForEvery {
+                    var,
+                    iterable,
+                    body,
+                    ..
+                } => {
+                    self.check_expr_use(iterable);
+                    self.push();
+                    self.define(&var.name, VarState::Owned);
+                    self.check_block(body);
+                    self.pop();
                 }
-            }
+                RepeatStmt::While {
+                    condition, body, ..
+                } => {
+                    self.check_expr_use(condition);
+                    self.check_block(body);
+                }
+                RepeatStmt::Count { times, body, .. } => {
+                    self.check_expr_use(times);
+                    self.check_block(body);
+                }
+            },
             Stmt::Match(m) => {
                 self.check_expr_use(&m.subject);
                 for case in &m.cases {
@@ -160,9 +175,15 @@ impl Checker {
                     self.check_block(otherwise);
                 }
             }
-            Stmt::Expr(e) => { self.check_expr_use(e); }
-            Stmt::Transaction(t) => { self.check_block(&t.body); }
-            Stmt::Send(s) => { self.check_expr_use(&s.message); }
+            Stmt::Expr(e) => {
+                self.check_expr_use(e);
+            }
+            Stmt::Transaction(t) => {
+                self.check_block(&t.body);
+            }
+            Stmt::Send(s) => {
+                self.check_expr_use(&s.message);
+            }
             _ => {}
         }
     }
@@ -197,18 +218,28 @@ impl Checker {
                 self.check_expr_use(left);
                 self.check_expr_use(right);
             }
-            Expr::UnOp { operand, .. } => { self.check_expr_use(operand); }
-            Expr::Field { object, .. }  => { self.check_expr_use(object); }
+            Expr::UnOp { operand, .. } => {
+                self.check_expr_use(operand);
+            }
+            Expr::Field { object, .. } => {
+                self.check_expr_use(object);
+            }
             Expr::Index { object, index, .. } => {
                 self.check_expr_use(object);
                 self.check_expr_use(index);
             }
             Expr::List { elements, .. } => {
-                for e in elements { self.check_expr_use(e); }
+                for e in elements {
+                    self.check_expr_use(e);
+                }
             }
-            Expr::Block(b) => { self.check_block(b); }
+            Expr::Block(b) => {
+                self.check_block(b);
+            }
             Expr::StructLit { fields, .. } => {
-                for (_, e) in fields { self.check_expr_use(e); }
+                for (_, e) in fields {
+                    self.check_expr_use(e);
+                }
             }
             Expr::Lit { .. } => {}
         }

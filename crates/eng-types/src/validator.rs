@@ -1,9 +1,9 @@
-use eng_hir::Module as HirModule;
-use eng_hir::Item as HirItem;
-use eng_hir::Expr as HirExpr;
-use eng_hir::Stmt as HirStmt;
 use crate::passes::{CompilerContext, CompilerPass};
 use crate::TypeError;
+use eng_hir::Expr as HirExpr;
+use eng_hir::Item as HirItem;
+use eng_hir::Module as HirModule;
+use eng_hir::Stmt as HirStmt;
 
 pub struct HirValidatorPass;
 
@@ -36,14 +36,20 @@ impl HirValidatorPass {
                     }
                     if ctx.symbol_table.get(param.ty.0).is_none() {
                         ctx.type_errors.push(TypeError::new(
-                            format!("Parameter `{}` has invalid TypeId {:?}", param.name, param.ty),
+                            format!(
+                                "Parameter `{}` has invalid TypeId {:?}",
+                                param.name, param.ty
+                            ),
                             param.span,
                         ));
                     }
                 }
                 if ctx.symbol_table.get(f.ret_ty.0).is_none() {
                     ctx.type_errors.push(TypeError::new(
-                        format!("Function `{}` has invalid return TypeId {:?}", f.name, f.ret_ty),
+                        format!(
+                            "Function `{}` has invalid return TypeId {:?}",
+                            f.name, f.ret_ty
+                        ),
                         f.span,
                     ));
                 }
@@ -73,7 +79,9 @@ impl HirValidatorPass {
 
     fn validate_stmt(&self, ctx: &mut CompilerContext, stmt: &HirStmt) {
         match stmt {
-            HirStmt::Let { id, ty, init, span, .. } => {
+            HirStmt::Let {
+                id, ty, init, span, ..
+            } => {
                 if ctx.symbol_table.get_var(*id).is_none() {
                     ctx.type_errors.push(TypeError::new(
                         format!("Let statement has invalid VariableId {:?}", id),
@@ -92,7 +100,12 @@ impl HirValidatorPass {
                 self.validate_expr(ctx, target);
                 self.validate_expr(ctx, value);
             }
-            HirStmt::If { condition, then_block, otherwise, .. } => {
+            HirStmt::If {
+                condition,
+                then_block,
+                otherwise,
+                ..
+            } => {
                 self.validate_expr(ctx, condition);
                 for s in &then_block.stmts {
                     self.validate_stmt(ctx, s);
@@ -109,7 +122,9 @@ impl HirValidatorPass {
                     }
                 }
             }
-            HirStmt::RepeatWhile { condition, body, .. } => {
+            HirStmt::RepeatWhile {
+                condition, body, ..
+            } => {
                 self.validate_expr(ctx, condition);
                 for s in &body.stmts {
                     self.validate_stmt(ctx, s);
@@ -143,12 +158,16 @@ impl HirValidatorPass {
             HirExpr::Lit { .. } => {}
             HirExpr::VarRef { id, span, .. } => {
                 if ctx.symbol_table.get_var(*id).is_none()
-                    && ctx.symbol_table.get_func(eng_hir::symbol::FunctionId(id.0)).is_none() {
-                        ctx.type_errors.push(TypeError::new(
-                            format!("VarRef has invalid ID {:?}", id),
-                            *span,
-                        ));
-                    }
+                    && ctx
+                        .symbol_table
+                        .get_func(eng_hir::symbol::FunctionId(id.0))
+                        .is_none()
+                {
+                    ctx.type_errors.push(TypeError::new(
+                        format!("VarRef has invalid ID {:?}", id),
+                        *span,
+                    ));
+                }
             }
             HirExpr::Call { callee, args, .. } => {
                 self.validate_expr(ctx, callee);
@@ -193,7 +212,11 @@ impl HirValidatorPass {
 }
 
 impl CompilerPass for HirValidatorPass {
-    fn run(&mut self, _ast: &eng_parser::ast::Module, _ctx: &mut CompilerContext) -> Option<HirModule> {
+    fn run(
+        &mut self,
+        _ast: &eng_parser::ast::Module,
+        _ctx: &mut CompilerContext,
+    ) -> Option<HirModule> {
         // HirValidatorPass expects an already compiled HirModule, so it cannot run as a standard ast pass directly.
         // It should be invoked separately on the generated HIR.
         None
