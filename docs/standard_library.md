@@ -12,20 +12,12 @@ The standard library is organized within the `std/` directory:
 
 ```text
 std/
-├── collections/   (Vector<T>, HashMap<K,V>, HashSet<T>, etc.)
-├── string/        (String manipulation)
-├── io/            (Files and terminal IO)
-├── fs/            (Filesystem interaction)
-├── math/          (Math routines)
-├── net/           (Networking)
-├── process/       (Subprocesses)
-├── sync/          (Concurrency primitives)
-├── thread/        (Threading)
-├── random/        (RNG)
-├── json/          (Data serialization)
-├── csv/           (Data parsing)
-├── time/          (Time and timers)
-└── crypto/        (Cryptography)
+├── collections/   (Vector of T, HashMap of K, V, etc.)
+├── string.eng     (String manipulation)
+├── io.eng         (Terminal I/O)
+├── math.eng       (Math routines)
+├── net.eng        (Networking & sockets)
+└── runtime.eng    (OS-level allocators and wrappers)
 ```
 
 ## The `std.collections` Module
@@ -34,21 +26,22 @@ The collections module supplies foundational generic data structures. Internally
 
 ### Generic Vector
 
-The `Vector<T>` struct provides a dynamically resizing array implementation.
+The `Vector of T` struct provides a dynamically resizing array implementation.
 
 ```englist
-use std.collections.vector;
+use std.collections.vector
 
-fn main() {
-    let v: Vector<number> = vector_new<number>();
+public function main()
+begin
+    let v be vector_new of number()
     
     // The vector automatically resizes as elements are appended
-    v = vector_push(v, 10);
-    v = vector_push(v, 20);
+    let v be vector_push(v, 10)
+    let v be vector_push(v, 20)
     
     // The underlying memory allocation must be explicitly freed
-    vector_free(v);
-}
+    vector_free(v)
+end
 ```
 
 The runtime required to support these native abstractions is exceptionally minimal, primarily consisting of standard allocation primitives (`malloc`, `free`, `realloc`) defined within `rt.c`.

@@ -29,5 +29,6 @@ Several optimization passes operate directly on the MIR to maximize execution ef
 - **Global Value Numbering (GVN)**: Identifies and eliminates redundant calculations.
 
 ## 5. Codegen
-The optimized MIR is ultimately translated into machine code via a target backend.
-- **C Backend (`--backend c`)**: Generates secure, high-performance C code, utilizing `__auto_type` for reliable generic inference. This output is linked with a minimal runtime and compiled using the host C compiler (`clang` or `gcc`) to produce the final executable binary.
+The optimized MIR (and sometimes the AST directly, depending on the backend) is translated into machine code via a target backend.
+- **LLVM Backend (`crates/eng-llvm`)**: Consumes the optimized Mid-Level IR (MIR) to generate highly optimized, native LLVM IR.
+- **C Backend (`--backend c`)**: Currently serves as a rapid bootstrapping backend that consumes the AST directly (bypassing MIR). It generates secure, high-performance C code, utilizing `__auto_type` for reliable generic inference. This output is linked with a minimal runtime and compiled using the host C compiler (`clang` or `gcc`) to produce the final executable binary.

@@ -287,30 +287,30 @@
 
         <h2>II. Standard Library</h2>
         <ul>
-            <li><a href="#std-overview">8. Library Overview</a></li>
-            <li><a href="#std-memory">9. Memory Allocation</a></li>
-            <li><a href="#std-vector">10. Dynamic Vectors</a></li>
-            <li><a href="#std-hashmap">11. Hash Maps</a></li>
-            <li><a href="#std-io">12. File I/O</a></li>
+            <li><a href="#std-overview">10. Library Overview</a></li>
+            <li><a href="#std-memory">11. Memory Allocation</a></li>
+            <li><a href="#std-vector">12. Dynamic Vectors</a></li>
+            <li><a href="#std-hashmap">13. Hash Maps</a></li>
+            <li><a href="#std-io">14. File I/O</a></li>
         </ul>
 
         <h2>III. Compiler Internals</h2>
         <ul>
-            <li><a href="#architecture">13. The Pipeline</a></li>
-            <li><a href="#frontend">14. Lexer & Parser</a></li>
-            <li><a href="#hir">15. High-Level IR (HIR)</a></li>
-            <li><a href="#mir">16. Mid-Level IR & SSA</a></li>
-            <li><a href="#opt-cfg">17. Opt: CFG Simplification</a></li>
-            <li><a href="#opt-gvn">18. Opt: GVN & Constant Fold</a></li>
-            <li><a href="#codegen">19. C Backend Codegen</a></li>
+            <li><a href="#architecture">15. The Pipeline</a></li>
+            <li><a href="#frontend">16. Lexer & Parser</a></li>
+            <li><a href="#hir">17. High-Level IR (HIR)</a></li>
+            <li><a href="#mir">18. Mid-Level IR & SSA</a></li>
+            <li><a href="#opt-cfg">19. Opt: CFG Simplification</a></li>
+            <li><a href="#opt-gvn">20. Opt: GVN & Constant Fold</a></li>
+            <li><a href="#codegen">21. Codegen Backends</a></li>
         </ul>
         
         <h2>IV. Ecosystem</h2>
         <ul>
-            <li><a href="#cli">20. Englist CLI</a></li>
-            <li><a href="#lsp">21. Language Server (LSP)</a></li>
-            <li><a href="#roadmap">22. Future Roadmap</a></li>
-            <li><a href="#benchmarks">23. Benchmarks</a></li>
+            <li><a href="#cli">22. Englist CLI</a></li>
+            <li><a href="#lsp">23. Language Server (LSP)</a></li>
+            <li><a href="#roadmap">24. Future Roadmap</a></li>
+            <li><a href="#benchmarks">25. Benchmarks</a></li>
         </ul>
     </nav>
 
@@ -441,10 +441,10 @@ struct, type, address</span></code></pre>
         <!-- PART II: STANDARD LIBRARY                      -->
         <!-- ============================================== -->
 
-        <h2 id="std-overview">8. Library Overview</h2>
+        <h2 id="std-overview">10. Library Overview</h2>
         <p>The Englist standard library (<code>std</code>) is a collection of modules written entirely in Englist. Because the language supports raw memory operations and seamless C interoperability, almost no internal C code is required. The library proves the language's capability to bootstrap itself.</p>
 
-        <h2 id="std-memory">9. Memory Allocation</h2>
+        <h2 id="std-memory">11. Memory Allocation</h2>
         <p>The <code>std.runtime</code> module exposes intrinsics mapped directly to OS-level memory allocators (via the <code>rt.c</code> runtime wrapper).</p>
         <ul>
             <li><code>eng_alloc(bytes: number) -&gt; address&lt;T&gt;</code>: Allocates uninitialized heap memory.</li>
@@ -453,29 +453,30 @@ struct, type, address</span></code></pre>
             <li><code>eng_write(ptr: address&lt;T&gt;, offset: number, val: T)</code>: Writes a value to a specific index.</li>
         </ul>
 
-        <h2 id="std-vector">10. Dynamic Vectors</h2>
-        <p>The <code>Vector&lt;T&gt;</code> is the quintessential dynamically resizing contiguous array. Internally, it holds a raw address, a length, and a capacity.</p>
+        <h2 id="std-vector">12. Dynamic Vectors</h2>
+        <p>The <code>Vector of T</code> is the quintessential dynamically resizing contiguous array. Internally, it holds a raw address, a length, and a capacity.</p>
         <div class="callout">
             <h4>Reallocation Strategy</h4>
             <p>When <code>vec.len is vec.capacity</code>, the <code>push</code> function calculates <code>new_cap = capacity * 2</code>, allocates a new block, copies existing elements via a <code>repeat while</code> loop, and frees the old block. This guarantees O(1) amortized insertion time.</p>
         </div>
         <pre><code><span class="highlight-keyword">use</span> std.collections.vector
 
-<span class="highlight-keyword">function</span> <span class="highlight-function">main</span>()
+<span class="highlight-keyword">public function</span> <span class="highlight-function">main</span>()
 <span class="highlight-keyword">begin</span>
-    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_new&lt;<span class="highlight-type">number</span>&gt;()
-    vector_push(my_vec, 100)
-    vector_push(my_vec, 200)
+    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_new of <span class="highlight-type">number</span>()
+    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_push(my_vec, 100)
+    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_push(my_vec, 200)
     
     <span class="highlight-comment">// Safe deallocation</span>
     vector_free(my_vec)
 <span class="highlight-keyword">end</span></code></pre>
 
-        <h2 id="std-hashmap">11. Hash Maps (Planned)</h2>
-        <p>The upcoming <code>HashMap&lt;K, V&gt;</code> utilizes an open-addressing, linear-probing architecture to maximize CPU cache locality. The hashing algorithm employs a fast, non-cryptographic hash (such as FNV-1a or WyHash), resolving collisions by scanning adjacent memory slots.</p>
+        <h2 id="std-hashmap">13. Hash Maps</h2>
+        <p>The <code>HashMap of K, V</code> (located in <code>std.collections.map</code>) utilizes an open-addressing, linear-probing architecture to maximize CPU cache locality. The hashing algorithm resolves collisions by scanning adjacent memory slots. Internally, it leverages native C interop via <code>eng_map.c</code>.</p>
+        <p>Examples successfully leverage <code>eng_map_new()</code>, <code>eng_map_insert()</code>, and <code>eng_map_get()</code> natively within Englist.</p>
 
-        <h2 id="std-io">12. File I/O</h2>
-        <p>The <code>std.io</code> and <code>std.fs</code> modules provide wrappers around POSIX file descriptors. Files are represented as structs containing the integer descriptor and buffer pointers, enabling buffered reads and writes natively in Englist.</p>
+        <h2 id="std-io">14. File I/O</h2>
+        <p>The <code>std.io</code> module provides wrappers around standard input, output, and file descriptors. Files are represented as structs containing the integer descriptor, enabling buffered reads and writes natively in Englist.</p>
 
         <hr>
 
@@ -483,30 +484,28 @@ struct, type, address</span></code></pre>
         <!-- PART III: COMPILER INTERNALS                   -->
         <!-- ============================================== -->
 
-        <h2 id="architecture">13. The Pipeline</h2>
+        <h2 id="architecture">15. The Pipeline</h2>
         <p>The Englist compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
         <pre><code>Source Code (.eng) 
        ↓ (Lexer & Parser)
-Abstract Syntax Tree (AST)
-       ↓ (Semantic Analysis & Type Checking)
-High-Level IR (HIR)
+Abstract Syntax Tree (AST) ───────→ (C Codegen Backend) → C Source Code (.c)
+       ↓ (Semantic Analysis & Type Checking)                  ↓ (GCC / Clang)
+High-Level IR (HIR)                                           Executable Binary
        ↓ (SSA Conversion & CFG Generation)
 Mid-Level IR (MIR)
        ↓ (Optimization Passes: DCE, GVN, Constant Fold)
 Optimized MIR
-       ↓ (Codegen Backend)
-C Source Code (.c)
-       ↓ (GCC / Clang)
+       ↓ (LLVM Codegen Backend)
 Executable Binary</code></pre>
 
-        <h2 id="frontend">14. Lexer & Parser</h2>
+        <h2 id="frontend">16. Lexer & Parser</h2>
         <p>The Lexer converts raw text into a token stream. The Parser utilizes a recursive descent algorithm with Pratt parsing (Operator-Precedence parsing) for expressions. This accurately handles operator precedence, converting English keywords (like <code>is below</code>) into strict binary operations within the AST.</p>
 
-        <h2 id="hir">15. High-Level IR (HIR)</h2>
+        <h2 id="hir">17. High-Level IR (HIR)</h2>
         <p>The AST is flattened into the HIR. This is where <strong>Symbol Resolution</strong> occurs. The compiler maps all identifiers to unique <code>SymbolId</code>s. Module imports (<code>use std.math</code>) are resolved into an <strong>Import Graph</strong>, allowing the compiler to selectively merge required definitions and detect namespace collisions.</p>
         <p><strong>Alias Analysis</strong> is also performed here. By tracking pointer assignments and references, the compiler validates that mutations do not violate borrowing rules.</p>
 
-        <h2 id="mir">16. Mid-Level IR & SSA</h2>
+        <h2 id="mir">18. Mid-Level IR & SSA</h2>
         <p>The HIR is translated into the Mid-Level IR (MIR). This is the crown jewel of the Englist compiler.</p>
         <p>MIR utilizes <strong>Static Single Assignment (SSA)</strong> form. In SSA, every variable is assigned exactly once. When a variable is reassigned in the source (e.g., <code>x = x + 1</code>), the MIR generates a new version of that variable (e.g., <code>x_2 = x_1 + 1</code>).</p>
         
@@ -515,19 +514,23 @@ Executable Binary</code></pre>
             <p>At control flow merge points (e.g., the end of an <code>if/else</code> block), the MIR inserts a Phi node. The Phi node selects the correct version of a variable based on which basic block executed previously (e.g., <code>x_3 = Φ(x_1, x_2)</code>). This pure mathematical mapping allows optimization passes to trace data-flow flawlessly.</p>
         </div>
 
-        <h2 id="opt-cfg">17. Opt: CFG Simplification</h2>
+        <h2 id="opt-cfg">19. Opt: CFG Simplification</h2>
         <p>The <code>cfg_simplify.rs</code> pass analyzes the Basic Blocks of the MIR. It performs:</p>
         <ul>
             <li><strong>Dead Block Elimination:</strong> Removes blocks that have no incoming edges.</li>
             <li><strong>Block Merging:</strong> If Block A unconditionally jumps to Block B, and Block B has no other incoming edges, the two blocks are merged into a single contiguous block, reducing branch overhead.</li>
         </ul>
 
-        <h2 id="opt-gvn">18. Opt: GVN & Constant Fold</h2>
+        <h2 id="opt-gvn">20. Opt: GVN & Constant Fold</h2>
         <p><strong>Global Value Numbering (GVN):</strong> The compiler assigns a unique hash to every computed expression. If it encounters the same expression (e.g., <code>a * b</code>) later in the control flow, and neither <code>a</code> nor <code>b</code> have been modified (guaranteed by SSA), it replaces the second computation with a direct reference to the first result.</p>
         <p><strong>Constant Folding (<code>constant_folding.rs</code>):</strong> Traverses the SSA graph identifying expressions composed entirely of literal constants. It evaluates these at compile-time (e.g., folding <code>5 * 4</code> directly into <code>20</code>) and propagates the result downstream.</p>
 
-        <h2 id="codegen">19. C Backend Codegen</h2>
-        <p>The highly optimized MIR is lowered into C code via <code>lower.rs</code>. Compiling to C rather than LLVM IR directly allows Englist to remain highly portable and easy to debug while still leveraging the world-class optimization of GCC or Clang.</p>
+        <h2 id="codegen">21. Codegen Backends</h2>
+        <p>Englist currently utilizes a dual-backend architecture, adapting to different goals:</p>
+        <ul>
+            <li><strong>C Backend (`--backend c`):</strong> Currently serves as a rapid bootstrapping backend that bypasses the MIR entirely and consumes the AST directly. It generates C code and links `rt.c`, allowing us to rely on GCC/Clang for heavy optimizations.</li>
+            <li><strong>LLVM Backend (`crates/eng-llvm`):</strong> The long-term production target. It consumes the highly-optimized MIR natively to produce robust binaries via LLVM IR without an intermediate C translation step.</li>
+        </ul>
         
         <h3>Structure Topological Sorting</h3>
         <p>C requires that structures are defined before they are used. If <code>Struct A</code> contains a <code>Struct B</code> by value, <code>Struct B</code> must be declared first. The Englist codegen performs a topological sort on the dependency graph of all structs to emit them in the mathematically correct order, resolving cyclic pointer references automatically via forward declarations.</p>
@@ -543,10 +546,10 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <!-- PART IV: ECOSYSTEM                             -->
         <!-- ============================================== -->
 
-        <h2 id="cli">20. Englist CLI</h2>
+        <h2 id="cli">22. Englist CLI</h2>
         <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit. Currently, it supports the <code>compile</code> command, which accepts a root <code>.eng</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
 
-        <h2 id="lsp">21. Language Server (LSP) Support</h2>
+        <h2 id="lsp">23. Language Server (LSP) Support</h2>
         <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Englist is perfectly positioned for a Language Server Protocol implementation.</p>
         <ul>
             <li><strong>Hover:</strong> The SSA graph directly maps identifiers to their inferred types.</li>
@@ -554,7 +557,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
             <li><strong>Code Actions:</strong> The optimizer's knowledge of Dead Code and Redundant computations can be exposed as automated quick-fixes.</li>
         </ul>
 
-        <h2 id="roadmap">22. Future Roadmap</h2>
+        <h2 id="roadmap">24. Future Roadmap</h2>
         <p>The roadmap for Englist prioritizes ecosystem expansion over language mutations:</p>
         <ol>
             <li><strong>The Package Manager (<code>eng</code>):</strong> A native dependency resolver allowing commands like <code>eng new</code>, <code>eng build</code>, <code>eng add std.net</code>.</li>
@@ -562,7 +565,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
             <li><strong>LLVM Backend:</strong> While the C backend is excellent for bootstrapping, a native LLVM IR backend is planned for even tighter optimization control and faster compilation speeds (bypassing the C compiler intermediary).</li>
         </ol>
 
-        <h2 id="benchmarks">23. Benchmarks</h2>
+        <h2 id="benchmarks">25. Benchmarks</h2>
         <p>The Englist compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
         <p>You can execute the benchmarking suite using the built-in CLI command:</p>
         <pre><code>eng benchmark benchmarks --runs 5</code></pre>
