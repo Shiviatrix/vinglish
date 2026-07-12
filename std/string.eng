@@ -2,11 +2,11 @@ package std
 module string
 
 foreign function eng_string_new(text p) returns String
-foreign function eng_string_len(String s) returns number
-foreign function eng_string_concat(String a, String b) returns String
-foreign function eng_string_free(String s) returns unit
+foreign function eng_string_len(borrow String s) returns number
+foreign function eng_string_concat(borrow String a, borrow String b) returns String
+foreign function eng_string_free(borrow String s) returns unit
 
-type String is public
+public type String
 begin
     ptr: text
 end
@@ -26,7 +26,7 @@ begin
     return eng_string_concat(a, b)
 end
 
-public function free(borrow String s)
+public function string_free(borrow String s)
 begin
     eng_string_free(s)
 end

@@ -1,0 +1,41 @@
+package std
+module net
+
+public foreign function eng_net_tcp_connect(text host, number port) returns number
+public foreign function eng_net_tcp_send(number sock, text data) returns number
+public foreign function eng_net_tcp_recv(number sock, number max_bytes) returns text
+public foreign function eng_net_tcp_close(number sock)
+
+public type TcpSocket
+begin
+    fd: number
+end
+
+public function tcp_connect(text host, number port) returns TcpSocket
+begin
+    let fd be eng_net_tcp_connect(host, port)
+    return TcpSocket { fd: fd }
+end
+
+public function is_valid(borrow TcpSocket sock) returns number
+begin
+    if sock.fd is below 0 then begin
+        return 0
+    end
+    return 1
+end
+
+public function tcp_send(borrow TcpSocket sock, text data) returns number
+begin
+    return eng_net_tcp_send(sock.fd, data)
+end
+
+public function tcp_receive(borrow TcpSocket sock, number max_bytes) returns text
+begin
+    return eng_net_tcp_recv(sock.fd, max_bytes)
+end
+
+public function close(borrow TcpSocket sock)
+begin
+    eng_net_tcp_close(sock.fd)
+end

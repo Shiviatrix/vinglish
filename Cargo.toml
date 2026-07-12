@@ -8,7 +8,7 @@ members = [
     "crates/eng-diagnostics",
     "crates/eng-codegen",
     "crates/eng-fmt",
-    "crates/eng-hir", "crates/eng-mir", "crates/eng-opt", "crates/eng-own", "crates/eng-ssa", "crates/eng-analysis", "crates/eng-llvm",
+    "crates/eng-hir", "crates/eng-mir", "crates/eng-opt", "crates/eng-own", "crates/eng-ssa", "crates/eng-analysis", "crates/eng-llvm", "crates/eng-lsp",
 ]
 resolver = "2"
 

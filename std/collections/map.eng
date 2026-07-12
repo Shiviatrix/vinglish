@@ -1,0 +1,31 @@
+package std
+module map
+
+public foreign function eng_map_new() returns address<number>
+public foreign function eng_map_insert(address<number> map, text key, number value)
+public foreign function eng_map_get(address<number> map, text key) returns number
+public foreign function eng_map_free(address<number> map)
+
+public type Map
+    ptr: address<number>
+end
+
+public function map_new() returns Map
+begin
+    return Map { ptr: eng_map_new() }
+end
+
+public function insert(borrow Map m, text key, number value)
+begin
+    eng_map_insert(m.ptr, key, value)
+end
+
+public function get(borrow Map m, text key) returns number
+begin
+    return eng_map_get(m.ptr, key)
+end
+
+public function map_free(borrow Map m)
+begin
+    eng_map_free(m.ptr)
+end

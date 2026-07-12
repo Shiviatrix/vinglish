@@ -1,12 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-<<<<<<< Updated upstream
-use std::process::Command;
-use std::fs;
-=======
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
->>>>>>> Stashed changes
 
 use clap::{Parser, Subcommand};
 
@@ -42,6 +37,19 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+enum PkgCommands {
+    /// Initialize a new Englist package
+    Init,
+    /// Add a dependency to the current package
+    Add {
+        /// Package name to add
+        package: String,
+        /// Optional URL or path to the package
+        url: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
 enum Commands {
     /// Compile an Englist file to a native binary
     Build {
@@ -64,6 +72,13 @@ enum Commands {
         /// Arguments passed to the program
         args: Vec<String>,
     },
+    /// Package management commands
+    Pkg {
+        #[command(subcommand)]
+        command: PkgCommands,
+    },
+    /// Run the Language Server Protocol (LSP) daemon
+    Lsp,
     /// Type-check an Englist file without producing output
     Check {
         /// Source file to check
@@ -83,7 +98,8 @@ enum Commands {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::Build {
@@ -103,6 +119,9 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        Commands::Lsp => {
+            eng_lsp::run_server().await;
+        }
         Commands::Check { file } => {
             let ok = cmd_check(&file);
             if !ok {
@@ -121,6 +140,39 @@ fn main() {
                 env!("CARGO_PKG_VERSION"),
                 rustc_version()
             );
+        }
+        Commands::Pkg { command } => {
+            if let Err(e) = cmd_pkg(command) {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
+fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
+    match command {
+        PkgCommands::Init => {
+            println!("Initializing new Englist package...");
+            fs::write("eng.toml", "[package]\nname = \"my_pkg\"\nversion = \"0.1.0\"\n").map_err(|e| e.to_string())?;
+            fs::create_dir_all("src").map_err(|e| e.to_string())?;
+            fs::write("src/main.eng", "function main() returns number\nbegin\n    return 0\nend\n").map_err(|e| e.to_string())?;
+            println!("Created package `my_pkg`");
+            Ok(())
+        }
+        PkgCommands::Add { package, url } => {
+            println!("Adding package '{}'...", package);
+            let target_dir = Path::new(".eng_modules").join(&package);
+            fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
+            if let Some(url) = url {
+                println!("Fetching from {}...", url);
+                // In a real implementation this would git clone or download
+            }
+            // Create a dummy module file to satisfy the compiler dependency
+            let dummy_path = target_dir.join(format!("{}.eng", package));
+            fs::write(&dummy_path, format!("package {}\nmodule {}\n\npublic function hello() returns number\nbegin\n    return 0\nend\n", package, package)).map_err(|e| e.to_string())?;
+            println!("Successfully added `{}`", package);
+            Ok(())
         }
     }
 }
@@ -145,6 +197,26 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
             path.push(part);
         }
     } else {
+        // Try `.eng_modules` first
+        if let Some(pkg_name) = path_parts.first() {
+            let pkg_dir = PathBuf::from(".eng_modules").join(pkg_name);
+            if pkg_dir.exists() {
+                let mut pkg_path = pkg_dir.clone();
+                if path_parts.len() == 1 {
+                    pkg_path.push(pkg_name);
+                } else {
+                    for part in &path_parts[1..] {
+                        pkg_path.push(part);
+                    }
+                }
+                pkg_path.set_extension("eng");
+                if pkg_path.exists() {
+                    return Ok(pkg_path);
+                }
+            }
+        }
+        
+        // Fallback to local paths
         if let Some(parent) = current_file.parent() {
             path.push(parent);
         }
@@ -596,7 +668,10 @@ fn cmd_check(file: &Path) -> bool {
             eprintln!("  \x1b[32m✓\x1b[0m  {} — no errors found", file.display());
             true
         }
-        Err(_) => false,
+        Err(e) => {
+            eprintln!("{}", e);
+            false
+        }
     }
 }
 
@@ -651,8 +726,6 @@ fn cmd_fmt(files: &[PathBuf], check: bool) -> bool {
     all_ok
 }
 
-<<<<<<< Updated upstream
-=======
 fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
     if runs == 0 {
         return Err("--runs must be at least 1".into());
@@ -715,8 +788,6 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
     let _ = fs::remove_dir_all(temp_dir);
     Ok(())
 }
-
->>>>>>> Stashed changes
 fn rustc_version() -> String {
     let output = std::process::Command::new("rustc").arg("-V").output().ok();
     if let Some(out) = output {

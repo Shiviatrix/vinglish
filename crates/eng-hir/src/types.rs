@@ -56,10 +56,6 @@ impl Type {
     /// Returns true if this type has copy semantics (no ownership transfer on assignment/call).
     pub fn is_copy(&self) -> bool {
         match self {
-<<<<<<< Updated upstream
-            Type::Int | Type::Float | Type::Bool | Type::Unit | Type::Pointer(_) => true,
-            _ => false, // Lists, dicts, strings, structs are moved
-=======
             // `text` is an immutable pointer ABI. Its ownership is currently
             // explicit at the std.string API boundary, so passing it does not
             // invalidate the source value. Heap containers and structs remain
@@ -68,7 +64,6 @@ impl Type {
                 true
             }
             _ => false,
->>>>>>> Stashed changes
         }
     }
 

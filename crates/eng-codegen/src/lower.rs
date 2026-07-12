@@ -450,7 +450,7 @@ impl CEmitter {
                         "0".into()
                     }
                 }
-                Literal::Text(s) => format!("\"{}\"", s.replace('"', "\\\"").replace('\n', "\\n")),
+                Literal::Text(s) => format!("\"{}\"", s.replace('"', "\\\"").replace('\n', "\\n").replace('\r', "\\r")),
                 Literal::Unit => "0".into(),
             }),
 

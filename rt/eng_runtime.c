@@ -17,3 +17,8 @@ void eng_write(int64_t* ptr, int64_t index, int64_t val) {
 int64_t eng_read(int64_t* ptr, int64_t index) {
     return ptr[index];
 }
+
+#include <stdio.h>
+void print_num(int64_t n) {
+    printf("%lld\n", (long long)n);
+}

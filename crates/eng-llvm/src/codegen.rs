@@ -746,7 +746,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
     ) -> Result<Option<BasicValueEnum<'ctx>>, String> {
         // Check if it's a known built-in
         if let Some(fs) = self.symbol_table.get_func(func_id) {
-            if fs.name == "print" {
+            if fs.name == "print" || fs.name == "print_num" {
                 return self.compile_print_call(args);
             }
         }

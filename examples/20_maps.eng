@@ -1,0 +1,25 @@
+// ===================================
+// Example 20
+// Concepts: Hash Maps
+// Difficulty: Advanced
+// Estimated Reading Time: 3 minutes
+// Run Command: eng build examples/20_maps.eng -o maps && ./maps
+// Expected Output: 42, 99
+// ===================================
+
+use std.io
+use std.collections.map
+
+function main() returns number
+begin
+    let m be map_new()
+    
+    insert(borrow m, "test", 42)
+    insert(borrow m, "another", 99)
+    
+    print_num(get(borrow m, "test"))
+    print_num(get(borrow m, "another"))
+    
+    map_free(borrow m)
+    return 0
+end

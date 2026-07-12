@@ -1,0 +1,30 @@
+// ===================================
+// Example 21
+// Concepts: TCP Networking
+// Difficulty: Advanced
+// Estimated Reading Time: 3 minutes
+// Run Command: eng build examples/21_networking.eng -o net && ./net
+// Expected Output: HTTP Response from google.com
+// ===================================
+
+use std.io
+use std.net
+use std.string
+
+function main() returns number
+begin
+    let sock be tcp_connect("google.com", 80)
+    if is_valid(borrow sock) is 0 then begin
+        print("Failed to connect!")
+        return 1
+    end
+    
+    let request be "GET / HTTP/1.1\r\nHost: google.com\r\nConnection: close\r\n\r\n"
+    tcp_send(borrow sock, request)
+    
+    let response be tcp_receive(borrow sock, 512)
+    print(response)
+    
+    close(borrow sock)
+    return 0
+end

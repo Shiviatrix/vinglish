@@ -24,3 +24,5 @@ clap.workspace = true
 eng-hir = { path = "../eng-hir" }
 eng-analysis = { path = "../eng-analysis" }
 eng-llvm = { path = "../eng-llvm" }
+eng-lsp = { version = "0.1.0", path = "../eng-lsp" }
+tokio = { version = "1.52.3", features = ["full"] }

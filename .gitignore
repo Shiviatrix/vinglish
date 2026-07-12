@@ -1,22 +1,18 @@
+# Rust
 /target/
-*.out
-out_*
-test_rt
-test_std_bin
-test_borrow
-*.pyc
-__pycache__/
+**/*.rs.bk
+
+# Englist
+/a.out
+/*.c
+/net
+/net.c
+/net.dSYM/
+/.eng_modules/
+/eng.toml
+/src/
+/rt/*.o
+/rt/*.d
+
+# OS
 .DS_Store
-*.eps
-
-# Ignore scratch scripts and old backup files
-/fix*.py
-/main.rs.recovered
-/a.c
-/rt.c
-
-# Ignore ad-hoc test scripts in root (real tests should be in tests/)
-/test*.eng
-/test*.rs
-/factorial.eng
-/test.eng
