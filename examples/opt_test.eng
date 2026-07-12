@@ -1,0 +1,12 @@
+function main() begin
+    let x be 5 + 10
+    let y be x
+    let z be 20
+    
+    if x is above 0 begin
+        let unused be y * 2
+        return y
+    end otherwise begin
+        return z
+    end
+end

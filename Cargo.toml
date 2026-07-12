@@ -1,0 +1,32 @@
+[workspace]
+members = [
+    "crates/eng-cli",
+    "crates/eng-lexer",
+    "crates/eng-parser",
+    "crates/eng-types",
+    "crates/eng-ownership",
+    "crates/eng-diagnostics",
+    "crates/eng-codegen",
+    "crates/eng-fmt",
+    "crates/eng-hir", "crates/eng-mir", "crates/eng-opt", "crates/eng-own", "crates/eng-ssa", "crates/eng-analysis", "crates/eng-llvm",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["The Englist Team"]
+license = "MIT"
+description = "The Englist intent-aware systems programming language"
+
+[workspace.dependencies]
+thiserror       = "1.0"
+clap            = { version = "4", features = ["derive"] }
+indexmap        = "2"
+strsim          = "0.11"
+
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
+strip         = true

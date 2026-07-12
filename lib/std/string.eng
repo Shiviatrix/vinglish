@@ -1,0 +1,31 @@
+module std.string
+
+foreign function eng_string_new(text p) returns String
+foreign function eng_string_len(String s) returns number
+foreign function eng_string_concat(String a, String b) returns String
+foreign function eng_string_free(String s) returns unit
+
+type String
+begin
+    ptr: text
+end
+
+function string_new(text p) returns String
+begin
+    return eng_string_new(p)
+end
+
+function length on String() returns number
+begin
+    return eng_string_len(self)
+end
+
+function concat on String(String other) returns String
+begin
+    return eng_string_concat(self, other)
+end
+
+function free on String() returns unit
+begin
+    eng_string_free(self)
+end

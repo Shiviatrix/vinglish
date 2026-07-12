@@ -1,0 +1,51 @@
+package std
+module vector
+
+use std.runtime
+
+public type Vector<T>
+    data: address<number>
+    len: number
+    capacity: number
+end
+
+public function vector_new<T>() returns Vector<T>
+begin
+    let v be Vector<T> {
+        data: eng_alloc(8),
+        len: 0,
+        capacity: 8
+    }
+    return v
+end
+
+public function push<T>(borrow mutable Vector<T> vec, T val)
+begin
+    if vec.len is vec.capacity then
+        let new_cap be vec.capacity * 2
+        let new_data be eng_alloc(new_cap)
+        
+        let i be 0
+        repeat while i is below vec.len
+            let item be eng_read(vec.data, i)
+            eng_write(new_data, i, item)
+            i be i + 1
+        end
+        
+        eng_free(vec.data)
+        vec.data be new_data
+        vec.capacity be new_cap
+    
+    eng_write(vec.data, vec.len, val)
+    vec.len be vec.len + 1
+end
+
+public function get<T>(borrow Vector<T> vec, number index) returns T
+begin
+    return eng_read(vec.data, index)
+end
+
+public function vector_free<T>(borrow mutable Vector<T> vec)
+begin
+    eng_free(vec.data)
+end

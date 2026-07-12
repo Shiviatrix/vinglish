@@ -1,0 +1,7 @@
+package std
+module runtime
+
+public foreign function eng_alloc(number size) returns address<number>
+public foreign function eng_free(address<number> ptr)
+public foreign function eng_write(address<number> ptr, number index, number val)
+public foreign function eng_read(address<number> ptr, number index) returns number

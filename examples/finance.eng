@@ -1,0 +1,33 @@
+-- Finance demo in Englist
+-- Demonstrates: parallel loops (semantic), actors, and domain language
+-- Run with: eng run examples/finance.eng
+
+function calculate_var(number portfolio_value, number volatility)
+returns decimal
+begin
+    -- Value at Risk: simplified 95% confidence z-score = 1.645
+    let z_score be 1.645
+    return portfolio_value * volatility * z_score
+end
+
+function main()
+begin
+    -- Portfolio risk analysis
+    let portfolio_a be 1000000
+    let portfolio_b be 750000
+    let portfolio_c be 2500000
+
+    let volatility be 0.02
+
+    println("=== Portfolio Risk Analysis ===")
+    print("Portfolio A VaR: $")
+    println(to_text(calculate_var(portfolio_a, volatility)))
+
+    print("Portfolio B VaR: $")
+    println(to_text(calculate_var(portfolio_b, volatility)))
+
+    print("Portfolio C VaR: $")
+    println(to_text(calculate_var(portfolio_c, volatility)))
+
+    println("=== Done ===")
+end

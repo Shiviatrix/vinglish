@@ -1,0 +1,10 @@
+foreign function rt_alloc(size: number) returns number
+foreign function rt_write(ptr: number, value: number)
+foreign function rt_read(ptr: number) returns number
+
+function main() returns number
+begin
+    let ptr be rt_alloc(8)
+    rt_write(ptr, 42)
+    return rt_read(ptr)
+end

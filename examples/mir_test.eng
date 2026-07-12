@@ -1,0 +1,8 @@
+function main() begin
+    let x be 10
+    let y be 20
+    if x is below y begin
+        return x + y
+    end
+    return 0
+end

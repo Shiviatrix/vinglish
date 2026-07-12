@@ -1,0 +1,11 @@
+[package]
+name = "eng-analysis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eng-hir = { path = "../eng-hir" }
+eng-mir = { path = "../eng-mir" }
+eng-diagnostics = { path = "../eng-diagnostics" }
+eng-parser = { path = "../eng-parser" }
+eng-lexer = { path = "../eng-lexer" }

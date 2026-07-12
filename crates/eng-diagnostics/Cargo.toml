@@ -1,0 +1,9 @@
+[package]
+name        = "eng-diagnostics"
+version.workspace    = true
+edition.workspace    = true
+description = "Englist intent-aware diagnostic renderer"
+
+[dependencies]
+eng-lexer   = { path = "../eng-lexer" }
+strsim.workspace    = true

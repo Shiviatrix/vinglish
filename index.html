@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Englist Language Specification and Compiler Internals</title>
+    <style>
+        :root {
+            --ivory: #F8F4ED;
+            --indigo: #1B2A6B;
+            --emerald: #1C7A4F;
+            --copper: #B46A2C;
+            --code-bg: #111A42;
+            --sidebar-w: 320px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--ivory);
+            color: var(--indigo);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background-color: var(--indigo);
+            color: var(--ivory);
+            padding: 2rem;
+            overflow-y: auto;
+            border-right: 4px solid var(--copper);
+            scrollbar-width: thin;
+            scrollbar-color: var(--emerald) var(--indigo);
+        }
+
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-thumb { background-color: var(--emerald); border-radius: 4px; }
+
+        #sidebar img {
+            width: 100%;
+            max-width: 180px;
+            display: block;
+            margin: 0 auto 2rem auto;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        #sidebar h2 {
+            font-size: 1.1rem;
+            margin: 2rem 0 0.5rem 0;
+            color: var(--emerald);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        #sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        #sidebar li { margin-bottom: 0.4rem; }
+        
+        #sidebar a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            transition: color 0.2s, padding-left 0.2s;
+        }
+
+        #sidebar a:hover { 
+            color: var(--copper); 
+            padding-left: 5px;
+        }
+
+        #content {
+            margin-left: var(--sidebar-w);
+            padding: 4rem 8rem;
+            max-width: 1400px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            color: var(--indigo);
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--emerald);
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-top: 4rem;
+            color: var(--indigo);
+            border-bottom: 2px solid var(--emerald);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.6rem;
+            color: var(--copper);
+            margin-top: 2.5rem;
+        }
+        
+        h4 {
+            font-size: 1.2rem;
+            color: var(--indigo);
+            margin-top: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        p { margin-bottom: 1.5rem; text-align: justify; }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            color: var(--ivory);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "Fira Code", "Consolas", monospace;
+            font-size: 0.95rem;
+            border-left: 4px solid var(--emerald);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: "Fira Code", "Consolas", monospace;
+            background-color: rgba(27, 42, 107, 0.08);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: var(--copper);
+            font-size: 0.95rem;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        .highlight-keyword { color: #FF7B72; font-weight: bold; }
+        .highlight-type { color: #79C0FF; }
+        .highlight-function { color: #D2A8FF; }
+        .highlight-comment { color: #8B949E; font-style: italic; }
+        .highlight-string { color: #A5D6FF; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        th, td {
+            border: 1px solid rgba(27, 42, 107, 0.15);
+            padding: 1rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--indigo);
+            color: var(--ivory);
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(27, 42, 107, 0.03);
+        }
+
+        /* Callouts */
+        .callout {
+            background-color: rgba(28, 122, 79, 0.08);
+            border-left: 4px solid var(--emerald);
+            padding: 1.5rem;
+            margin: 2.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .callout.warning {
+            background-color: rgba(180, 106, 44, 0.08);
+            border-left-color: var(--copper);
+        }
+
+        .callout h4 {
+            margin-top: 0;
+            color: var(--emerald);
+        }
+        .callout.warning h4 {
+            color: var(--copper);
+        }
+        
+        hr {
+            border: 0;
+            height: 1px;
+            background: rgba(27, 42, 107, 0.15);
+            margin: 4rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <img src="Englist Icon.png" alt="Englist Logo">
+        
+        <h2>I. The Language</h2>
+        <ul>
+            <li><a href="#motivation">1. Motivation & History</a></li>
+            <li><a href="#lexical">2. Lexical Structure</a></li>
+            <li><a href="#types">3. Types & Semantics</a></li>
+            <li><a href="#control-flow">4. Control Flow</a></li>
+            <li><a href="#memory">5. Memory & Ownership</a></li>
+            <li><a href="#generics">6. Generics & Polymorphism</a></li>
+            <li><a href="#structs">7. Structs & Layout</a></li>
+        </ul>
+
+        <h2>II. Standard Library</h2>
+        <ul>
+            <li><a href="#std-overview">8. Library Overview</a></li>
+            <li><a href="#std-memory">9. Memory Allocation</a></li>
+            <li><a href="#std-vector">10. Dynamic Vectors</a></li>
+            <li><a href="#std-hashmap">11. Hash Maps</a></li>
+            <li><a href="#std-io">12. File I/O</a></li>
+        </ul>
+
+        <h2>III. Compiler Internals</h2>
+        <ul>
+            <li><a href="#architecture">13. The Pipeline</a></li>
+            <li><a href="#frontend">14. Lexer & Parser</a></li>
+            <li><a href="#hir">15. High-Level IR (HIR)</a></li>
+            <li><a href="#mir">16. Mid-Level IR & SSA</a></li>
+            <li><a href="#opt-cfg">17. Opt: CFG Simplification</a></li>
+            <li><a href="#opt-gvn">18. Opt: GVN & Constant Fold</a></li>
+            <li><a href="#codegen">19. C Backend Codegen</a></li>
+        </ul>
+        
+        <h2>IV. Ecosystem</h2>
+        <ul>
+            <li><a href="#cli">20. Englist CLI</a></li>
+            <li><a href="#lsp">21. Language Server (LSP)</a></li>
+            <li><a href="#roadmap">22. Future Roadmap</a></li>
+        </ul>
+    </nav>
+
+    <main id="content">
+        <h1>The Englist Specification</h1>
+        <div class="subtitle">Comprehensive Language Guide and Compiler Internals</div>
+        
+        <p>This document serves as the exhaustive, unabridged specification of the <strong>Englist</strong> programming language, its standard library, and the internal architecture of its Rust-based compiler. It is designed to guide developers from the surface-level syntax down to the bare metal representation in the C-codegen backend.</p>
+
+        <hr>
+
+        <!-- ============================================== -->
+        <!-- PART I: THE LANGUAGE                           -->
+        <!-- ============================================== -->
+
+        <h2 id="motivation">1. Motivation & History</h2>
+        <p>Systems programming languages typically fall into two camps: low-level, highly symbolic languages (C, C++) that offer ultimate control but sacrifice human readability, or modern, safe languages (Rust) that introduce immense cognitive overhead and complex syntax. <strong>Englist</strong> bridges this divide.</p>
+        <p>The core philosophy of Englist is: <em>Code should read like English prose, but the compiler should rigorously understand and optimize the developer's intent.</em> By parsing naturalistic keywords (<code>is below</code>, <code>repeat while</code>, <code>be</code>) and feeding them into an aggressively optimizing, mathematically pure Static Single Assignment (SSA) pipeline, Englist offers the readability of pseudocode with the zero-cost abstractions of C.</p>
+
+        <h2 id="lexical">2. Lexical Structure</h2>
+        <p>Englist programs are composed of a stream of ASCII tokens. The lexer ignores whitespace (spaces, tabs, newlines) outside of string literals.</p>
+        
+        <h3>Keywords</h3>
+        <p>The following keywords are reserved and carry semantic weight:</p>
+        <pre><code><span class="highlight-keyword">public, private, package, module, use, fn, function, returns, begin, end,
+if, then, else, repeat, while, let, be, is, below, above, borrow, mutable,
+struct, type, address</span></code></pre>
+
+        <h3>Identifiers & Comments</h3>
+        <p>Identifiers must begin with an alphabetic character or underscore, followed by alphanumeric characters or underscores. Line comments begin with <code>//</code> and block comments are currently unsupported to encourage concise, single-line annotations.</p>
+
+        <h2 id="types">3. Types & Semantics</h2>
+        <p>Englist employs a static, strongly-typed system. All variables, function parameters, and return types must be resolvable at compile-time during the High-Level Intermediate Representation (HIR) phase.</p>
+
+        <h3>Primitive Types</h3>
+        <ul>
+            <li><code>number</code>: Represents the default architecture-dependent integer (equivalent to <code>int64_t</code> on 64-bit platforms).</li>
+            <li><code>address&lt;T&gt;</code>: A raw, unmanaged memory pointer pointing to a value of type <code>T</code>. Equivalent to <code>T*</code> in C.</li>
+            <li><code>boolean</code>: Logical true or false. (Implemented natively as a 1-byte integer).</li>
+        </ul>
+
+        <h3>Type Definitions</h3>
+        <p>Types can be aliased using the <code>type</code> keyword, heavily used when defining generic structural boundaries.</p>
+
+        <h2 id="control-flow">4. Control Flow</h2>
+        <p>Control flow in Englist is designed to read rhythmically, avoiding the "bracket fatigue" common in C-family languages. The <code>begin</code> and <code>end</code> keywords delineate scope.</p>
+
+        <h3>Conditional Logic</h3>
+        <p>The <code>if / then / else</code> construct supports relational operators modeled on English:</p>
+        <ul>
+            <li><code>is</code> (equality: <code>==</code>)</li>
+            <li><code>is below</code> (less than: <code>&lt;</code>)</li>
+            <li><code>is above</code> (greater than: <code>&gt;</code>)</li>
+        </ul>
+        <pre><code><span class="highlight-keyword">if</span> x <span class="highlight-keyword">is below</span> 10 <span class="highlight-keyword">then</span>
+    <span class="highlight-comment">// Executed if x &lt; 10</span>
+    x <span class="highlight-keyword">be</span> x + 1
+<span class="highlight-keyword">else</span>
+    <span class="highlight-comment">// Executed otherwise</span>
+    x <span class="highlight-keyword">be</span> 0
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h3>Iteration</h3>
+        <p>Looping is handled via the <code>repeat while</code> construct. Englist does not currently feature a traditional <code>for</code> loop, preferring explicit index management or iterator patterns defined in the standard library.</p>
+        <pre><code><span class="highlight-keyword">let</span> i <span class="highlight-keyword">be</span> 0
+<span class="highlight-keyword">repeat while</span> i <span class="highlight-keyword">is below</span> 100
+    <span class="highlight-comment">// Loop body</span>
+    i <span class="highlight-keyword">be</span> i + 1
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="memory">5. Memory & Ownership</h2>
+        <p>Englist does <strong>not</strong> include a Garbage Collector (GC). The language requires the developer to manage memory allocations manually, but introduces syntactical safety barriers via the <code>borrow</code> system.</p>
+
+        <div class="callout warning">
+            <h4>Manual Allocation Risk</h4>
+            <p>Failure to invoke <code>eng_free</code> on an address initialized via <code>eng_alloc</code> will result in a memory leak. The standard library encapsulates these raw calls into safe data structures like <code>Vector&lt;T&gt;</code>.</p>
+        </div>
+
+        <h3>Borrow Semantics</h3>
+        <p>When passing structures across function boundaries, Englist enforces ownership clarity:</p>
+        <ul>
+            <li><code>borrow</code>: Passes an immutable reference to the function. The function can read, but the HIR compiler will reject any assignment to the borrowed data.</li>
+            <li><code>borrow mutable</code>: Passes a mutable reference. The function may alter the underlying data.</li>
+        </ul>
+        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">transform</span>(<span class="highlight-keyword">borrow mutable</span> <span class="highlight-type">Vector</span>&lt;<span class="highlight-type">number</span>&gt; v)
+<span class="highlight-keyword">begin</span>
+    <span class="highlight-comment">// 'v' can be modified here.</span>
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="generics">6. Generics & Polymorphism</h2>
+        <p>Englist achieves polymorphism through compile-time monomorphization of generics. A generic type parameter <code>&lt;T&gt;</code> acts as a placeholder during the parsing and initial HIR phases.</p>
+        <p>When a generic function or struct is instantiated (e.g., <code>Vector&lt;number&gt;</code>), the compiler generates a specialized, concrete version of that entity. This completely eliminates dynamic dispatch overhead at runtime.</p>
+        <pre><code><span class="highlight-keyword">struct</span> <span class="highlight-type">Pair</span>&lt;T&gt;
+    first: T
+    second: T
+<span class="highlight-keyword">end</span>
+
+<span class="highlight-keyword">function</span> <span class="highlight-function">make_pair</span>&lt;T&gt;(a: T, b: T) <span class="highlight-keyword">returns</span> <span class="highlight-type">Pair</span>&lt;T&gt;
+<span class="highlight-keyword">begin</span>
+    <span class="highlight-keyword">let</span> p <span class="highlight-keyword">be</span> <span class="highlight-type">Pair</span>&lt;T&gt; { first: a, second: b }
+    <span class="highlight-keyword">return</span> p
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="structs">7. Structs & Layout</h2>
+        <p>Structs in Englist map 1:1 with C structures. They guarantee memory layout order, making them ideal for systems programming, foreign function interfacing (FFI), and network packet serialization.</p>
+        <p>Struct instantiation utilizes brace syntax. Every field must be initialized.</p>
+
+        <hr>
+
+        <!-- ============================================== -->
+        <!-- PART II: STANDARD LIBRARY                      -->
+        <!-- ============================================== -->
+
+        <h2 id="std-overview">8. Library Overview</h2>
+        <p>The Englist standard library (<code>std</code>) is a collection of modules written entirely in Englist. Because the language supports raw memory operations and seamless C interoperability, almost no internal C code is required. The library proves the language's capability to bootstrap itself.</p>
+
+        <h2 id="std-memory">9. Memory Allocation</h2>
+        <p>The <code>std.runtime</code> module exposes intrinsics mapped directly to OS-level memory allocators (via the <code>rt.c</code> runtime wrapper).</p>
+        <ul>
+            <li><code>eng_alloc(bytes: number) -&gt; address&lt;T&gt;</code>: Allocates uninitialized heap memory.</li>
+            <li><code>eng_free(ptr: address&lt;T&gt;)</code>: Frees the previously allocated memory block.</li>
+            <li><code>eng_read(ptr: address&lt;T&gt;, offset: number) -&gt; T</code>: Reads a value at a specific index offset.</li>
+            <li><code>eng_write(ptr: address&lt;T&gt;, offset: number, val: T)</code>: Writes a value to a specific index.</li>
+        </ul>
+
+        <h2 id="std-vector">10. Dynamic Vectors</h2>
+        <p>The <code>Vector&lt;T&gt;</code> is the quintessential dynamically resizing contiguous array. Internally, it holds a raw address, a length, and a capacity.</p>
+        <div class="callout">
+            <h4>Reallocation Strategy</h4>
+            <p>When <code>vec.len is vec.capacity</code>, the <code>push</code> function calculates <code>new_cap = capacity * 2</code>, allocates a new block, copies existing elements via a <code>repeat while</code> loop, and frees the old block. This guarantees O(1) amortized insertion time.</p>
+        </div>
+        <pre><code><span class="highlight-keyword">use</span> std.collections.vector
+
+<span class="highlight-keyword">function</span> <span class="highlight-function">main</span>()
+<span class="highlight-keyword">begin</span>
+    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_new&lt;<span class="highlight-type">number</span>&gt;()
+    vector_push(my_vec, 100)
+    vector_push(my_vec, 200)
+    
+    <span class="highlight-comment">// Safe deallocation</span>
+    vector_free(my_vec)
+<span class="highlight-keyword">end</span></code></pre>
+
+        <h2 id="std-hashmap">11. Hash Maps (Planned)</h2>
+        <p>The upcoming <code>HashMap&lt;K, V&gt;</code> utilizes an open-addressing, linear-probing architecture to maximize CPU cache locality. The hashing algorithm employs a fast, non-cryptographic hash (such as FNV-1a or WyHash), resolving collisions by scanning adjacent memory slots.</p>
+
+        <h2 id="std-io">12. File I/O</h2>
+        <p>The <code>std.io</code> and <code>std.fs</code> modules provide wrappers around POSIX file descriptors. Files are represented as structs containing the integer descriptor and buffer pointers, enabling buffered reads and writes natively in Englist.</p>
+
+        <hr>
+
+        <!-- ============================================== -->
+        <!-- PART III: COMPILER INTERNALS                   -->
+        <!-- ============================================== -->
+
+        <h2 id="architecture">13. The Pipeline</h2>
+        <p>The Englist compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
+        <pre><code>Source Code (.eng) 
+       ↓ (Lexer & Parser)
+Abstract Syntax Tree (AST)
+       ↓ (Semantic Analysis & Type Checking)
+High-Level IR (HIR)
+       ↓ (SSA Conversion & CFG Generation)
+Mid-Level IR (MIR)
+       ↓ (Optimization Passes: DCE, GVN, Constant Fold)
+Optimized MIR
+       ↓ (Codegen Backend)
+C Source Code (.c)
+       ↓ (GCC / Clang)
+Executable Binary</code></pre>
+
+        <h2 id="frontend">14. Lexer & Parser</h2>
+        <p>The Lexer converts raw text into a token stream. The Parser utilizes a recursive descent algorithm with Pratt parsing (Operator-Precedence parsing) for expressions. This accurately handles operator precedence, converting English keywords (like <code>is below</code>) into strict binary operations within the AST.</p>
+
+        <h2 id="hir">15. High-Level IR (HIR)</h2>
+        <p>The AST is flattened into the HIR. This is where <strong>Symbol Resolution</strong> occurs. The compiler maps all identifiers to unique <code>SymbolId</code>s. Module imports (<code>use std.math</code>) are resolved into an <strong>Import Graph</strong>, allowing the compiler to selectively merge required definitions and detect namespace collisions.</p>
+        <p><strong>Alias Analysis</strong> is also performed here. By tracking pointer assignments and references, the compiler validates that mutations do not violate borrowing rules.</p>
+
+        <h2 id="mir">16. Mid-Level IR & SSA</h2>
+        <p>The HIR is translated into the Mid-Level IR (MIR). This is the crown jewel of the Englist compiler.</p>
+        <p>MIR utilizes <strong>Static Single Assignment (SSA)</strong> form. In SSA, every variable is assigned exactly once. When a variable is reassigned in the source (e.g., <code>x = x + 1</code>), the MIR generates a new version of that variable (e.g., <code>x_2 = x_1 + 1</code>).</p>
+        
+        <div class="callout">
+            <h4>Phi (Φ) Nodes</h4>
+            <p>At control flow merge points (e.g., the end of an <code>if/else</code> block), the MIR inserts a Phi node. The Phi node selects the correct version of a variable based on which basic block executed previously (e.g., <code>x_3 = Φ(x_1, x_2)</code>). This pure mathematical mapping allows optimization passes to trace data-flow flawlessly.</p>
+        </div>
+
+        <h2 id="opt-cfg">17. Opt: CFG Simplification</h2>
+        <p>The <code>cfg_simplify.rs</code> pass analyzes the Basic Blocks of the MIR. It performs:</p>
+        <ul>
+            <li><strong>Dead Block Elimination:</strong> Removes blocks that have no incoming edges.</li>
+            <li><strong>Block Merging:</strong> If Block A unconditionally jumps to Block B, and Block B has no other incoming edges, the two blocks are merged into a single contiguous block, reducing branch overhead.</li>
+        </ul>
+
+        <h2 id="opt-gvn">18. Opt: GVN & Constant Fold</h2>
+        <p><strong>Global Value Numbering (GVN):</strong> The compiler assigns a unique hash to every computed expression. If it encounters the same expression (e.g., <code>a * b</code>) later in the control flow, and neither <code>a</code> nor <code>b</code> have been modified (guaranteed by SSA), it replaces the second computation with a direct reference to the first result.</p>
+        <p><strong>Constant Folding (<code>constant_folding.rs</code>):</strong> Traverses the SSA graph identifying expressions composed entirely of literal constants. It evaluates these at compile-time (e.g., folding <code>5 * 4</code> directly into <code>20</code>) and propagates the result downstream.</p>
+
+        <h2 id="codegen">19. C Backend Codegen</h2>
+        <p>The highly optimized MIR is lowered into C code via <code>lower.rs</code>. Compiling to C rather than LLVM IR directly allows Englist to remain highly portable and easy to debug while still leveraging the world-class optimization of GCC or Clang.</p>
+        
+        <h3>Structure Topological Sorting</h3>
+        <p>C requires that structures are defined before they are used. If <code>Struct A</code> contains a <code>Struct B</code> by value, <code>Struct B</code> must be declared first. The Englist codegen performs a topological sort on the dependency graph of all structs to emit them in the mathematically correct order, resolving cyclic pointer references automatically via forward declarations.</p>
+        
+        <h3><code>__auto_type</code> Inference</h3>
+        <p>To elegantly handle the translation of Englist generics to C, the codegen utilizes the GNU C extension <code>__auto_type</code>. This prevents the compiler from needing to generate deeply convoluted generic C macros, instead relying on the C compiler to infer the type of the evaluated expression.</p>
+        <pre><code><span class="highlight-comment">// Generated C code for generic assignment</span>
+__auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
+
+        <hr>
+
+        <!-- ============================================== -->
+        <!-- PART IV: ECOSYSTEM                             -->
+        <!-- ============================================== -->
+
+        <h2 id="cli">20. Englist CLI</h2>
+        <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit. Currently, it supports the <code>compile</code> command, which accepts a root <code>.eng</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
+
+        <h2 id="lsp">21. Language Server (LSP) Support</h2>
+        <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Englist is perfectly positioned for a Language Server Protocol implementation.</p>
+        <ul>
+            <li><strong>Hover:</strong> The SSA graph directly maps identifiers to their inferred types.</li>
+            <li><strong>Diagnostics:</strong> Borrow-checking errors and semantic validation are emitted as JSON LSP diagnostics.</li>
+            <li><strong>Code Actions:</strong> The optimizer's knowledge of Dead Code and Redundant computations can be exposed as automated quick-fixes.</li>
+        </ul>
+
+        <h2 id="roadmap">22. Future Roadmap</h2>
+        <p>The roadmap for Englist prioritizes ecosystem expansion over language mutations:</p>
+        <ol>
+            <li><strong>The Package Manager (<code>eng</code>):</strong> A native dependency resolver allowing commands like <code>eng new</code>, <code>eng build</code>, <code>eng add std.net</code>.</li>
+            <li><strong>Standard Library Maturation:</strong> Implementing cryptographic hashing, highly concurrent threading models, and a non-blocking TCP server entirely natively.</li>
+            <li><strong>LLVM Backend:</strong> While the C backend is excellent for bootstrapping, a native LLVM IR backend is planned for even tighter optimization control and faster compilation speeds (bypassing the C compiler intermediary).</li>
+        </ol>
+
+    </main>
+
+    <script>
+        document.querySelectorAll('#sidebar a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

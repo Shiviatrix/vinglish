@@ -1,0 +1,9 @@
+[package]
+name        = "eng-fmt"
+version.workspace    = true
+edition.workspace    = true
+description = "Englist canonical source formatter"
+
+[dependencies]
+eng-parser = { path = "../eng-parser" }
+eng-lexer  = { path = "../eng-lexer" }

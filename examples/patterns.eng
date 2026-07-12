@@ -1,0 +1,42 @@
+-- Pattern matching and types in Englist
+-- Run with: eng run examples/patterns.eng
+
+-- Classify a number using match
+function classify(number n)
+returns text
+begin
+    -- Simple demonstration of match and then
+    match n
+        case 0 then return "zero"
+        case 42 then return "meaning of life"
+        otherwise then return "other"
+end
+
+-- FizzBuzz
+function fizzbuzz(number n)
+returns text
+begin
+    if n % 15 == 0
+        return "FizzBuzz"
+    if n % 3 == 0
+        return "Fizz"
+    if n % 5 == 0
+        return "Buzz"
+    return to_text(n)
+end
+
+function main()
+begin
+    -- Number classification
+    println(classify(-5))
+    println(classify(0))
+    println(classify(42))
+
+    -- FizzBuzz 1..15
+    let i be 1
+    repeat while i <= 15
+    begin
+        println(fizzbuzz(i))
+        i += 1
+    end
+end

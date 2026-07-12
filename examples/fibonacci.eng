@@ -1,0 +1,24 @@
+-- Fibonacci sequence in Englist
+-- Demonstrates: recursion, type annotations, if/otherwise
+-- Run with: eng run examples/fibonacci.eng
+
+function fibonacci(number n)
+returns number
+begin
+    if n is below 2
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+end
+
+function main()
+begin
+    let i be 0
+    repeat while i < 11
+    begin
+        print("fibonacci(")
+        print(i)
+        print(") = ")
+        println(fibonacci(i))
+        i += 1
+    end
+end

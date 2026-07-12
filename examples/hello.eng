@@ -1,0 +1,7 @@
+-- Hello World in Englist
+-- Run with: eng run examples/hello.eng
+
+function main()
+begin
+    print("Hello from Englist!")
+end

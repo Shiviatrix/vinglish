@@ -1,0 +1,7 @@
+function main() returns number
+begin
+    let x be 42
+    let y be borrow x
+    let z be deref y
+    return z
+end

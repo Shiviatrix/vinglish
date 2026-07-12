@@ -1,0 +1,14 @@
+[package]
+name        = "eng-codegen"
+version.workspace    = true
+edition.workspace    = true
+description = "Englist code generation: tree-walking interpreter + C transpiler"
+
+[dependencies]
+eng-lexer  = { path = "../eng-lexer" }
+eng-parser = { path = "../eng-parser" }
+eng-types  = { path = "../eng-types" }
+eng-hir    = { path = "../eng-hir" }
+eng-mir    = { path = "../eng-mir" }
+thiserror.workspace  = true
+indexmap.workspace   = true

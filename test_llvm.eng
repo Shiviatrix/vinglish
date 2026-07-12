@@ -1,0 +1,8 @@
+-- LLVM backend test: arithmetic and branches
+function main()
+begin
+    let a be 3
+    let b be 7
+    let c be a + b
+    let d be c * 2
+end

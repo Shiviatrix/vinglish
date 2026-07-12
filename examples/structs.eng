@@ -1,0 +1,25 @@
+type Point
+begin
+    x: number
+    y: number
+end
+
+function translate on Point (number dx, number dy)
+returns Point
+begin
+    return Point {
+        x: self.x + dx,
+        y: self.y + dy
+    }
+end
+
+function main()
+begin
+    let p be Point { x: 10, y: 20 }
+    let p2 be p.translate(5, 5)
+    
+    print("p.x is ")
+    println(p.x)
+    print("p2 is ")
+    println(p2)
+end
