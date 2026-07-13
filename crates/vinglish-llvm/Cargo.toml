@@ -1,0 +1,10 @@
+[package]
+name = "vinglish-llvm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vinglish-mir = { path = "../vinglish-mir" }
+vinglish-hir = { path = "../vinglish-hir" }
+vinglish-parser = { path = "../vinglish-parser" }
+inkwell = { version = "0.9.0", features = ["llvm22-1"] }

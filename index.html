@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Englist Language Specification and Compiler Internals</title>
+    <title>Vinglish Language Specification and Compiler Internals</title>
     <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@300;500;700&family=VT323&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -43,10 +43,18 @@
         }
 
         #sidebar img {
-            width: 100%;
-            max-width: 120px;
+            max-width: 100%;
             display: block;
-            margin: 0 auto 20px auto;
+            margin: 0 auto 10px auto;
+        }
+
+        .version-tag {
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 20px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
         }
 
         #sidebar h2 {
@@ -217,7 +225,8 @@
     <canvas id="trailCanvas"></canvas>
 
     <nav id="sidebar">
-        <img src="Englist Icon.png" alt="Englist Logo">
+        <img src="Vinglish Icon.png" alt="Vinglish Logo">
+        <div class="version-tag">Version 0.1.0</div>
         
         <h2>I. The Language</h2>
         <ul>
@@ -254,7 +263,7 @@
         
         <h2>IV. Ecosystem</h2>
         <ul>
-            <li><a href="#cli">22. Englist CLI</a></li>
+            <li><a href="#cli">22. Vinglish CLI</a></li>
             <li><a href="#lsp">23. Language Server (LSP)</a></li>
             <li><a href="#roadmap">24. Future Roadmap</a></li>
             <li><a href="#benchmarks">25. Benchmarks</a></li>
@@ -262,10 +271,10 @@
     </nav>
 
     <main id="content">
-        <h1>The Englist Specification</h1>
+        <h1>The Vinglish Specification</h1>
         <div class="subtitle">Comprehensive Language Guide and Compiler Internals</div>
         
-        <p>This document serves as the exhaustive, unabridged specification of the <strong>Englist</strong> programming language, its standard library, and the internal architecture of its Rust-based compiler. It is designed to guide developers from the surface-level syntax down to the bare metal representation in the C-codegen backend.</p>
+        <p>This document serves as the exhaustive, unabridged specification of the <strong>Vinglish</strong> programming language, its standard library, and the internal architecture of its Rust-based compiler. It is designed to guide developers from the surface-level syntax down to the bare metal representation in the C-codegen backend.</p>
 
         <hr>
 
@@ -274,11 +283,11 @@
         <!-- ============================================== -->
 
         <h2 id="motivation">1. Motivation & History</h2>
-        <p>Systems programming languages typically fall into two camps: low-level, highly symbolic languages (C, C++) that offer ultimate control but sacrifice human readability, or modern, safe languages (Rust) that introduce immense cognitive overhead and complex syntax. <strong>Englist</strong> bridges this divide.</p>
-        <p>The core philosophy of Englist is: <em>Code should read like English prose, but the compiler should rigorously understand and optimize the developer's intent.</em> By parsing naturalistic keywords (<code>is below</code>, <code>repeat while</code>, <code>be</code>) and feeding them into an aggressively optimizing, mathematically pure Static Single Assignment (SSA) pipeline, Englist offers the readability of pseudocode with the zero-cost abstractions of C.</p>
+        <p>Systems programming languages typically fall into two camps: low-level, highly symbolic languages (C, C++) that offer ultimate control but sacrifice human readability, or modern, safe languages (Rust) that introduce immense cognitive overhead and complex syntax. <strong>Vinglish</strong> bridges this divide.</p>
+        <p>The core philosophy of Vinglish is: <em>Code should read like English prose, but the compiler should rigorously understand and optimize the developer's intent.</em> By parsing naturalistic keywords (<code>is below</code>, <code>repeat while</code>, <code>be</code>) and feeding them into an aggressively optimizing, mathematically pure Static Single Assignment (SSA) pipeline, Vinglish offers the readability of pseudocode with the zero-cost abstractions of C.</p>
 
         <h2 id="lexical">2. Lexical Structure</h2>
-        <p>Englist programs are composed of a stream of ASCII tokens. The lexer ignores whitespace (spaces, tabs, newlines) outside of string literals.</p>
+        <p>Vinglish programs are composed of a stream of ASCII tokens. The lexer ignores whitespace (spaces, tabs, newlines) outside of string literals.</p>
         
         <h3>Keywords</h3>
         <p>The following keywords are reserved and carry semantic weight:</p>
@@ -290,7 +299,7 @@ struct, type, address</span></code></pre>
         <p>Identifiers must begin with an alphabetic character or underscore, followed by alphanumeric characters or underscores. Line comments begin with <code>//</code> and block comments are currently unsupported to encourage concise, single-line annotations.</p>
 
         <h2 id="types">3. Types & Semantics</h2>
-        <p>Englist employs a static, strongly-typed system. All variables, function parameters, and return types must be resolvable at compile-time during the High-Level Intermediate Representation (HIR) phase.</p>
+        <p>Vinglish employs a static, strongly-typed system. All variables, function parameters, and return types must be resolvable at compile-time during the High-Level Intermediate Representation (HIR) phase.</p>
 
         <h3>Primitive Types</h3>
         <ul>
@@ -303,7 +312,7 @@ struct, type, address</span></code></pre>
         <p>Types can be aliased using the <code>type</code> keyword, heavily used when defining generic structural boundaries.</p>
 
         <h2 id="control-flow">4. Control Flow</h2>
-        <p>Control flow in Englist is designed to read rhythmically, avoiding the "bracket fatigue" common in C-family languages. The <code>begin</code> and <code>end</code> keywords delineate scope.</p>
+        <p>Control flow in Vinglish is designed to read rhythmically, avoiding the "bracket fatigue" common in C-family languages. The <code>begin</code> and <code>end</code> keywords delineate scope.</p>
 
         <h3>Conditional Logic</h3>
         <p>The <code>if / then / else</code> construct supports relational operators modeled on English:</p>
@@ -321,7 +330,7 @@ struct, type, address</span></code></pre>
 <span class="highlight-keyword">end</span></code></pre>
 
         <h3>Iteration</h3>
-        <p>Looping is handled via the <code>repeat while</code> construct. Englist does not currently feature a traditional <code>for</code> loop, preferring explicit index management or iterator patterns defined in the standard library.</p>
+        <p>Looping is handled via the <code>repeat while</code> construct. Vinglish does not currently feature a traditional <code>for</code> loop, preferring explicit index management or iterator patterns defined in the standard library.</p>
         <pre><code><span class="highlight-keyword">let</span> i <span class="highlight-keyword">be</span> 0
 <span class="highlight-keyword">repeat while</span> i <span class="highlight-keyword">is below</span> 100
     <span class="highlight-comment">// Loop body</span>
@@ -329,7 +338,7 @@ struct, type, address</span></code></pre>
 <span class="highlight-keyword">end</span></code></pre>
 
         <h2 id="memory">5. Memory & Ownership</h2>
-        <p>Englist does <strong>not</strong> include a Garbage Collector (GC). The language requires the developer to manage memory allocations manually, but introduces syntactical safety barriers via the <code>borrow</code> system.</p>
+        <p>Vinglish does <strong>not</strong> include a Garbage Collector (GC). The language requires the developer to manage memory allocations manually, but introduces syntactical safety barriers via the <code>borrow</code> system.</p>
 
         <div class="callout warning">
             <h4>Manual Allocation Risk</h4>
@@ -337,7 +346,7 @@ struct, type, address</span></code></pre>
         </div>
 
         <h3>Borrow Semantics</h3>
-        <p>When passing structures across function boundaries, Englist enforces ownership clarity:</p>
+        <p>When passing structures across function boundaries, Vinglish enforces ownership clarity:</p>
         <ul>
             <li><code>borrow</code>: Passes an immutable reference to the function. The function can read, but the HIR compiler will reject any assignment to the borrowed data.</li>
             <li><code>borrow mutable</code>: Passes a mutable reference. The function may alter the underlying data.</li>
@@ -348,7 +357,7 @@ struct, type, address</span></code></pre>
 <span class="highlight-keyword">end</span></code></pre>
 
         <h2 id="generics">6. Generics & Polymorphism</h2>
-        <p>Englist achieves polymorphism through compile-time monomorphization of generics. A generic type parameter <code>&lt;T&gt;</code> acts as a placeholder during the parsing and initial HIR phases.</p>
+        <p>Vinglish achieves polymorphism through compile-time monomorphization of generics. A generic type parameter <code>&lt;T&gt;</code> acts as a placeholder during the parsing and initial HIR phases.</p>
         <p>When a generic function or struct is instantiated (e.g., <code>Vector&lt;number&gt;</code>), the compiler generates a specialized, concrete version of that entity. This completely eliminates dynamic dispatch overhead at runtime.</p>
         <pre><code><span class="highlight-keyword">struct</span> <span class="highlight-type">Pair</span>&lt;T&gt;
     first: T
@@ -362,7 +371,7 @@ struct, type, address</span></code></pre>
 <span class="highlight-keyword">end</span></code></pre>
 
         <h2 id="error-handling">7. Error Handling</h2>
-        <p>Englist avoids exceptions entirely, utilizing explicit <code>Result&lt;T, E&gt;</code> types combined with the postfix <code>?</code> operator for safe error propagation. Errors must be handled or explicitly propagated, ensuring resilient code.</p>
+        <p>Vinglish avoids exceptions entirely, utilizing explicit <code>Result&lt;T, E&gt;</code> types combined with the postfix <code>?</code> operator for safe error propagation. Errors must be handled or explicitly propagated, ensuring resilient code.</p>
         <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">read_config</span>() <span class="highlight-keyword">returns</span> <span class="highlight-type">Result</span>&lt;<span class="highlight-type">text</span>, <span class="highlight-type">text</span>&gt;
 <span class="highlight-keyword">begin</span>
     <span class="highlight-keyword">let</span> file <span class="highlight-keyword">be</span> open(<span class="highlight-string">"config.txt"</span>)<span class="highlight-keyword">?</span>
@@ -379,7 +388,7 @@ struct, type, address</span></code></pre>
 <span class="highlight-keyword">end</span></code></pre>
 
         <h2 id="structs">9. Structs & Layout</h2>
-        <p>Structs in Englist map 1:1 with C structures. They guarantee memory layout order, making them ideal for systems programming, foreign function interfacing (FFI), and network packet serialization.</p>
+        <p>Structs in Vinglish map 1:1 with C structures. They guarantee memory layout order, making them ideal for systems programming, foreign function interfacing (FFI), and network packet serialization.</p>
         <p>Struct instantiation utilizes brace syntax. Every field must be initialized.</p>
 
         <hr>
@@ -389,7 +398,7 @@ struct, type, address</span></code></pre>
         <!-- ============================================== -->
 
         <h2 id="std-overview">10. Library Overview</h2>
-        <p>The Englist standard library (<code>std</code>) is a collection of modules written entirely in Englist. Because the language supports raw memory operations and seamless C interoperability, almost no internal C code is required. The library proves the language's capability to bootstrap itself.</p>
+        <p>The Vinglish standard library (<code>std</code>) is a collection of modules written entirely in Vinglish. Because the language supports raw memory operations and seamless C interoperability, almost no internal C code is required. The library proves the language's capability to bootstrap itself.</p>
 
         <h2 id="std-memory">11. Memory Allocation</h2>
         <p>The <code>std.runtime</code> module exposes intrinsics mapped directly to OS-level memory allocators (via the <code>rt.c</code> runtime wrapper).</p>
@@ -420,10 +429,10 @@ struct, type, address</span></code></pre>
 
         <h2 id="std-hashmap">13. Hash Maps</h2>
         <p>The <code>HashMap of K, V</code> (located in <code>std.collections.map</code>) utilizes an open-addressing, linear-probing architecture to maximize CPU cache locality. The hashing algorithm resolves collisions by scanning adjacent memory slots. Internally, it leverages native C interop via <code>eng_map.c</code>.</p>
-        <p>Examples successfully leverage <code>eng_map_new()</code>, <code>eng_map_insert()</code>, and <code>eng_map_get()</code> natively within Englist.</p>
+        <p>Examples successfully leverage <code>eng_map_new()</code>, <code>eng_map_insert()</code>, and <code>eng_map_get()</code> natively within Vinglish.</p>
 
         <h2 id="std-io">14. File I/O</h2>
-        <p>The <code>std.io</code> module provides wrappers around standard input, output, and file descriptors. Files are represented as structs containing the integer descriptor, enabling buffered reads and writes natively in Englist.</p>
+        <p>The <code>std.io</code> module provides wrappers around standard input, output, and file descriptors. Files are represented as structs containing the integer descriptor, enabling buffered reads and writes natively in Vinglish.</p>
 
         <hr>
 
@@ -432,7 +441,7 @@ struct, type, address</span></code></pre>
         <!-- ============================================== -->
 
         <h2 id="architecture">15. The Pipeline</h2>
-        <p>The Englist compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
+        <p>The Vinglish compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
         <pre><code>Source Code (.eng) 
        ↓ (Lexer & Parser)
 Abstract Syntax Tree (AST) ───────→ (C Codegen Backend) → C Source Code (.c)
@@ -453,7 +462,7 @@ Executable Binary</code></pre>
         <p><strong>Alias Analysis</strong> is also performed here. By tracking pointer assignments and references, the compiler validates that mutations do not violate borrowing rules.</p>
 
         <h2 id="mir">18. Mid-Level IR & SSA</h2>
-        <p>The HIR is translated into the Mid-Level IR (MIR). This is the crown jewel of the Englist compiler.</p>
+        <p>The HIR is translated into the Mid-Level IR (MIR). This is the crown jewel of the Vinglish compiler.</p>
         <p>MIR utilizes <strong>Static Single Assignment (SSA)</strong> form. In SSA, every variable is assigned exactly once. When a variable is reassigned in the source (e.g., <code>x = x + 1</code>), the MIR generates a new version of that variable (e.g., <code>x_2 = x_1 + 1</code>).</p>
         
         <div class="callout">
@@ -473,17 +482,17 @@ Executable Binary</code></pre>
         <p><strong>Constant Folding (<code>constant_folding.rs</code>):</strong> Traverses the SSA graph identifying expressions composed entirely of literal constants. It evaluates these at compile-time (e.g., folding <code>5 * 4</code> directly into <code>20</code>) and propagates the result downstream.</p>
 
         <h2 id="codegen">21. Codegen Backends</h2>
-        <p>Englist currently utilizes a dual-backend architecture, adapting to different goals:</p>
+        <p>Vinglish currently utilizes a dual-backend architecture, adapting to different goals:</p>
         <ul>
             <li><strong>C Backend (`--backend c`):</strong> Currently serves as a rapid bootstrapping backend that bypasses the MIR entirely and consumes the AST directly. It generates C code and links `rt.c`, allowing us to rely on GCC/Clang for heavy optimizations.</li>
             <li><strong>LLVM Backend (`crates/eng-llvm`):</strong> The long-term production target. It consumes the highly-optimized MIR natively to produce robust binaries via LLVM IR without an intermediate C translation step.</li>
         </ul>
         
         <h3>Structure Topological Sorting</h3>
-        <p>C requires that structures are defined before they are used. If <code>Struct A</code> contains a <code>Struct B</code> by value, <code>Struct B</code> must be declared first. The Englist codegen performs a topological sort on the dependency graph of all structs to emit them in the mathematically correct order, resolving cyclic pointer references automatically via forward declarations.</p>
+        <p>C requires that structures are defined before they are used. If <code>Struct A</code> contains a <code>Struct B</code> by value, <code>Struct B</code> must be declared first. The Vinglish codegen performs a topological sort on the dependency graph of all structs to emit them in the mathematically correct order, resolving cyclic pointer references automatically via forward declarations.</p>
         
         <h3><code>__auto_type</code> Inference</h3>
-        <p>To elegantly handle the translation of Englist generics to C, the codegen utilizes the GNU C extension <code>__auto_type</code>. This prevents the compiler from needing to generate deeply convoluted generic C macros, instead relying on the C compiler to infer the type of the evaluated expression.</p>
+        <p>To elegantly handle the translation of Vinglish generics to C, the codegen utilizes the GNU C extension <code>__auto_type</code>. This prevents the compiler from needing to generate deeply convoluted generic C macros, instead relying on the C compiler to infer the type of the evaluated expression.</p>
         <pre><code><span class="highlight-comment">// Generated C code for generic assignment</span>
 __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
 
@@ -493,12 +502,12 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <!-- PART IV: ECOSYSTEM                             -->
         <!-- ============================================== -->
 
-        <h2 id="cli">22. Englist CLI</h2>
+        <h2 id="cli">22. Vinglish CLI</h2>
         <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit.</p>
         
         <h3>Installation</h3>
-        <p>You can install the Englist compiler on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:</p>
-        <pre><code>curl -fsSL https://raw.githubusercontent.com/Shiviatrix/englist/main/install.sh | bash</code></pre>
+        <p>You can install the Vinglish compiler on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:</p>
+        <pre><code>curl -fsSL https://raw.githubusercontent.com/Shiviatrix/vinglish/main/install.sh | bash</code></pre>
         <p><em>Note: This requires <a href="https://rustup.rs/" style="color: var(--saffron);">Rust</a> and Git to be installed on your system.</em></p>
 
         <h3>Usage</h3>
@@ -506,7 +515,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <pre><code>eng compile my_program.eng</code></pre>
 
         <h2 id="lsp">23. Language Server (LSP) Support</h2>
-        <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Englist is perfectly positioned for a Language Server Protocol implementation.</p>
+        <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Vinglish is perfectly positioned for a Language Server Protocol implementation.</p>
         <ul>
             <li><strong>Hover:</strong> The SSA graph directly maps identifiers to their inferred types.</li>
             <li><strong>Diagnostics:</strong> Borrow-checking errors and semantic validation are emitted as JSON LSP diagnostics.</li>
@@ -514,7 +523,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         </ul>
 
         <h2 id="roadmap">24. Future Roadmap</h2>
-        <p>The roadmap for Englist prioritizes ecosystem expansion over language mutations:</p>
+        <p>The roadmap for Vinglish prioritizes ecosystem expansion over language mutations:</p>
         <ol>
             <li><strong>The Package Manager (<code>eng</code>):</strong> A native dependency resolver allowing commands like <code>eng new</code>, <code>eng build</code>, <code>eng add std.net</code>.</li>
             <li><strong>Standard Library Maturation:</strong> Implementing cryptographic hashing, highly concurrent threading models, and a non-blocking TCP server entirely natively.</li>
@@ -522,7 +531,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         </ol>
 
         <h2 id="benchmarks">25. Benchmarks</h2>
-        <p>The Englist compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
+        <p>The Vinglish compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
         <p>You can execute the benchmarking suite using the built-in CLI command:</p>
         <pre><code>eng benchmark benchmarks --runs 5</code></pre>
         <p>The performance metrics are tracked daily through our continuous integration pipelines, ensuring the C and LLVM codegen backends maintain zero-cost abstraction guarantees.</p>

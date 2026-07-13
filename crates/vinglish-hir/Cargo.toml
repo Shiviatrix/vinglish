@@ -1,0 +1,9 @@
+[package]
+name        = "vinglish-hir"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish High-Level Intermediate Representation"
+
+[dependencies]
+vinglish-lexer = { path = "../vinglish-lexer" }
+vinglish-parser = { path = "../vinglish-parser" }

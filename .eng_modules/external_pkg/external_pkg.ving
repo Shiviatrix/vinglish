@@ -1,0 +1,7 @@
+package external_pkg
+module external_pkg
+
+public function hello() returns number
+begin
+    return 0
+end

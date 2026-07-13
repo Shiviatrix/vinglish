@@ -1,0 +1,14 @@
+[package]
+name = "vinglish-lsp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description.workspace = true
+
+[dependencies]
+vinglish-diagnostics = { version = "0.1.0", path = "../vinglish-diagnostics" }
+vinglish-lexer = { version = "0.1.0", path = "../vinglish-lexer" }
+vinglish-parser = { version = "0.1.0", path = "../vinglish-parser" }
+tokio = { version = "1.52.3", features = ["full"] }
+tower-lsp = "0.20.0"

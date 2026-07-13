@@ -1,0 +1,12 @@
+[package]
+name = "vinglish-opt"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description.workspace = true
+
+[dependencies]
+vinglish-mir = { path = "../vinglish-mir" }
+vinglish-hir = { path = "../vinglish-hir" }
+vinglish-parser = { path = "../vinglish-parser" }

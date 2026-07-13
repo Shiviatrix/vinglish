@@ -1,8 +1,0 @@
-[package]
-name        = "eng-lexer"
-version.workspace    = true
-edition.workspace    = true
-description = "Englist Intent Lexer — tokenizes Englist source with indentation tracking"
-
-[dependencies]
-thiserror.workspace = true

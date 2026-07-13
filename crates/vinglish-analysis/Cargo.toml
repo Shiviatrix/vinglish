@@ -1,0 +1,11 @@
+[package]
+name = "vinglish-analysis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vinglish-hir = { path = "../vinglish-hir" }
+vinglish-mir = { path = "../vinglish-mir" }
+vinglish-diagnostics = { path = "../vinglish-diagnostics" }
+vinglish-parser = { path = "../vinglish-parser" }
+vinglish-lexer = { path = "../vinglish-lexer" }

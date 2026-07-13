@@ -1,0 +1,6 @@
+use std.io
+
+function main()
+begin
+    print("Hello from Vinglish!")
+end

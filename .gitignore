@@ -8,7 +8,7 @@
 /net
 /net.c
 /*.dSYM/
-/.eng_modules/
+/.ving_modules/
 /eng.toml
 /src/
 /rt/*.o

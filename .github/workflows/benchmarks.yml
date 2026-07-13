@@ -20,6 +20,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc g++ python3 golang
+          npm install -g elm
 
       - name: Run Benchmarks
         run: cargo run --release --bin eng -- benchmark benchmarks --runs 5

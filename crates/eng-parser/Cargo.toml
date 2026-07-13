@@ -1,9 +1,0 @@
-[package]
-name        = "eng-parser"
-version.workspace    = true
-edition.workspace    = true
-description = "Englist Grammar Parser — recursive-descent AST builder"
-
-[dependencies]
-eng-lexer   = { path = "../eng-lexer" }
-thiserror.workspace = true

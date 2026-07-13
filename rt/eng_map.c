@@ -25,7 +25,7 @@ static uint64_t hash_string(const char* str) {
     return hash;
 }
 
-void* eng_map_new() {
+void* ving_map_new() {
     Map* map = (Map*)malloc(sizeof(Map));
     map->capacity = INITIAL_CAPACITY;
     map->size = 0;
@@ -33,7 +33,7 @@ void* eng_map_new() {
     return map;
 }
 
-void eng_map_insert(void* map_ptr, const char* key, int64_t value) {
+void ving_map_insert(void* map_ptr, const char* key, int64_t value) {
     Map* map = (Map*)map_ptr;
     uint64_t hash = hash_string(key);
     int64_t index = hash % map->capacity;
@@ -57,7 +57,7 @@ void eng_map_insert(void* map_ptr, const char* key, int64_t value) {
     // For simplicity, we skip rehashing in this minimal runtime
 }
 
-int64_t eng_map_get(void* map_ptr, const char* key) {
+int64_t ving_map_get(void* map_ptr, const char* key) {
     Map* map = (Map*)map_ptr;
     uint64_t hash = hash_string(key);
     int64_t index = hash % map->capacity;
@@ -72,7 +72,7 @@ int64_t eng_map_get(void* map_ptr, const char* key) {
     return 0; // return 0 if not found
 }
 
-void eng_map_free(void* map_ptr) {
+void ving_map_free(void* map_ptr) {
     Map* map = (Map*)map_ptr;
     for (int64_t i = 0; i < map->capacity; i++) {
         Entry* current = map->buckets[i];

@@ -1,0 +1,28 @@
+[package]
+name        = "vinglish-cli"
+version.workspace    = true
+edition.workspace    = true
+description = "eng — the Vinglish compiler driver"
+
+[[bin]]
+name = "vng"
+path = "src/main.rs"
+
+[dependencies]
+vinglish-lexer      = { path = "../vinglish-lexer" }
+vinglish-parser     = { path = "../vinglish-parser" }
+vinglish-types      = { path = "../vinglish-types" }
+vinglish-ownership  = { path = "../vinglish-ownership" }
+vinglish-diagnostics= { path = "../vinglish-diagnostics" }
+vinglish-codegen    = { path = "../vinglish-codegen" }
+vinglish-fmt        = { path = "../vinglish-fmt" }
+vinglish-mir        = { path = "../vinglish-mir" }
+vinglish-opt        = { path = "../vinglish-opt" }
+vinglish-own        = { path = "../vinglish-own" }
+vinglish-ssa        = { path = "../vinglish-ssa" }
+clap.workspace = true
+vinglish-hir = { path = "../vinglish-hir" }
+vinglish-analysis = { path = "../vinglish-analysis" }
+vinglish-llvm = { path = "../vinglish-llvm" }
+vinglish-lsp = { version = "0.1.0", path = "../vinglish-lsp" }
+tokio = { version = "1.52.3", features = ["full"] }

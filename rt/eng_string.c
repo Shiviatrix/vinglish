@@ -6,7 +6,7 @@ struct String {
     char* ptr;
 };
 
-struct String eng_string_new(char* ptr) {
+struct String ving_string_new(char* ptr) {
     struct String s;
     if (!ptr) {
         s.ptr = calloc(1, 1);
@@ -16,12 +16,12 @@ struct String eng_string_new(char* ptr) {
     return s;
 }
 
-int64_t eng_string_len(struct String s) {
+int64_t ving_string_len(struct String s) {
     if (!s.ptr) return 0;
     return strlen(s.ptr);
 }
 
-struct String eng_string_concat(struct String a, struct String b) {
+struct String ving_string_concat(struct String a, struct String b) {
     struct String res;
     if (!a.ptr && !b.ptr) {
         res.ptr = calloc(1, 1);
@@ -37,7 +37,7 @@ struct String eng_string_concat(struct String a, struct String b) {
     return res;
 }
 
-void eng_string_free(struct String s) {
+void ving_string_free(struct String s) {
     if (s.ptr) {
         free(s.ptr);
     }

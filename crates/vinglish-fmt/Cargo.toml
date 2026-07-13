@@ -1,0 +1,9 @@
+[package]
+name        = "vinglish-fmt"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish canonical source formatter"
+
+[dependencies]
+vinglish-parser = { path = "../vinglish-parser" }
+vinglish-lexer  = { path = "../vinglish-lexer" }

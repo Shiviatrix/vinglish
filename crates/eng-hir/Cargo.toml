@@ -1,9 +1,0 @@
-[package]
-name        = "eng-hir"
-version.workspace    = true
-edition.workspace    = true
-description = "Englist High-Level Intermediate Representation"
-
-[dependencies]
-eng-lexer = { path = "../eng-lexer" }
-eng-parser = { path = "../eng-parser" }

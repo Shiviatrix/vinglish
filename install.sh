@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================="
-echo "   Englist Compiler Installation Script  "
+echo "   Vinglish Compiler Installation Script  "
 echo "========================================="
 
 # Check for prerequisites
@@ -15,26 +15,26 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-ENGLIST_ROOT="$HOME/.englist"
+ENGLIST_ROOT="$HOME/.vinglish"
 
 # Create a temporary directory for cloning if we aren't already in the repo
 WORK_DIR=$(pwd)
 CLONED=false
 
 if [ ! -f "Cargo.toml" ] || ! grep -q "eng-cli" "Cargo.toml"; then
-    echo "Downloading Englist source code..."
+    echo "Downloading Vinglish source code..."
     WORK_DIR=$(mktemp -d)
-    git clone --quiet https://github.com/Shiviatrix/englist.git "$WORK_DIR"
+    git clone --quiet https://github.com/Shiviatrix/vinglish.git "$WORK_DIR"
     cd "$WORK_DIR"
     CLONED=true
 fi
 
 # 1. Build the compiler in release mode
-echo "[1/4] Building Englist (cargo build --release)..."
+echo "[1/4] Building Vinglish (cargo build --release)..."
 cargo build --release
 
 # 2. Create the global directory
-echo "[2/4] Setting up global Englist directory (~/.englist)..."
+echo "[2/4] Setting up global Vinglish directory (~/.vinglish)..."
 mkdir -p "$ENGLIST_ROOT"
 
 # 3. Copy standard library and runtime
@@ -58,10 +58,10 @@ fi
 echo "========================================="
 echo "Installation Successful! 🎉"
 echo ""
-echo "To use Englist from any directory, you MUST set the ENGLIST_ROOT environment variable."
+echo "To use Vinglish from any directory, you MUST set the ENGLIST_ROOT environment variable."
 echo "Add the following line to your shell profile (e.g., ~/.bashrc, ~/.zshrc, or ~/.profile):"
 echo ""
-echo "    export ENGLIST_ROOT=\"$HOME/.englist\""
+echo "    export ENGLIST_ROOT=\"$HOME/.vinglish\""
 echo ""
 echo "After adding it, restart your terminal or run: source ~/.zshrc"
 echo "========================================="

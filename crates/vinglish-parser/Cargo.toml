@@ -1,0 +1,10 @@
+[package]
+name        = "vinglish-parser"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish Grammar Parser — recursive-descent AST builder"
+
+[dependencies]
+vinglish-lexer   = { path = "../vinglish-lexer" }
+thiserror.workspace = true
+vinglish-diagnostics = { path = "../vinglish-diagnostics" }

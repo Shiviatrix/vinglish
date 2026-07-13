@@ -1,0 +1,11 @@
+[package]
+name        = "vinglish-ownership"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish ownership and borrow checker"
+
+[dependencies]
+vinglish-lexer  = { path = "../vinglish-lexer" }
+vinglish-parser = { path = "../vinglish-parser" }
+vinglish-types  = { path = "../vinglish-types" }
+thiserror.workspace = true

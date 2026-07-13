@@ -7,7 +7,7 @@
 #include <netdb.h>
 #include <stdint.h>
 
-int64_t eng_net_tcp_connect(const char* host, int64_t port) {
+int64_t ving_net_tcp_connect(const char* host, int64_t port) {
     int sock;
     struct sockaddr_in server;
     struct hostent *he;
@@ -33,13 +33,13 @@ int64_t eng_net_tcp_connect(const char* host, int64_t port) {
     return (int64_t)sock;
 }
 
-int64_t eng_net_tcp_send(int64_t sock, const char* data) {
+int64_t ving_net_tcp_send(int64_t sock, const char* data) {
     int len = strlen(data);
     int sent = send((int)sock, data, len, 0);
     return (int64_t)sent;
 }
 
-const char* eng_net_tcp_recv(int64_t sock, int64_t max_bytes) {
+const char* ving_net_tcp_recv(int64_t sock, int64_t max_bytes) {
     char* buffer = (char*)malloc(max_bytes + 1);
     int received = recv((int)sock, buffer, max_bytes, 0);
     if (received < 0) {
@@ -50,6 +50,6 @@ const char* eng_net_tcp_recv(int64_t sock, int64_t max_bytes) {
     return buffer;
 }
 
-void eng_net_tcp_close(int64_t sock) {
+void ving_net_tcp_close(int64_t sock) {
     close((int)sock);
 }

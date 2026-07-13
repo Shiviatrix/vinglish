@@ -1,14 +1,14 @@
 <div align="center">
-  <img src="./Englist%20Icon.png" alt="Englist Logo" width="200" />
+  <img src="./Vinglish%20Icon.png" alt="Vinglish Logo" width="200" />
 </div>
 
-# Englist
+# Vinglish (v0.1.0)
 
 **Programming that reads like English. Built on mathematics.**
 
-Englist is a modern, statically-typed systems programming language developed as a comprehensive academic project. It is built upon a core philosophy: **programming should read like English, but the compiler understands the intent of the user.**
+Vinglish is a modern, statically-typed systems programming language developed as a comprehensive academic project. It is built upon a core philosophy: **programming should read like English, but the compiler understands the intent of the user.**
 
-By combining an intent-aware semantic analysis pipeline, an optimizing SSA-form Mid-Level Intermediate Representation (MIR), and a zero-overhead C-codegen backend, Englist successfully merges high-level syntactical expression with low-level systems control.
+By combining an intent-aware semantic analysis pipeline, an optimizing SSA-form Mid-Level Intermediate Representation (MIR), and a zero-overhead C-codegen backend, Vinglish successfully merges high-level syntactical expression with low-level systems control.
 
 ---
 
@@ -17,11 +17,11 @@ By combining an intent-aware semantic analysis pipeline, an optimizing SSA-form 
 * **Intent over Syntax:** The compiler actively models data ownership and types to minimize syntactic boilerplate.
 * **Human Readability:** The language grammar is designed to closely resemble English prose.
 * **Mathematical Foundation:** The compiler leverages a robust intermediate representation (MIR) to perform safe, mathematically-grounded optimizations.
-* **Zero Overhead:** The language compiles directly to low-level C. The runtime is extremely minimal, allowing the majority of the standard library to be implemented natively in Englist.
+* **Zero Overhead:** The language compiles directly to low-level C. The runtime is extremely minimal, allowing the majority of the standard library to be implemented natively in Vinglish.
 
 ## Architecture Highlights
 
-The Englist compiler implements a multi-stage pipeline:
+The Vinglish compiler implements a multi-stage pipeline:
 
 1. **HIR (High-Level IR):** Performs comprehensive type resolution, modular symbol graph construction, and alias analysis.
 2. **MIR (Mid-Level IR):** A mathematically pure, Static Single Assignment (SSA) form utilized for advanced optimization.
@@ -38,17 +38,17 @@ The Englist compiler implements a multi-stage pipeline:
 
 ### Installation
 
-You can install the Englist compiler globally on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:
+You can install the Vinglish compiler globally on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Shiviatrix/englist/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Shiviatrix/vinglish/main/install.sh | bash
 ```
 
 *Note: This requires [Rust](https://rustup.rs/) and Git to be installed on your system.*
 
-### Compiling Englist Source
+### Compiling Vinglish Source
 
-To compile an Englist source file to an executable binary, execute the following command:
+To compile an Vinglish source file to an executable binary, execute the following command:
 
 ```bash
 cargo run --bin eng-cli -- compile my_file.eng

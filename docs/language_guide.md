@@ -1,16 +1,16 @@
-# Englist Language Guide
+# Vinglish Language Guide
 
 <div align="center">
-  <img src="../Englist%20Icon.png" alt="Englist Logo" width="100" />
+  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
 </div>
 
-Englist is designed to maximize human readability while preserving the low-level performance characteristics of a systems programming language like C. This guide outlines the core syntactical features of the language.
+Vinglish is designed to maximize human readability while preserving the low-level performance characteristics of a systems programming language like C. This guide outlines the core syntactical features of the language.
 
 ## Variables and Functions
 
-Variables in Englist are strongly typed to ensure program correctness. Use `let ... be ...` to declare variables.
+Variables in Vinglish are strongly typed to ensure program correctness. Use `let ... be ...` to declare variables.
 
-```englist
+```vinglish
 public function add(number a, number b) returns number
 begin
     return a + b
@@ -19,9 +19,9 @@ end
 
 ## Structs and Borrowing
 
-Englist provides support for structs. Memory management is explicit, requiring the use of `borrow` to modify data structures in place or pass references.
+Vinglish provides support for structs. Memory management is explicit, requiring the use of `borrow` to modify data structures in place or pass references.
 
-```englist
+```vinglish
 struct Point begin
     number x
     number y
@@ -36,9 +36,9 @@ end
 
 ## Generics
 
-Generics are implemented as a first-class feature in Englist. They are heavily utilized throughout the standard library to enable type-safe code reuse without runtime overhead.
+Generics are implemented as a first-class feature in Vinglish. They are heavily utilized throughout the standard library to enable type-safe code reuse without runtime overhead.
 
-```englist
+```vinglish
 struct Pair of T begin
     T first
     T second
@@ -52,9 +52,9 @@ end
 
 ## Error Handling
 
-Englist uses a `Result of T` type and the postfix `?` operator for robust and explicit error propagation, completely avoiding exceptions.
+Vinglish uses a `Result of T` type and the postfix `?` operator for robust and explicit error propagation, completely avoiding exceptions.
 
-```englist
+```vinglish
 public function read_config() returns Result of text
 begin
     let file be open("config.txt")?
@@ -67,7 +67,7 @@ end
 
 You can easily format strings using the `fmt!` macro, which seamlessly interpolates variables and expressions into text.
 
-```englist
+```vinglish
 public function greet(text name, number age)
 begin
     let message be fmt!("Hello, my name is {name} and I am {age} years old.")
@@ -77,9 +77,9 @@ end
 
 ## Modules (Import Graph)
 
-To support scalable software development, Englist resolves dependencies into a Module Graph rather than a monolithic AST. This architectural decision facilitates fast incremental compilation and ensures clean namespace management.
+To support scalable software development, Vinglish resolves dependencies into a Module Graph rather than a monolithic AST. This architectural decision facilitates fast incremental compilation and ensures clean namespace management.
 
-```englist
+```vinglish
 use std.math
 use std.collections.vector
 ```

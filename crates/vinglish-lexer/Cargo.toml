@@ -1,0 +1,8 @@
+[package]
+name        = "vinglish-lexer"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish Intent Lexer — tokenizes Vinglish source with indentation tracking"
+
+[dependencies]
+thiserror.workspace = true

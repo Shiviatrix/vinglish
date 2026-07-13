@@ -1,23 +1,23 @@
 [workspace]
 members = [
-    "crates/eng-cli",
-    "crates/eng-lexer",
-    "crates/eng-parser",
-    "crates/eng-types",
-    "crates/eng-ownership",
-    "crates/eng-diagnostics",
-    "crates/eng-codegen",
-    "crates/eng-fmt",
-    "crates/eng-hir", "crates/eng-mir", "crates/eng-opt", "crates/eng-own", "crates/eng-ssa", "crates/eng-analysis", "crates/eng-llvm", "crates/eng-lsp",
+    "crates/vinglish-cli",
+    "crates/vinglish-lexer",
+    "crates/vinglish-parser",
+    "crates/vinglish-types",
+    "crates/vinglish-ownership",
+    "crates/vinglish-diagnostics",
+    "crates/vinglish-codegen",
+    "crates/vinglish-fmt",
+    "crates/vinglish-hir", "crates/vinglish-mir", "crates/vinglish-opt", "crates/vinglish-own", "crates/vinglish-ssa", "crates/vinglish-analysis", "crates/vinglish-llvm", "crates/vinglish-lsp",
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["The Englist Team"]
+authors = ["The Vinglish Team"]
 license = "MIT"
-description = "The Englist intent-aware systems programming language"
+description = "The Vinglish intent-aware systems programming language"
 
 [workspace.dependencies]
 thiserror       = "1.0"

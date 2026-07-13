@@ -1,10 +1,10 @@
-# Englist Architecture
+# Vinglish Architecture
 
 <div align="center">
-  <img src="../Englist%20Icon.png" alt="Englist Logo" width="100" />
+  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
 </div>
 
-The Englist compiler is architected as a sequence of independent passes that transform high-level source code into heavily optimized machine code. This document outlines the fundamental stages of the compilation pipeline.
+The Vinglish compiler is architected as a sequence of independent passes that transform high-level source code into heavily optimized machine code. This document outlines the fundamental stages of the compilation pipeline.
 
 ## 1. Frontend: Lexing and Parsing
 The initial phase involves tokenizing the source file and parsing it into an Abstract Syntax Tree (AST). 

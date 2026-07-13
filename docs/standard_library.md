@@ -1,10 +1,10 @@
-# The Englist Standard Library (`std`)
+# The Vinglish Standard Library (`std`)
 
 <div align="center">
-  <img src="../Englist%20Icon.png" alt="Englist Logo" width="100" />
+  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
 </div>
 
-The Englist standard library serves as a primary demonstration of the language's capability. Rather than relying on a monolithic C runtime environment, the core utilities are implemented natively in `.eng` code, guaranteeing zero abstraction overhead.
+The Vinglish standard library serves as a primary demonstration of the language's capability. Rather than relying on a monolithic C runtime environment, the core utilities are implemented natively in `.eng` code, guaranteeing zero abstraction overhead.
 
 ## Structural Layout
 
@@ -22,13 +22,13 @@ std/
 
 ## The `std.collections` Module
 
-The collections module supplies foundational generic data structures. Internally, these structures utilize raw heap allocation mechanisms, yet they expose a memory-safe, idiomatic Englist API to the user.
+The collections module supplies foundational generic data structures. Internally, these structures utilize raw heap allocation mechanisms, yet they expose a memory-safe, idiomatic Vinglish API to the user.
 
 ### Generic Vector
 
 The `Vector of T` struct provides a dynamically resizing array implementation.
 
-```englist
+```vinglish
 use std.collections.vector
 
 public function main()

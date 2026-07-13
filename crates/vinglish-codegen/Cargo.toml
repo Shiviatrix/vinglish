@@ -1,0 +1,14 @@
+[package]
+name        = "vinglish-codegen"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish code generation: tree-walking interpreter + C transpiler"
+
+[dependencies]
+vinglish-lexer  = { path = "../vinglish-lexer" }
+vinglish-parser = { path = "../vinglish-parser" }
+vinglish-types  = { path = "../vinglish-types" }
+vinglish-hir    = { path = "../vinglish-hir" }
+vinglish-mir    = { path = "../vinglish-mir" }
+thiserror.workspace  = true
+indexmap.workspace   = true

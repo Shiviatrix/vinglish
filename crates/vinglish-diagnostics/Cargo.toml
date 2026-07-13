@@ -1,0 +1,9 @@
+[package]
+name        = "vinglish-diagnostics"
+version.workspace    = true
+edition.workspace    = true
+description = "Vinglish intent-aware diagnostic renderer"
+
+[dependencies]
+vinglish-lexer   = { path = "../vinglish-lexer" }
+strsim.workspace    = true
