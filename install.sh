@@ -5,17 +5,42 @@ echo "========================================="
 echo "   Englist Compiler Installation Script  "
 echo "========================================="
 
+# Check for prerequisites
+if ! command -v git &> /dev/null; then
+    echo "Error: git is not installed."
+    exit 1
+fi
+if ! command -v cargo &> /dev/null; then
+    echo "Error: cargo (Rust) is not installed. Please install Rust from https://rustup.rs/"
+    exit 1
+fi
+
+ENGLIST_ROOT="$HOME/.englist"
+
+# Create a temporary directory for cloning if we aren't already in the repo
+WORK_DIR=$(pwd)
+CLONED=false
+
+if [ ! -f "Cargo.toml" ] || ! grep -q "eng-cli" "Cargo.toml"; then
+    echo "Downloading Englist source code..."
+    WORK_DIR=$(mktemp -d)
+    git clone --quiet https://github.com/Shiviatrix/englist.git "$WORK_DIR"
+    cd "$WORK_DIR"
+    CLONED=true
+fi
+
 # 1. Build the compiler in release mode
 echo "[1/4] Building Englist (cargo build --release)..."
 cargo build --release
 
 # 2. Create the global directory
 echo "[2/4] Setting up global Englist directory (~/.englist)..."
-ENGLIST_ROOT="$HOME/.englist"
 mkdir -p "$ENGLIST_ROOT"
 
 # 3. Copy standard library and runtime
 echo "[3/4] Copying standard library and runtime..."
+# Remove old ones if they exist to ensure clean update
+rm -rf "$ENGLIST_ROOT/std" "$ENGLIST_ROOT/rt"
 cp -r std "$ENGLIST_ROOT/"
 cp -r rt "$ENGLIST_ROOT/"
 
@@ -23,6 +48,12 @@ cp -r rt "$ENGLIST_ROOT/"
 echo "[4/4] Installing binary to ~/.cargo/bin..."
 mkdir -p "$HOME/.cargo/bin"
 cp target/release/eng "$HOME/.cargo/bin/eng"
+
+# Cleanup if we cloned it
+if [ "$CLONED" = true ]; then
+    cd "$HOME"
+    rm -rf "$WORK_DIR"
+fi
 
 echo "========================================="
 echo "Installation Successful! 🎉"

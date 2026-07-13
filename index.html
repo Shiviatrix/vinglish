@@ -550,7 +550,16 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <!-- ============================================== -->
 
         <h2 id="cli">22. Englist CLI</h2>
-        <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit. Currently, it supports the <code>compile</code> command, which accepts a root <code>.eng</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
+        <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit.</p>
+        
+        <h3>Installation</h3>
+        <p>You can install the Englist compiler on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:</p>
+        <pre><code>curl -fsSL https://raw.githubusercontent.com/Shiviatrix/englist/main/install.sh | bash</code></pre>
+        <p><em>Note: This requires <a href="https://rustup.rs/" style="color: var(--saffron);">Rust</a> and Git to be installed on your system.</em></p>
+
+        <h3>Usage</h3>
+        <p>Currently, the CLI supports the <code>compile</code> command, which accepts a root <code>.eng</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
+        <pre><code>eng compile my_program.eng</code></pre>
 
         <h2 id="lsp">23. Language Server (LSP) Support</h2>
         <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Englist is perfectly positioned for a Language Server Protocol implementation.</p>
