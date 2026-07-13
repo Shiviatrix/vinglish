@@ -7,12 +7,21 @@
 /*.c
 /net
 /net.c
-/net.dSYM/
+/*.dSYM/
 /.eng_modules/
 /eng.toml
 /src/
 /rt/*.o
 /rt/*.d
+
+# Build Artifacts
+*.out
+out_*
+bench_out/
+*.dSYM/
+
+# Python scripts
+fix*.py
 
 # OS
 .DS_Store
