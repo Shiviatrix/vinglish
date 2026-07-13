@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./Vinglish%20Icon.png" alt="Vinglish Logo" width="200" />
+  <img src="logos/vinglish-icon-color.svg" alt="Vinglish Logo" width="200" />
 </div>
 
 # Vinglish (v0.1.0)
