@@ -1,0 +1,13 @@
+function fib(number n) returns number
+begin
+    if n < 2
+        return n
+    
+    return fib(n - 1) + fib(n - 2)
+end
+
+public function main() returns number
+begin
+    let res be fib(30)
+    return 0
+end

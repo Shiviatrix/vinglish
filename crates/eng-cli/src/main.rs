@@ -92,6 +92,14 @@ enum Commands {
         #[arg(long)]
         check: bool,
     },
+    /// Run the benchmarking suite
+    Benchmark {
+        /// Directory containing benchmark files
+        directory: PathBuf,
+        /// Number of iterations per benchmark
+        #[arg(long, default_value = "5")]
+        runs: u32,
+    },
     /// Print version information
     Version,
 }
@@ -131,6 +139,12 @@ async fn main() {
         Commands::Fmt { files, check } => {
             let ok = cmd_fmt(&files, check);
             if !ok {
+                std::process::exit(1);
+            }
+        }
+        Commands::Benchmark { directory, runs } => {
+            if let Err(e) = cmd_benchmark(&directory, runs) {
+                eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
@@ -192,6 +206,9 @@ struct CompileResult {
 fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBuf, String> {
     let mut path = PathBuf::new();
     if path_parts.first().map(|s| s.as_str()) == Some("std") {
+        if let Ok(root) = std::env::var("ENGLIST_ROOT") {
+            path.push(root);
+        }
         path.push("std");
         for part in &path_parts[1..] {
             path.push(part);
@@ -489,7 +506,12 @@ fn cmd_build(
 
     // Collect runtime paths
     let mut runtime_paths = Vec::new();
-    let rt_dir = std::env::current_dir().unwrap_or_default().join("rt");
+    let rt_dir = if let Ok(root) = std::env::var("ENGLIST_ROOT") {
+        PathBuf::from(root).join("rt")
+    } else {
+        std::env::current_dir().unwrap_or_default().join("rt")
+    };
+
     if let Ok(entries) = fs::read_dir(&rt_dir) {
         for entry in entries.flatten() {
             if entry.path().extension().map_or(false, |ext| ext == "c") {
