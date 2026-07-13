@@ -15,6 +15,14 @@
 /rt/*.d
 
 # Build Artifacts
+docs/_build/
+docs/_site/
+*.pdf
+
+# Studio
+/englist-studio/
+
+# Build Artifacts
 *.out
 out_*
 bench_out/
