@@ -36,13 +36,15 @@ The Englist compiler implements a multi-stage pipeline:
 
 ## Getting Started
 
-### Building the Compiler
+### Installation
 
-The Englist compiler is implemented in Rust. The `cargo` build system is required for compilation.
+You can install the Englist compiler globally on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:
 
 ```bash
-cargo build --release
+curl -fsSL https://raw.githubusercontent.com/Shiviatrix/englist/main/install.sh | bash
 ```
+
+*Note: This requires [Rust](https://rustup.rs/) and Git to be installed on your system.*
 
 ### Compiling Englist Source
 
