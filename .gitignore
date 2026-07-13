@@ -20,7 +20,7 @@ docs/_site/
 *.pdf
 
 # Studio
-/englist-studio/
+/vinglish-studio/
 
 # Build Artifacts
 *.out
