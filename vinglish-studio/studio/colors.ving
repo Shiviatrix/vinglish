@@ -1,0 +1,27 @@
+package studio
+module colors
+
+public type Color
+begin
+    r: number
+    g: number
+    b: number
+end
+
+// Global color palette based on Figma design
+
+public function color_editor_bg() returns Color begin return Color { r: 30, g: 30, b: 30 } end
+public function color_ui_bg() returns Color begin return Color { r: 37, g: 37, b: 38 } end
+public function color_secondary_bg() returns Color begin return Color { r: 45, g: 45, b: 48 } end
+public function color_border() returns Color begin return Color { r: 62, g: 62, b: 66 } end
+public function color_text_primary() returns Color begin return Color { r: 224, g: 224, b: 224 } end
+public function color_text_secondary() returns Color begin return Color { r: 133, g: 133, b: 133 } end
+public function color_accent_orange() returns Color begin return Color { r: 232, g: 168, b: 87 } end
+public function color_syntax_blue() returns Color begin return Color { r: 86, g: 156, b: 214 } end
+public function color_syntax_green() returns Color begin return Color { r: 106, g: 153, b: 85 } end
+public function color_syntax_orange() returns Color begin return Color { r: 206, g: 145, b: 120 } end
+public function color_syntax_cyan() returns Color begin return Color { r: 78, g: 201, b: 176 } end
+public function color_error_red() returns Color begin return Color { r: 244, g: 135, b: 113 } end
+public function color_success_green() returns Color begin return Color { r: 81, g: 207, b: 102 } end
+public function color_warning_yellow() returns Color begin return Color { r: 204, g: 167, b: 0 } end
+public function color_info_blue() returns Color begin return Color { r: 55, g: 148, b: 255 } end

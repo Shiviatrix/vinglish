@@ -47,5 +47,38 @@ pub fn check_polyglot_interference(bad_token_text: &str, context: &str, diag: &m
         return true;
     }
 
+    // Check for Rust/C++ trailing return types ('->' instead of 'returns')
+    if bad_token_text == "->" && context.contains("function") {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish uses 'returns' to declare a function's return type.")
+                .with_replacement("returns")
+                .with_confidence(98.0)
+        );
+        diag.message = "Unexpected Rust/C++ style trailing return '->'.".to_string();
+        return true;
+    }
+
+    // Check for C/Python style while loop ('while' without 'repeat')
+    if bad_token_text == "while" && !context.contains("repeat") {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish loops read like prose: use 'repeat while'.")
+                .with_replacement("repeat while")
+                .with_confidence(98.0)
+        );
+        diag.message = "Unexpected C/Python style 'while' loop.".to_string();
+        return true;
+    }
+
+    // Check for assignment '=' inside 'if' conditions (should be 'is' or '==')
+    if bad_token_text == "=" && context.contains("if ") {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish uses 'is' or '==' for equality checks, not '='.")
+                .with_replacement("is")
+                .with_confidence(95.0)
+        );
+        diag.message = "Unexpected assignment '=' in condition.".to_string();
+        return true;
+    }
+
     false
 }

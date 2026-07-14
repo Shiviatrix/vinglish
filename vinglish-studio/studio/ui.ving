@@ -1,0 +1,48 @@
+package studio
+module ui
+
+use std.string
+use colors
+use render
+
+public type Rect
+begin
+    x: number
+    y: number
+    w: number
+    h: number
+end
+
+public type Panel
+begin
+    rect: Rect
+    bg_color: Color
+    border_color: Color
+    title: String
+end
+
+public function panel_new(number x, number y, number w, number h, Color bg_color, Color border_color, String title) returns Panel
+begin
+    return Panel {
+        rect: Rect { x: x, y: y, w: w, h: h },
+        bg_color: bg_color,
+        border_color: border_color,
+        title: title
+    }
+end
+
+public function panel_render(borrow Panel p) returns unit
+begin
+    // Fill background
+    draw_rect(p.rect.x, p.rect.y, p.rect.w, p.rect.h, p.bg_color)
+    
+    // Draw top border line
+    draw_rect(p.rect.x, p.rect.y, p.rect.w, 1, p.border_color)
+    
+    // Draw title if present
+    let title_len be length(borrow p.title)
+    if title_len > 0 begin
+        let text_color be color_text_secondary()
+        draw_text_bg(p.rect.x + 10, p.rect.y, p.title, text_color, p.border_color)
+    end
+end

@@ -443,7 +443,7 @@ struct, type, address</span></code></pre>
 
         <h2 id="architecture">15. The Pipeline</h2>
         <p>The Vinglish compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
-        <pre><code>Source Code (.eng) 
+        <pre><code>Source Code (.ving) 
        ↓ (Lexer & Parser)
 Abstract Syntax Tree (AST) ───────→ (C Codegen Backend) → C Source Code (.c)
        ↓ (Semantic Analysis & Type Checking)                  ↓ (GCC / Clang)
@@ -504,7 +504,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <!-- ============================================== -->
 
         <h2 id="cli">22. Vinglish CLI</h2>
-        <p>The <code>eng-cli</code> binary provides the primary interface to the compiler toolkit.</p>
+        <p>The <code>vng</code> binary provides the primary interface to the compiler toolkit.</p>
         
         <h3>Installation</h3>
         <p>You can install the Vinglish compiler on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:</p>
@@ -512,8 +512,8 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <p><em>Note: This requires <a href="https://rustup.rs/" style="color: var(--saffron);">Rust</a> and Git to be installed on your system.</em></p>
 
         <h3>Usage</h3>
-        <p>Currently, the CLI supports the <code>compile</code> command, which accepts a root <code>.eng</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
-        <pre><code>eng compile my_program.eng</code></pre>
+        <p>Currently, the CLI supports the <code>build</code> command, which accepts a root <code>.ving</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
+        <pre><code>vng build my_program.ving</code></pre>
 
         <h2 id="lsp">23. Language Server (LSP) Support</h2>
         <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Vinglish is perfectly positioned for a Language Server Protocol implementation.</p>
@@ -526,7 +526,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <h2 id="roadmap">24. Future Roadmap</h2>
         <p>The roadmap for Vinglish prioritizes ecosystem expansion over language mutations:</p>
         <ol>
-            <li><strong>The Package Manager (<code>eng</code>):</strong> A native dependency resolver allowing commands like <code>eng new</code>, <code>eng build</code>, <code>eng add std.net</code>.</li>
+            <li><strong>The Package Manager (<code>vng</code>):</strong> A native dependency resolver allowing commands like <code>vng pkg init</code>, <code>vng build</code>, <code>vng pkg add std.net</code>.</li>
             <li><strong>Standard Library Maturation:</strong> Implementing cryptographic hashing, highly concurrent threading models, and a non-blocking TCP server entirely natively.</li>
             <li><strong>LLVM Backend:</strong> While the C backend is excellent for bootstrapping, a native LLVM IR backend is planned for even tighter optimization control and faster compilation speeds (bypassing the C compiler intermediary).</li>
         </ol>
@@ -534,7 +534,7 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <h2 id="benchmarks">25. Benchmarks</h2>
         <p>The Vinglish compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
         <p>You can execute the benchmarking suite using the built-in CLI command:</p>
-        <pre><code>eng benchmark benchmarks --runs 5</code></pre>
+        <pre><code>vng benchmark benchmarks --runs 5</code></pre>
         <p>The performance metrics are tracked daily through our continuous integration pipelines, ensuring the C and LLVM codegen backends maintain zero-cost abstraction guarantees.</p>
 
     </main>

@@ -1,0 +1,39 @@
+package studio
+module layout
+
+use ui
+
+public type Layout
+begin
+    activity_bar: Rect
+    explorer: Rect
+    editor: Rect
+    diagnostics: Rect
+    bottom_panel: Rect
+    menu_bar: Rect
+    status_bar: Rect
+end
+
+public function compute_layout(number width, number height) returns Layout
+begin
+    let menu_h be 30
+    let status_h be 24
+    let bottom_h be 200
+    
+    let activity_w be 50
+    let explorer_w be 300
+    let diagnostics_w be 350
+    
+    let main_h be height - menu_h - bottom_h - status_h
+    let editor_w be width - activity_w - explorer_w - diagnostics_w
+    
+    return Layout {
+        menu_bar: Rect { x: 0, y: 0, w: width, h: menu_h },
+        activity_bar: Rect { x: 0, y: menu_h, w: activity_w, h: main_h },
+        explorer: Rect { x: activity_w, y: menu_h, w: explorer_w, h: main_h },
+        editor: Rect { x: activity_w + explorer_w, y: menu_h, w: editor_w, h: main_h },
+        diagnostics: Rect { x: activity_w + explorer_w + editor_w, y: menu_h, w: diagnostics_w, h: main_h },
+        bottom_panel: Rect { x: 0, y: height - status_h - bottom_h, w: width, h: bottom_h },
+        status_bar: Rect { x: 0, y: height - status_h, w: width, h: status_h }
+    }
+end

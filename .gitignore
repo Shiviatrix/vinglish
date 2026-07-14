@@ -19,8 +19,6 @@ docs/_build/
 docs/_site/
 *.pdf
 
-# Studio
-/vinglish-studio/
 
 # Build Artifacts
 *.out

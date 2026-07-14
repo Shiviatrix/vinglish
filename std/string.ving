@@ -1,10 +1,10 @@
 package std
 module string
 
-foreign function eng_string_new(text p) returns String
-foreign function eng_string_len(borrow String s) returns number
-foreign function eng_string_concat(borrow String a, borrow String b) returns String
-foreign function eng_string_free(borrow String s) returns unit
+foreign function ving_string_new(text p) returns String
+foreign function ving_string_len(borrow String s) returns number
+foreign function ving_string_concat(borrow String a, borrow String b) returns String
+foreign function ving_string_free(borrow String s) returns unit
 
 public type String
 begin
@@ -13,20 +13,20 @@ end
 
 public function string_new(text p) returns String
 begin
-    return eng_string_new(p)
+    return ving_string_new(p)
 end
 
 public function length(borrow String s) returns number
 begin
-    return eng_string_len(s)
+    return ving_string_len(s)
 end
 
 public function concat(borrow String a, borrow String b) returns String
 begin
-    return eng_string_concat(a, b)
+    return ving_string_concat(a, b)
 end
 
 public function string_free(borrow String s)
 begin
-    eng_string_free(s)
+    ving_string_free(s)
 end
