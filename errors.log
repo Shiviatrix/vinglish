@@ -1,0 +1,33 @@
+warning: unused variable: `call_start`
+    --> crates/vinglish-parser/src/parser.rs:1066:25
+     |
+1066 |                     let call_start = self.current_span();
+     |                         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_call_start`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vinglish-parser` (lib) generated 1 warning (run `cargo fix --lib -p vinglish-parser` to apply 1 suggestion)
+    Checking vinglish-mir v0.1.0 (/Users/babayaga/vinglish/crates/vinglish-mir)
+    Checking vinglish-fmt v0.1.0 (/Users/babayaga/vinglish/crates/vinglish-fmt)
+error[E0425]: cannot find value `stmt` in this scope
+   --> crates/vinglish-fmt/src/formatter.rs:135:27
+    |
+135 |             self.fmt_stmt(stmt);
+    |                           ^^^^ not found in this scope
+
+error[E0425]: cannot find value `stmt` in this scope
+   --> crates/vinglish-fmt/src/formatter.rs:144:27
+    |
+144 |             self.fmt_stmt(stmt);
+    |                           ^^^^ not found in this scope
+
+error[E0425]: cannot find value `stmt` in this scope
+  --> crates/vinglish-mir/src/validator.rs:68:56
+   |
+68 |                 if let crate::Instruction::Phi(_, _) = stmt.instr {
+   |                                                        ^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `vinglish-mir` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `vinglish-fmt` (lib) due to 2 previous errors

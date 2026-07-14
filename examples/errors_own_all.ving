@@ -1,0 +1,24 @@
+type Box
+begin
+    val: number
+end
+
+function take_box(Box b)
+begin
+end
+
+function mutate_box(borrow mutable Box b)
+begin
+    b.val = b.val + 1
+end
+
+function main()
+begin
+    let my_box be Box { val: 42 }
+    let ref1 be borrow mutable my_box
+    let ref2 be borrow mutable my_box
+
+    let my_box2 be Box { val: 10 }
+    take_box(my_box2)
+    let ref3 be borrow my_box2
+end

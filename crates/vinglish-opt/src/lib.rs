@@ -26,22 +26,22 @@ impl PassStats {
     }
 }
 
-pub trait OptimizationPass<V: Clone + Copy + Display + Eq + Hash> {
+pub trait OptimizationPass<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> {
     fn name(&self) -> &'static str;
-    fn run(&mut self, module: &mut MirModule<V>) -> PassStats;
+    fn run(&mut self, module: &mut MirModule<V>, symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats;
 }
 
-pub struct PassManager<V: Clone + Copy + Display + Eq + Hash> {
+pub struct PassManager<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> {
     passes: Vec<Box<dyn OptimizationPass<V>>>,
 }
 
-impl<V: Clone + Copy + Display + Eq + Hash> Default for PassManager<V> {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> Default for PassManager<V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<V: Clone + Copy + Display + Eq + Hash> PassManager<V> {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> PassManager<V> {
     pub fn new() -> Self {
         Self { passes: Vec::new() }
     }
@@ -59,7 +59,7 @@ impl<V: Clone + Copy + Display + Eq + Hash> PassManager<V> {
         let validator = vinglish_mir::validator::MirValidatorPass::new();
 
         for pass in &mut self.passes {
-            let stats = pass.run(module);
+            let stats = pass.run(module, symbol_table);
             total_stats.add(&stats);
 
             validator.validate(symbol_table, module)?;

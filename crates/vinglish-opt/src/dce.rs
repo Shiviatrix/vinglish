@@ -6,12 +6,12 @@ use std::hash::Hash;
 
 pub struct DeadCodeEliminationPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeEliminationPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for DeadCodeEliminationPass {
     fn name(&self) -> &'static str {
         "Dead Code Elimination"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>) -> PassStats {
+    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -117,8 +117,6 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                         match instr {
                             Instruction::<V>::Assign(dest, _)
                             | Instruction::<V>::LoadField(dest, _, _)
-                            | Instruction::<V>::Borrow(dest, _)
-                            | Instruction::<V>::BorrowMut(dest, _)
                             | Instruction::<V>::Deref(dest, _, _)
                             | Instruction::<V>::HeapAllocate(dest, _)
                             | Instruction::<V>::StackAllocate(dest, _)
@@ -128,7 +126,9 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for DeadCodeElim
                             Instruction::<V>::StoreField(_, _, _)
                             | Instruction::<V>::Drop(_)
                             | Instruction::<V>::Call(_, _, _)
-                            | Instruction::<V>::CallIntrinsic(_, _, _) => true, // Side effects!
+                            | Instruction::<V>::CallIntrinsic(_, _, _)
+                            | Instruction::<V>::Borrow(_, _)
+                            | Instruction::<V>::BorrowMut(_, _) => true, // Side effects!
                         }
                     });
 

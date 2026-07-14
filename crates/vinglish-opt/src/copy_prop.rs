@@ -1,3 +1,4 @@
+use vinglish_hir::symbol::HasSymbolId;
 use crate::{OptimizationPass, PassStats};
 use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 use std::collections::HashMap;
@@ -6,12 +7,12 @@ use std::hash::Hash;
 
 pub struct CopyPropagationPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagationPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for CopyPropagationPass {
     fn name(&self) -> &'static str {
         "Copy Propagation"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>) -> PassStats {
+    fn run(&mut self, module: &mut MirModule<V>, symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
         let stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -39,6 +40,17 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
             }
 
             // Find single-assignment copies: dest = src
+            
+            let is_temp = |v: V| -> bool {
+                if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
+                    symbol_table.get(v.symbol_id())
+                {
+                    vs.name.starts_with("_tmp")
+                } else {
+                    false
+                }
+            };
+
             let mut copy_vars = HashMap::new();
             for block in &func.blocks {
                 for instr in &block.instrs {
@@ -48,7 +60,12 @@ impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for CopyPropagat
                         if assign_counts.get(dest) == Some(&1)
                             && assign_counts.get(src).copied().unwrap_or(0) <= 1
                         {
-                            copy_vars.insert(*dest, *src);
+                            // Avoid replacing a user variable with a temporary
+                            if !is_temp(*dest) && is_temp(*src) {
+                                // DO NOT REPLACE
+                            } else {
+                                copy_vars.insert(*dest, *src);
+                            }
                         }
                     }
                 }

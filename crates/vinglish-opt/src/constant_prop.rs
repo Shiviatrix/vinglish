@@ -6,12 +6,12 @@ use std::hash::Hash;
 
 pub struct ConstantPropagationPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash> OptimizationPass<V> for ConstantPropagationPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for ConstantPropagationPass {
     fn name(&self) -> &'static str {
         "Constant Propagation"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>) -> PassStats {
+    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {

@@ -23,7 +23,7 @@ impl<'a> MirLowerer<'a> {
         }
     }
 
-    fn new_temp(&mut self, ty: TypeId) -> VariableId {
+    fn new_temp(&mut self, ty: TypeId, span: vinglish_lexer::Span) -> VariableId {
         let name = format!("_tmp{}", self.locals.len());
         let symbol = VariableSymbol {
             id: VariableId(SymbolId(0)),
@@ -34,6 +34,7 @@ impl<'a> MirLowerer<'a> {
                 .get_interned_type(ty)
                 .cloned()
                 .unwrap_or(vinglish_hir::types::Type::Unit),
+            span: Some(span),
         };
         // Define it in the symbol table to get a valid VariableId
         let id = self.symbol_table.define_var(name, symbol);
@@ -132,7 +133,7 @@ impl<'a> MirLowerer<'a> {
 
                 if let Some(fs) = self.symbol_table.get_func(func_id) {
                     if let Some((enum_id, variant_index)) = fs.is_variant_constructor {
-                        let temp = self.new_temp(*ty);
+                        let temp = self.new_temp(*ty, expr.span());
                         self.push_instr(Instruction::HeapAllocate(temp, enum_id));
                         self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Constant(vinglish_parser::ast::Literal::Int(variant_index as i64))));
                         if !lowered_args.is_empty() {
@@ -142,7 +143,7 @@ impl<'a> MirLowerer<'a> {
                     }
                 }
 
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 self.push_instr(Instruction::Call(temp, func_id, lowered_args));
                 Operand::Var(temp)
             }
@@ -159,7 +160,7 @@ impl<'a> MirLowerer<'a> {
                 if *op == vinglish_parser::ast::BinOp::And {
                     let rhs_block = self.new_block();
                     let merge_block = self.new_block();
-                    let temp = self.new_temp(*ty);
+                    let temp = self.new_temp(*ty, expr.span());
 
                     self.push_instr(Instruction::Assign(temp, l.clone()));
                     self.end_block(Terminator::Branch(l, rhs_block, merge_block));
@@ -174,7 +175,7 @@ impl<'a> MirLowerer<'a> {
                 } else if *op == vinglish_parser::ast::BinOp::Or {
                     let rhs_block = self.new_block();
                     let merge_block = self.new_block();
-                    let temp = self.new_temp(*ty);
+                    let temp = self.new_temp(*ty, expr.span());
 
                     self.push_instr(Instruction::Assign(temp, l.clone()));
                     self.end_block(Terminator::Branch(l, merge_block, rhs_block));
@@ -189,7 +190,7 @@ impl<'a> MirLowerer<'a> {
                 }
 
                 let r = self.lower_expr(right);
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 self.push_instr(Instruction::BinaryOp(temp, *op, l, r));
                 Operand::Var(temp)
             }
@@ -197,7 +198,7 @@ impl<'a> MirLowerer<'a> {
                 op, operand, ty, ..
             } => {
                 let op_val = self.lower_expr(operand);
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 match op {
                     vinglish_parser::ast::UnOp::Borrow(false) => {
                         self.push_instr(Instruction::Borrow(temp, op_val));
@@ -225,7 +226,7 @@ impl<'a> MirLowerer<'a> {
                 }
             }
             HirExpr::StructInit { id, fields, ty, .. } => {
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 self.push_instr(Instruction::HeapAllocate(temp, *id));
                 if let Some(SymbolKind::Type(ts)) = self.symbol_table.get(id.0).cloned() {
                     for (i, fexpr) in fields.iter().enumerate() {
@@ -244,7 +245,7 @@ impl<'a> MirLowerer<'a> {
                 ..
             } => {
                 let obj_op = self.lower_expr(object);
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 self.push_instr(Instruction::LoadField(temp, obj_op, *field_id));
                 Operand::Var(temp)
             }
@@ -254,19 +255,19 @@ impl<'a> MirLowerer<'a> {
                     lowered_args.push(self.lower_expr(arg));
                 }
                 
-                let temp = self.new_temp(*ty);
+                let temp = self.new_temp(*ty, expr.span());
                 if name == "Ok" {
                     // Result struct layout: { tag: number, payload: T }
                     let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
                     self.push_instr(Instruction::HeapAllocate(temp, vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0))));
-                    let tag_temp = self.new_temp(int_ty_id);
+                    let tag_temp = self.new_temp(int_ty_id, expr.span());
                     self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(1)))); // tag 1 = Ok
                     self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
                     self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(1), lowered_args[0].clone()));
                 } else if name == "Err" {
                     let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
                     self.push_instr(Instruction::HeapAllocate(temp, vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0))));
-                    let tag_temp = self.new_temp(int_ty_id);
+                    let tag_temp = self.new_temp(int_ty_id, expr.span());
                     self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(0)))); // tag 0 = Err
                     self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
                     self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(1), lowered_args[0].clone()));
@@ -278,11 +279,11 @@ impl<'a> MirLowerer<'a> {
             HirExpr::PostfixTry { inner, ty, .. } => {
                 let inner_val = self.lower_expr(inner);
                 let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
-                let tag_temp = self.new_temp(int_ty_id);
+                let tag_temp = self.new_temp(int_ty_id, expr.span());
                 self.push_instr(Instruction::LoadField(tag_temp, inner_val.clone(), vinglish_hir::symbol::FieldId(0)));
                 
                 let bool_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Bool);
-                let is_ok = self.new_temp(bool_ty_id);
+                let is_ok = self.new_temp(bool_ty_id, expr.span());
                 // Assume Ok variant index is 1 because we added "tag" as field 0
                 self.push_instr(Instruction::BinaryOp(is_ok, vinglish_parser::ast::BinOp::Eq, Operand::Var(tag_temp), Operand::Constant(vinglish_parser::ast::Literal::Int(1))));
                 
@@ -297,7 +298,7 @@ impl<'a> MirLowerer<'a> {
                 
                 // Ok block: load field 1 (Ok payload)
                 self.switch_to_block(ok_block);
-                let ok_val = self.new_temp(*ty);
+                let ok_val = self.new_temp(*ty, expr.span());
                 self.push_instr(Instruction::LoadField(ok_val, inner_val, vinglish_hir::symbol::FieldId(1)));
                 Operand::Var(ok_val)
             }
@@ -312,30 +313,30 @@ impl<'a> MirLowerer<'a> {
                 let init_val = self.lower_expr(init);
                 self.push_instr(Instruction::Assign(*id, init_val));
             }
-            HirStmt::Assign { target, op, value, .. } => {
+            HirStmt::Assign { target, op, value, span, .. } => {
                 let val = self.lower_expr(value);
                 let final_val = match op {
                     vinglish_parser::ast::AssignOp::Assign => val,
                     vinglish_parser::ast::AssignOp::AddAssign => {
-                        let temp = self.new_temp(target.ty());
+                        let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
                         self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Add, l, val));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::SubAssign => {
-                        let temp = self.new_temp(target.ty());
+                        let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
                         self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Sub, l, val));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::MulAssign => {
-                        let temp = self.new_temp(target.ty());
+                        let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
                         self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Mul, l, val));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::DivAssign => {
-                        let temp = self.new_temp(target.ty());
+                        let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
                         self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Div, l, val));
                         Operand::Var(temp)

@@ -132,6 +132,7 @@ fn rename_block(
                     name: format!("{}_{}", new_dest.0 .0, orig.0 .0), // give it some name
                     is_mut: false,
                     ty,
+                    span: None,
                 },
             );
 
@@ -192,18 +193,23 @@ fn rename_block(
 
             // Propagate type to new SSA variable
             let mut ty = vinglish_hir::types::Type::Unit;
+            let mut vs_name = format!("var{}", orig.0 .0);
+            let mut span = None;
             if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
                 symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0 .0))
             {
                 ty = vs.ty.clone();
+                vs_name = vs.name.clone();
+                span = vs.span;
             }
             symbol_table.define_var_with_id(
                 new_id.0,
                 vinglish_hir::symbol::VariableSymbol {
                     id: new_id,
-                    name: format!("{}_{}", new_id.0 .0, orig.0 .0), // give it some name
+                    name: format!("{}_{}", vs_name, new_id.0 .0),
                     is_mut: false,
                     ty,
+                    span,
                 },
             );
 

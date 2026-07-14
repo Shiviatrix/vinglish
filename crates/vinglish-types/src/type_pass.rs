@@ -522,8 +522,7 @@ impl TypeInferencePass {
                 id: VariableId(SymbolId(0)),
                 name: "self".to_string(),
                 is_mut: false,
-                ty: self_ty.clone(),
-            });
+                ty: self_ty.clone(), span: None, });
             if let Some(vs) = ctx.symbol_table.get_var_mut(self_id) {
                 vs.id = self_id;
             }
@@ -544,8 +543,7 @@ impl TypeInferencePass {
                 id: VariableId(SymbolId(0)),
                 name: param.name.name.clone(),
                 is_mut: false,
-                ty: ty.clone(),
-            });
+                ty: ty.clone(), span: None, });
             if let Some(vs) = ctx.symbol_table.get_var_mut(param_id) {
                 vs.id = param_id;
             }
@@ -710,8 +708,7 @@ impl TypeInferencePass {
                     id: VariableId(SymbolId(0)),
                     name: let_stmt.name.name.clone(),
                     is_mut: let_stmt.mutable,
-                    ty: resolved.clone(),
-                });
+                    ty: resolved.clone(), span: None, });
                 if let Some(vs) = ctx.symbol_table.get_var_mut(id) {
                     vs.id = id;
                 }

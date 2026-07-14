@@ -220,6 +220,7 @@ pub struct VariableSymbol {
     pub name: String,
     pub is_mut: bool,
     pub ty: Type,
+    pub span: Option<vinglish_lexer::span::Span>,
 }
 
 #[derive(Debug, Clone)]
@@ -262,4 +263,16 @@ impl TypeSymbol {
     pub fn add_method(&mut self, name: String, func_id: FunctionId) {
         self.methods.insert(name, func_id);
     }
+}
+
+pub trait HasSymbolId {
+    fn symbol_id(&self) -> SymbolId;
+}
+
+impl HasSymbolId for VariableId {
+    fn symbol_id(&self) -> SymbolId { self.0 }
+}
+
+impl HasSymbolId for SsaValueId {
+    fn symbol_id(&self) -> SymbolId { SymbolId(self.0) }
 }

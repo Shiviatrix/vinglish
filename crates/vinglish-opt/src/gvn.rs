@@ -1,3 +1,4 @@
+use vinglish_hir::symbol::HasSymbolId;
 use crate::{OptimizationPass, PassStats};
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
@@ -10,7 +11,7 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
         "Global Value Numbering"
     }
 
-    fn run(&mut self, module: &mut MirModule<SsaValueId>) -> PassStats {
+    fn run(&mut self, module: &mut MirModule<SsaValueId>, symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -24,6 +25,17 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                 ),
                 UnaryOp(vinglish_parser::ast::UnOp, Operand<SsaValueId>),
             }
+
+            
+            let is_temp = |v: vinglish_hir::symbol::SsaValueId| -> bool {
+                if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
+                    symbol_table.get(v.symbol_id())
+                {
+                    vs.name.starts_with("_tmp")
+                } else {
+                    false
+                }
+            };
 
             let mut value_table: HashMap<ValueExpr, SsaValueId> = HashMap::new();
             let mut replacements: HashMap<SsaValueId, SsaValueId> = HashMap::new();
@@ -92,9 +104,15 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                     let mut keep = true;
                     if let (Some(d), Some(e)) = (dest, expr) {
                         if let Some(&existing_val) = value_table.get(&e) {
-                            replacements.insert(d, existing_val);
-                            stats.gvn_eliminated += 1;
-                            keep = false;
+                            if !is_temp(d) && is_temp(existing_val) {
+                                // DO NOT REPLACE user var with temp var.
+                                // Instead, update the table so future expressions map to the user var!
+                                value_table.insert(e, d);
+                            } else {
+                                replacements.insert(d, existing_val);
+                                stats.gvn_eliminated += 1;
+                                keep = false;
+                            }
                         } else {
                             value_table.insert(e, d);
                         }
