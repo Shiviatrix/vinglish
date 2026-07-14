@@ -1,0 +1,21 @@
+package std
+module subprocess
+
+use std.collections.vector
+
+public type Process
+begin
+    pid: number
+    fd: number
+end
+
+public type ProcessResult
+begin
+    exit_code: number
+    stdout: string
+    stderr: string
+end
+
+public foreign function spawn_process(string command, borrow Vector<string> args) returns Process
+public foreign function process_wait(borrow Process p) returns ProcessResult
+public foreign function process_read_output(borrow Process p) returns string

@@ -678,7 +678,7 @@ fn cmd_build(
 
         let cc = std::env::var("CC").unwrap_or_else(|_| "cc".into());
         let mut cmd = Command::new(&cc);
-        cmd.arg("-O2").arg("-o").arg(output).arg(&c_file);
+        cmd.arg("-O2").arg("-Wno-int-conversion").arg("-o").arg(output).arg(&c_file);
 
         for rt_path in &runtime_paths {
             cmd.arg(rt_path);

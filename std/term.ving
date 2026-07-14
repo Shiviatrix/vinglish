@@ -1,0 +1,25 @@
+package std
+module term
+
+// Sets the terminal to raw mode so we can read characters one by one without waiting for Enter
+public foreign function term_enable_raw_mode()
+public foreign function term_disable_raw_mode()
+
+// Clear the screen using ANSI escape codes
+public foreign function term_clear_screen()
+
+// Reads a single keypress from stdin. Blocks until a key is pressed.
+// Returns the ASCII code of the key, or special codes for arrows.
+public foreign function term_read_key() returns number
+
+// Moves the cursor to a specific row and column (1-indexed)
+public foreign function term_move_cursor(row: number, col: number)
+
+// Gets the terminal size
+public type TermSize
+begin
+    rows: number
+    cols: number
+end
+
+public foreign function term_get_size() returns TermSize

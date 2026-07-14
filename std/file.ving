@@ -1,0 +1,21 @@
+package std
+module file
+
+public foreign function eng_file_read(path: string) returns string
+public foreign function eng_file_write(path: string, content: string)
+public foreign function eng_dir_list(path: string) returns string
+
+public function file_read(path: string) returns string
+begin
+    return eng_file_read(path)
+end
+
+public function file_write(path: string, content: string)
+begin
+    eng_file_write(path, content)
+end
+
+public function dir_list(path: string) returns string
+begin
+    return eng_dir_list(path)
+end

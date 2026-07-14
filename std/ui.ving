@@ -1,0 +1,67 @@
+package std
+module ui
+
+use std.term
+
+// Colors (ANSI Codes)
+public type Color
+begin
+    r: number
+    g: number
+    b: number
+end
+
+public function rgb(r: number, g: number, b: number) returns Color
+begin
+    let c be Color { r: r, g: g, b: b }
+    return c
+end
+
+// Sets the foreground text color
+public foreign function ui_set_fg(c: Color)
+
+// Sets the background color
+public foreign function ui_set_bg(c: Color)
+
+// Resets color formatting
+public foreign function ui_reset_color()
+
+// Draws a border around a rectangle
+public function ui_draw_border(x: number, y: number, w: number, h: number)
+begin
+    // Simple ASCII border for now
+    let i be 0
+    
+    // Top border
+    term_move_cursor(y, x)
+    print("+")
+    i = 1
+    repeat while i < w - 1
+    begin
+        print("-")
+        i = i + 1
+    end
+    print("+")
+    
+    // Bottom border
+    term_move_cursor(y + h - 1, x)
+    print("+")
+    i = 1
+    repeat while i < w - 1
+    begin
+        print("-")
+        i = i + 1
+    end
+    print("+")
+    
+    // Sides
+    i = 1
+    repeat while i < h - 1
+    begin
+        term_move_cursor(y + i, x)
+        print("|")
+        term_move_cursor(y + i, x + w - 1)
+        print("|")
+        i = i + 1
+    end
+end

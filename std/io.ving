@@ -1,6 +1,39 @@
 package std
 module io
 
+public foreign function eng_read_line() returns string
+public foreign function eng_str_starts_with(str: string, prefix: string) returns number
+public foreign function eng_str_substring(str: string, start: number) returns string
+public foreign function eng_str_index_of(str: string, delimiter: string) returns number
+public foreign function eng_str_substring_len(str: string, start: number, len: number) returns string
+public foreign function eng_str_unescape_newlines(str: string) returns string
 
+public function read_line() returns string
+begin
+    return eng_read_line()
+end
 
-public foreign function print_num(number n)
+public function starts_with(str: string, prefix: string) returns number
+begin
+    return eng_str_starts_with(str, prefix)
+end
+
+public function substring(str: string, start: number) returns string
+begin
+    return eng_str_substring(str, start)
+end
+
+public function index_of(str: string, delimiter: string) returns number
+begin
+    return eng_str_index_of(str, delimiter)
+end
+
+public function substring_len(str: string, start: number, len: number) returns string
+begin
+    return eng_str_substring_len(str, start, len)
+end
+
+public function unescape_newlines(str: string) returns string
+begin
+    return eng_str_unescape_newlines(str)
+end

@@ -1,0 +1,40 @@
+package std
+module thread
+
+public type Thread<T>
+begin
+    handle: number
+end
+
+public foreign function thread_spawn<T, F>(F f) returns Thread<T>
+public foreign function thread_join<T>(Thread<T> t) returns T
+public foreign function thread_sleep(number milliseconds)
+
+public type Sender<T>
+begin
+    channel_id: number
+end
+
+public type Receiver<T>
+begin
+    channel_id: number
+end
+
+public type ChannelTuple<T>
+begin
+    sender: Sender<T>
+    receiver: Receiver<T>
+end
+
+public foreign function channel<T>() returns ChannelTuple<T>
+public foreign function channel_send<T>(Sender<T> sender, T value)
+public foreign function channel_receive<T>(Receiver<T> receiver) returns T
+
+public type Mutex<T>
+begin
+    id: number
+end
+
+public foreign function mutex_new<T>(T value) returns Mutex<T>
+public foreign function mutex_lock<T>(Mutex<T> m) returns T
+public foreign function mutex_unlock<T>(Mutex<T> m, T value)
