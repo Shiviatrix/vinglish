@@ -79,6 +79,51 @@ impl CEmitter {
         self.emit("#include <math.h>\n");
         self.blank();
 
+        // Builtin implementations
+        self.emit("/* Builtins */\n");
+        self.emit("#define print(x) _Generic((x), \\\n");
+        self.emit("    const char*: printf(\"%s\", x), \\\n");
+        self.emit("    char*: printf(\"%s\", x), \\\n");
+        self.emit("    double: printf(\"%g\", x), \\\n");
+        self.emit("    long: printf(\"%ld\", x), \\\n");
+        self.emit("    int: printf(\"%d\", x) \\\n");
+        self.emit(")\n");
+        
+        self.emit("#define println(x) _Generic((x), \\\n");
+        self.emit("    const char*: printf(\"%s\\n\", x), \\\n");
+        self.emit("    char*: printf(\"%s\\n\", x), \\\n");
+        self.emit("    double: printf(\"%g\\n\", x), \\\n");
+        self.emit("    long: printf(\"%ld\\n\", x), \\\n");
+        self.emit("    int: printf(\"%d\\n\", x) \\\n");
+        self.emit(")\n");
+        
+        self.emit("#define to_text(x) _Generic((x), \\\n");
+        self.emit("    double: _to_text_double(x), \\\n");
+        self.emit("    long: _to_text_long(x), \\\n");
+        self.emit("    int: _to_text_long(x) \\\n");
+        self.emit(")\n");
+        
+        self.emit("static inline const char* _to_text_double(double x) {\n");
+        self.emit("    char* buf = malloc(32);\n");
+        self.emit("    snprintf(buf, 32, \"%g\", x);\n");
+        self.emit("    return buf;\n");
+        self.emit("}\n");
+
+        self.emit("static inline const char* _to_text_long(long x) {\n");
+        self.emit("    char* buf = malloc(32);\n");
+        self.emit("    snprintf(buf, 32, \"%ld\", x);\n");
+        self.emit("    return buf;\n");
+        self.emit("}\n");
+
+        self.emit("static inline long to_number(const char* x) {\n");
+        self.emit("    return strtol(x, NULL, 10);\n");
+        self.emit("}\n");
+        
+        self.emit("#define min(a,b) (((a) < (b)) ? (a) : (b))\n");
+        self.emit("#define max(a,b) (((a) > (b)) ? (a) : (b))\n");
+        self.emit("#define abs(x) ((x) < 0 ? -(x) : (x))\n");
+        self.blank();
+
         // Type definitions
         for item in &module.items {
             if let Item::Type(t) = item {
@@ -163,6 +208,7 @@ impl CEmitter {
             let std_fns = [
                 "pow", "sin", "cos", "tan", "sqrt", "log", "log10", "exp", "ceil", "floor",
                 "round", "puts", "free", "malloc", "print", "println",
+                "to_text", "to_number", "min", "max", "abs"
             ];
             if std_fns.contains(&f.name.name.as_str()) {
                 return Ok(());
@@ -173,12 +219,18 @@ impl CEmitter {
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
         };
-        let params = f
-            .params
-            .iter()
-            .map(|p| format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)))
-            .collect::<Vec<_>>()
-            .join(", ");
+        let mut c_params = Vec::new();
+        if let Some(target) = &f.target_type {
+            c_params.push(format!("struct {} self", c_ident(&target.name)));
+        }
+        for p in &f.params {
+            c_params.push(format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)));
+        }
+        let params = if c_params.is_empty() {
+            "".to_string()
+        } else {
+            c_params.join(", ")
+        };
         let name = if f.name.name == "main" {
             "main".to_string()
         } else {
@@ -209,12 +261,14 @@ impl CEmitter {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
         };
         self.current_ret_ty = Some(ret.clone());
-        let params = f
-            .params
-            .iter()
-            .map(|p| format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)))
-            .collect::<Vec<_>>()
-            .join(", ");
+        let mut c_params = Vec::new();
+        if let Some(target) = &f.target_type {
+            c_params.push(format!("struct {} self", c_ident(&target.name)));
+        }
+        for p in &f.params {
+            c_params.push(format!("{} {}", type_to_c(&p.ty), c_ident(&p.name.name)));
+        }
+        let params = c_params.join(", ");
         let name = c_ident(&f.name.name);
         self.emit(&format!("{} {}({}) {{\n", ret, name, params));
         self.indent();
@@ -475,11 +529,19 @@ impl CEmitter {
             Expr::GenericInst { base, .. } => Ok(c_ident(&base.name)),
 
             Expr::Call { callee, args, .. } => {
-                let callee_str = self.emit_expr(callee)?;
                 let mut arg_strs: Vec<String> = args
                     .iter()
                     .map(|a| self.emit_expr(a))
                     .collect::<Result<_, _>>()?;
+
+                let callee_str = match &**callee {
+                    Expr::Field { object, field, .. } => {
+                        let obj_str = self.emit_expr(object)?;
+                        arg_strs.insert(0, obj_str);
+                        c_ident(&field.name)
+                    }
+                    _ => self.emit_expr(callee)?,
+                };
                     
                 if callee_str == "Ok" {
                     return Ok(if arg_strs.len() == 1 {

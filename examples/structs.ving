@@ -18,8 +18,8 @@ begin
     let p be Point { x: 10, y: 20 }
     let p2 be p.translate(5, 5)
     
-    print("p.x is ")
-    println(p.x)
-    print("p2 is ")
-    println(p2)
+    print("p2.x is ")
+    println(p2.x)
+    print("p2.y is ")
+    println(p2.y)
 end

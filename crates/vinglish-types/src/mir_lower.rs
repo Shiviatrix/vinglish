@@ -312,10 +312,38 @@ impl<'a> MirLowerer<'a> {
                 let init_val = self.lower_expr(init);
                 self.push_instr(Instruction::Assign(*id, init_val));
             }
-            HirStmt::Assign { target, value, .. } => {
+            HirStmt::Assign { target, op, value, .. } => {
                 let val = self.lower_expr(value);
+                let final_val = match op {
+                    vinglish_parser::ast::AssignOp::Assign => val,
+                    vinglish_parser::ast::AssignOp::AddAssign => {
+                        let temp = self.new_temp(target.ty());
+                        let l = self.lower_expr(target);
+                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Add, l, val));
+                        Operand::Var(temp)
+                    }
+                    vinglish_parser::ast::AssignOp::SubAssign => {
+                        let temp = self.new_temp(target.ty());
+                        let l = self.lower_expr(target);
+                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Sub, l, val));
+                        Operand::Var(temp)
+                    }
+                    vinglish_parser::ast::AssignOp::MulAssign => {
+                        let temp = self.new_temp(target.ty());
+                        let l = self.lower_expr(target);
+                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Mul, l, val));
+                        Operand::Var(temp)
+                    }
+                    vinglish_parser::ast::AssignOp::DivAssign => {
+                        let temp = self.new_temp(target.ty());
+                        let l = self.lower_expr(target);
+                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Div, l, val));
+                        Operand::Var(temp)
+                    }
+                };
+
                 if let HirExpr::VarRef { id, .. } = target {
-                    self.push_instr(Instruction::Assign(*id, val));
+                    self.push_instr(Instruction::Assign(*id, final_val));
                 } else if let HirExpr::FieldIndex {
                     object, field_id, ..
                 } = target
@@ -328,7 +356,7 @@ impl<'a> MirLowerer<'a> {
                             VariableId(SymbolId(0))
                         },
                         *field_id,
-                        val,
+                        final_val,
                     ));
                 }
             }

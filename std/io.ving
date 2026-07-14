@@ -1,11 +1,6 @@
 package std
 module io
 
-foreign function puts(text str) returns number
 
-public function print(text str) returns number
-begin
-    return puts(str)
-end
 
 public foreign function print_num(number n)

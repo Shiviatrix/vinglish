@@ -1,0 +1,10 @@
+function main()
+begin
+    let x be 5
+    x = "hello" // Type mismatch
+    
+    let y be "world"
+    let z be x + y // Invalid binary operation
+    
+    foo() // Undefined function
+end

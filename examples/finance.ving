@@ -2,7 +2,7 @@
 -- Demonstrates: parallel loops (semantic), actors, and domain language
 -- Run with: eng run examples/finance.eng
 
-function calculate_var(number portfolio_value, number volatility)
+function calculate_var(number portfolio_value, decimal volatility)
 returns decimal
 begin
     -- Value at Risk: simplified 95% confidence z-score = 1.645

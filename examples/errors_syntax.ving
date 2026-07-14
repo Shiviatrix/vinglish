@@ -1,0 +1,7 @@
+function main()
+begin
+    let x = 5 // Should be 'be' not '='
+    if x > 3 { // Should be 'then' not '{'
+        print("yes")
+    } // Should be 'end'
+end

@@ -804,6 +804,79 @@ impl TypeInferencePass {
                     },
                 )
             }
+            Stmt::Match(m) => {
+                let (subj_ty, subj_hir) = self.infer_expr(ctx, &m.subject);
+
+                let mut current_otherwise = m.otherwise.as_ref().map(|b| {
+                    let (_, hb) = self.infer_block(ctx, b);
+                    hb
+                });
+
+                let mut result_hir = None;
+
+                for case in m.cases.iter().rev() {
+                    let (_, then_block) = self.infer_block(ctx, &case.body);
+
+                    let condition = match &case.pattern {
+                        vinglish_parser::ast::Pattern::Literal(lit) => {
+                            let (lit_ty, lit_hir) = self.infer_expr(ctx, &vinglish_parser::ast::Expr::Lit { value: lit.clone(), span: case.span });
+                            self.unify(ctx, subj_ty.clone(), lit_ty, case.span);
+
+                            vinglish_hir::Expr::BinOp {
+                                left: Box::new(subj_hir.clone()),
+                                op: vinglish_parser::ast::BinOp::Eq,
+                                right: Box::new(lit_hir),
+                                ty: self.intern(ctx, Type::Bool),
+                                span: case.span,
+                            }
+                        }
+                        _ => {
+                            vinglish_hir::Expr::Lit {
+                                value: vinglish_parser::ast::Literal::Bool(true),
+                                ty: self.intern(ctx, Type::Bool),
+                                span: case.span,
+                            }
+                        }
+                    };
+
+                    let if_stmt = vinglish_hir::Stmt::If {
+                        condition,
+                        then_block,
+                        otherwise: current_otherwise.clone(),
+                        span: case.span,
+                    };
+
+                    let wrapper_block = vinglish_hir::Block {
+                        stmts: vec![if_stmt.clone()],
+                        expr: None,
+                        ty: self.intern(ctx, Type::Unit),
+                        span: case.span,
+                    };
+                    current_otherwise = Some(wrapper_block);
+                    result_hir = Some(if_stmt);
+                }
+
+                (Type::Unit, result_hir.unwrap_or_else(|| {
+                    if let Some(oth) = current_otherwise {
+                        vinglish_hir::Stmt::If {
+                            condition: vinglish_hir::Expr::Lit {
+                                value: vinglish_parser::ast::Literal::Bool(true),
+                                ty: self.intern(ctx, Type::Bool),
+                                span: m.span,
+                            },
+                            then_block: oth,
+                            otherwise: None,
+                            span: m.span,
+                        }
+                    } else {
+                        vinglish_hir::Stmt::Expr(vinglish_hir::Expr::Lit {
+                            value: vinglish_parser::ast::Literal::Unit,
+                            ty: self.intern(ctx, Type::Unit),
+                            span: m.span,
+                        })
+                    }
+                }))
+            }
             Stmt::Expr(e) => {
                 let (ty, hir_expr) = self.infer_expr(ctx, e);
                 (ty, HirStmt::Expr(hir_expr))
@@ -850,10 +923,17 @@ impl TypeInferencePass {
                         .symbol_table
                         .get_func(symbol_id.as_func().unwrap_or(FunctionId(SymbolId(0))))
                     {
-                        ty = fs.ty.clone();
+                        if fs.generic_params.is_empty() {
+                            ty = fs.ty.clone();
+                        } else {
+                            let mut subst = std::collections::HashMap::new();
+                            for &tv in &fs.generic_params {
+                                subst.insert(tv, self.fresh());
+                            }
+                            ty = self.substitute(&fs.ty, &subst);
+                        }
                     }
-                    // For let-polymorphism, we'd need a TypeScheme in the SymbolTable, but we'll stick to mono types for variables right now, and generalize builtins manually.
-
+                    
                     self.record(ctx, id.span, ty.clone());
                     (
                         ty.clone(),

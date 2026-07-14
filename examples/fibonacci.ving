@@ -2,6 +2,7 @@
 -- Demonstrates: recursion, type annotations, if/otherwise
 -- Run with: eng run examples/fibonacci.eng
 
+use std.io
 function fibonacci(number n)
 returns number
 begin
@@ -15,10 +16,11 @@ begin
     let i be 0
     repeat while i < 11
     begin
+        let f be fibonacci(i)
         print("fibonacci(")
-        print(i)
+        print(to_text(i))
         print(") = ")
-        println(fibonacci(i))
+        println(to_text(f))
         i += 1
     end
 end

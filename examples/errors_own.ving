@@ -1,0 +1,15 @@
+type Box
+begin
+    val: number
+end
+
+function take_box(Box b)
+begin
+end
+
+function main()
+begin
+    let my_box be Box { val: 42 }
+    take_box(my_box)
+    print(my_box.val)
+end

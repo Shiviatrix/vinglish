@@ -130,11 +130,77 @@ fn get_struct_store() -> &'static Mutex<HashMap<u64, HashMap<FieldId, Value>>> {
 
 impl<'a> Interpreter<'a> {
     pub fn new(symbol_table: &'a SymbolTable) -> Self {
-        let interp = Self {
+        let mut interp = Self {
             _symbol_table: symbol_table,
             functions: HashMap::new(),
             native_functions: HashMap::new(),
         };
+
+        let builtins: Vec<(&'static str, fn(Vec<Value>) -> Result<Value, InterpError>)> = vec![
+            ("print", |args| {
+                if let Some(val) = args.first() {
+                    print!("{}", val.to_display());
+                }
+                Ok(Value::Unit)
+            }),
+            ("println", |args| {
+                if let Some(val) = args.first() {
+                    println!("{}", val.to_display());
+                } else {
+                    println!();
+                }
+                Ok(Value::Unit)
+            }),
+            ("to_text", |args| {
+                if let Some(val) = args.first() {
+                    Ok(Value::Text(val.to_display()))
+                } else {
+                    Ok(Value::Text("".to_string()))
+                }
+            }),
+            ("to_number", |args| {
+                if let Some(Value::Text(s)) = args.first() {
+                    if let Ok(i) = s.parse::<i64>() {
+                        Ok(Value::Int(i))
+                    } else {
+                        Ok(Value::Int(0))
+                    }
+                } else {
+                    Ok(Value::Int(0))
+                }
+            }),
+            ("min", |args| {
+                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.get(0), args.get(1)) {
+                    Ok(Value::Int(*a.min(b)))
+                } else {
+                    Ok(Value::Int(0))
+                }
+            }),
+            ("max", |args| {
+                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.get(0), args.get(1)) {
+                    Ok(Value::Int(*a.max(b)))
+                } else {
+                    Ok(Value::Int(0))
+                }
+            }),
+            ("abs", |args| {
+                if let Some(Value::Int(a)) = args.first() {
+                    Ok(Value::Int(a.abs()))
+                } else {
+                    Ok(Value::Int(0))
+                }
+            }),
+        ];
+
+        for (name, f) in builtins {
+            if let Some(id) = symbol_table.lookup(name) {
+                interp.native_functions.insert(vinglish_hir::symbol::FunctionId(id), NativeFn {
+                    name,
+                    f,
+                });
+            }
+        }
+
         interp
     }
 

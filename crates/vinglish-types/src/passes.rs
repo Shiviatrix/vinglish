@@ -70,8 +70,19 @@ impl CompilerContext {
         let mut scope = HashMap::new();
 
         // Register builtins if not already present
-        let builtins = vec!["print", "println"];
-        for name in builtins {
+        let tv0 = vinglish_hir::types::TypeVar(0);
+        let builtins = vec![
+            ("print", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)), vec![tv0]),
+            ("println", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)), vec![tv0]),
+            ("to_text", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Text)), vec![tv0]),
+            ("to_number", Type::Function(vec![Type::Text], Box::new(Type::Int)), vec![]),
+            ("abs", Type::Function(vec![Type::Int], Box::new(Type::Int)), vec![]),
+            ("sqrt", Type::Function(vec![Type::Float], Box::new(Type::Float)), vec![]),
+            ("min", Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)), vec![]),
+            ("max", Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)), vec![]),
+        ];
+        
+        for (name, ty, gen_params) in builtins {
             let id = if let Some(sym_id) = symbol_table.lookup(name) {
                 FunctionId(sym_id)
             } else {
@@ -81,12 +92,8 @@ impl CompilerContext {
                         id: vinglish_hir::symbol::FunctionId(SymbolId(0)),
                         name: name.to_string(),
                         visibility: Visibility::Public,
-                        // Builtins take any type (represented by a fresh type variable) and return Unit
-                        ty: Type::Function(
-                            vec![Type::Var(vinglish_hir::types::TypeVar(0))],
-                            Box::new(Type::Unit),
-                        ),
-                        generic_params: vec![],
+                        ty,
+                        generic_params: gen_params,
                         is_variant_constructor: None,
                     },
                 );

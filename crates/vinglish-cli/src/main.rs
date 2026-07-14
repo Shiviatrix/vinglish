@@ -702,16 +702,68 @@ fn cmd_build(
 }
 
 fn cmd_check(file: &Path) -> bool {
-    match compile_project(file) {
-        Ok(_) => {
-            eprintln!("  \x1b[32m✓\x1b[0m  {} — no errors found", file.display());
-            true
-        }
+    let compile_res = match compile_project(file) {
+        Ok(res) => res,
         Err(e) => {
             eprintln!("{}", e);
-            false
+            return false;
         }
+    };
+    
+    let mut symbol_table = compile_res.symbol_table;
+    let mut mir_module = compile_res.mir_module;
+
+    let validator = MirValidatorPass::new();
+    if let Err(errors) = validator.validate(&symbol_table, &mir_module) {
+        for e in &errors {
+            eprintln!("MIR validation error: {}", e.message);
+        }
+        return false;
     }
+
+    let mut pre_pm = vinglish_opt::pre_ssa_pipeline();
+    if let Err(errors) = pre_pm.run_all(&mut mir_module, &symbol_table) {
+        for e in &errors {
+            eprintln!("MIR validation error after pre-SSA optimization: {}", e.message);
+        }
+        return false;
+    }
+
+    let mut ssa_pass = vinglish_ssa::SSAConversionPass::new();
+    let mut ssa_module = ssa_pass.run(mir_module, &mut symbol_table);
+
+    let ssa_validator = vinglish_ssa::SSAValidator::new();
+    if let Err(errors) = ssa_validator.validate(&ssa_module) {
+        for e in &errors {
+            eprintln!("SSA validation error: {}", e.message);
+        }
+        return false;
+    }
+
+    let mut post_pm = vinglish_opt::post_ssa_pipeline();
+    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
+        for e in &errors {
+            eprintln!("MIR validation error after post-SSA optimization: {}", e.message);
+        }
+        return false;
+    }
+
+    let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
+    let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
+
+    let own_validator = vinglish_own::OwnershipValidator::new();
+    if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
+        for e in &errors {
+            let mut diag = e.clone();
+            diag.enrich(&compile_res.entry_src);
+            let rendered = render(&[diag], &compile_res.entry_filename);
+            eprint!("{}", rendered);
+        }
+        return false;
+    }
+
+    eprintln!("  \x1b[32m✓\x1b[0m  {} — no errors found", file.display());
+    true
 }
 
 fn cmd_fmt(files: &[PathBuf], check: bool) -> bool {
