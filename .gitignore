@@ -29,7 +29,20 @@ bench_out/
 *.dSYM/
 
 # Python scripts
-fix*.py
+*.py
+
+# Shell scripts
+*.sh
+
+# Logs
+*.log
+
+# Test Scripts
+test_*.ving
+
+# Modules
+/.eng_modules/
+/.ving_modules/
 
 # OS
 .DS_Store
