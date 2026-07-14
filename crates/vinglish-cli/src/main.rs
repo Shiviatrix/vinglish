@@ -728,6 +728,7 @@ fn cmd_build(
             // Add macOS specific frameworks required by minifb/winit
             #[cfg(target_os = "macos")]
             {
+                cmd.arg("-lc++");
                 cmd.arg("-framework").arg("Cocoa");
                 cmd.arg("-framework").arg("IOKit");
                 cmd.arg("-framework").arg("Foundation");
@@ -735,6 +736,11 @@ fn cmd_build(
                 cmd.arg("-framework").arg("MetalKit");
                 cmd.arg("-framework").arg("Carbon");
                 cmd.arg("-framework").arg("QuartzCore");
+                cmd.arg("-framework").arg("UniformTypeIdentifiers");
+                cmd.arg("-framework").arg("WebKit");
+                cmd.arg("-framework").arg("AppKit");
+                cmd.arg("-framework").arg("Security");
+                cmd.arg("-framework").arg("SystemConfiguration");
             }
         }
 
