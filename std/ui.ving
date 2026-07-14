@@ -1,67 +1,39 @@
 package std
 module ui
 
-use std.term
+public foreign function eng_ui_create_window(title: string, width: number, height: number) returns number
+public foreign function eng_ui_window_is_open(id: number) returns number
+public foreign function eng_ui_create_buffer(width: number, height: number) returns number
+public foreign function eng_ui_set_pixel(buf_id: number, x: number, y: number, color: number) returns number
+public foreign function eng_ui_fill_buffer(buf_id: number, color: number) returns number
+public foreign function eng_ui_window_update(win_id: number, buf_id: number) returns number
 
-// Colors (ANSI Codes)
-public type Color
+public function create_window(title: string, width: number, height: number) returns number
 begin
-    r: number
-    g: number
-    b: number
+    return eng_ui_create_window(title, width, height)
 end
 
-public function rgb(r: number, g: number, b: number) returns Color
+public function is_window_open(id: number) returns number
 begin
-    let c be Color { r: r, g: g, b: b }
-    return c
+    return eng_ui_window_is_open(id)
 end
 
-// Sets the foreground text color
-public foreign function ui_set_fg(c: Color)
-
-// Sets the background color
-public foreign function ui_set_bg(c: Color)
-
-// Resets color formatting
-public foreign function ui_reset_color()
-
-// Draws a border around a rectangle
-public function ui_draw_border(x: number, y: number, w: number, h: number)
+public function create_buffer(width: number, height: number) returns number
 begin
-    // Simple ASCII border for now
-    let i be 0
-    
-    // Top border
-    term_move_cursor(y, x)
-    print("+")
-    i = 1
-    repeat while i < w - 1
-    begin
-        print("-")
-        i = i + 1
-    end
-    print("+")
-    
-    // Bottom border
-    term_move_cursor(y + h - 1, x)
-    print("+")
-    i = 1
-    repeat while i < w - 1
-    begin
-        print("-")
-        i = i + 1
-    end
-    print("+")
-    
-    // Sides
-    i = 1
-    repeat while i < h - 1
-    begin
-        term_move_cursor(y + i, x)
-        print("|")
-        term_move_cursor(y + i, x + w - 1)
-        print("|")
-        i = i + 1
-    end
+    return eng_ui_create_buffer(width, height)
+end
+
+public function set_pixel(buf_id: number, x: number, y: number, color: number)
+begin
+    eng_ui_set_pixel(buf_id, x, y, color)
+end
+
+public function fill_buffer(buf_id: number, color: number)
+begin
+    eng_ui_fill_buffer(buf_id, color)
+end
+
+public function update_window(win_id: number, buf_id: number)
+begin
+    eng_ui_window_update(win_id, buf_id)
 end

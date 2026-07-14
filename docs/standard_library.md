@@ -1,7 +1,7 @@
 # The Vinglish Standard Library (`std`)
 
 <div align="center">
-  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
+  <img src="../logos/vinglish-icon-color.svg" alt="Vinglish Logo" width="100" />
 </div>
 
 The Vinglish standard library serves as a primary demonstration of the language's capability. Rather than relying on a monolithic C runtime environment, the core utilities are implemented natively in `.eng` code, guaranteeing zero abstraction overhead.

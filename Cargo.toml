@@ -8,7 +8,7 @@ members = [
     "crates/vinglish-diagnostics",
     "crates/vinglish-codegen",
     "crates/vinglish-fmt",
-    "crates/vinglish-hir", "crates/vinglish-mir", "crates/vinglish-opt", "crates/vinglish-own", "crates/vinglish-ssa", "crates/vinglish-analysis", "crates/vinglish-llvm", "crates/vinglish-lsp",
+    "crates/vinglish-hir", "crates/vinglish-mir", "crates/vinglish-opt", "crates/vinglish-own", "crates/vinglish-ssa", "crates/vinglish-analysis", "crates/vinglish-llvm", "crates/vinglish-lsp", "rt_rust", "crates/vinglish-macro",
 ]
 resolver = "2"
 

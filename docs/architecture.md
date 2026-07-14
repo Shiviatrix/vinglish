@@ -1,7 +1,7 @@
 # Vinglish Architecture
 
 <div align="center">
-  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
+  <img src="../logos/vinglish-icon-color.svg" alt="Vinglish Logo" width="100" />
 </div>
 
 The Vinglish compiler is architected as a sequence of independent passes that transform high-level source code into heavily optimized machine code. This document outlines the fundamental stages of the compilation pipeline.

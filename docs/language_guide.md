@@ -1,7 +1,7 @@
 # Vinglish Language Guide
 
 <div align="center">
-  <img src="../Vinglish%20Icon.png" alt="Vinglish Logo" width="100" />
+  <img src="../logos/vinglish-icon-color.svg" alt="Vinglish Logo" width="100" />
 </div>
 
 Vinglish is designed to maximize human readability while preserving the low-level performance characteristics of a systems programming language like C. This guide outlines the core syntactical features of the language.

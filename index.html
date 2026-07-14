@@ -249,25 +249,27 @@
             <li><a href="#std-vector">12. Dynamic Vectors</a></li>
             <li><a href="#std-hashmap">13. Hash Maps</a></li>
             <li><a href="#std-io">14. File I/O</a></li>
+            <li><a href="#std-ui">15. Native UI Engine</a></li>
         </ul>
 
         <h2>III. Compiler Internals</h2>
         <ul>
-            <li><a href="#architecture">15. The Pipeline</a></li>
-            <li><a href="#frontend">16. Lexer & Parser</a></li>
-            <li><a href="#hir">17. High-Level IR (HIR)</a></li>
-            <li><a href="#mir">18. Mid-Level IR & SSA</a></li>
-            <li><a href="#opt-cfg">19. Opt: CFG Simplification</a></li>
-            <li><a href="#opt-gvn">20. Opt: GVN & Constant Fold</a></li>
-            <li><a href="#codegen">21. Codegen Backends</a></li>
+            <li><a href="#architecture">16. The Pipeline</a></li>
+            <li><a href="#frontend">17. Lexer & Parser</a></li>
+            <li><a href="#hir">18. High-Level IR (HIR)</a></li>
+            <li><a href="#mir">19. Mid-Level IR & SSA</a></li>
+            <li><a href="#opt-cfg">20. Opt: CFG Simplification</a></li>
+            <li><a href="#opt-gvn">21. Opt: GVN & Constant Fold</a></li>
+            <li><a href="#codegen">22. Codegen Backends</a></li>
         </ul>
         
         <h2>IV. Ecosystem</h2>
         <ul>
-            <li><a href="#cli">22. Vinglish CLI</a></li>
-            <li><a href="#lsp">23. Language Server (LSP)</a></li>
-            <li><a href="#roadmap">24. Future Roadmap</a></li>
-            <li><a href="#benchmarks">25. Benchmarks</a></li>
+            <li><a href="#bindgen">23. Rust Ecosystem Bindgen</a></li>
+            <li><a href="#cli">24. Vinglish CLI</a></li>
+            <li><a href="#lsp">25. Language Server (LSP)</a></li>
+            <li><a href="#roadmap">26. Future Roadmap</a></li>
+            <li><a href="#benchmarks">27. Benchmarks</a></li>
         </ul>
     </nav>
 
@@ -435,6 +437,15 @@ struct, type, address</span></code></pre>
         <h2 id="std-io">14. File I/O</h2>
         <p>The <code>std.io</code> module provides wrappers around standard input, output, and file descriptors. Files are represented as structs containing the integer descriptor, enabling buffered reads and writes natively in Vinglish.</p>
 
+        <h2 id="std-ui">15. Native UI Engine</h2>
+        <p>The <code>std.ui</code> module offers a fully native desktop windowing and rendering engine built into Vinglish, backed by Rust's highly performant <code>minifb</code>.</p>
+        <p>Vinglish provides simple handles for windows and pixel buffers. Developers can build high-performance GUIs, animations, and graphic simulations by painting pixels on the screen synchronously, without touching any C code or HTML.</p>
+        <pre><code><span class="highlight-keyword">use</span> std.ui
+<span class="highlight-keyword">let</span> window <span class="highlight-keyword">be</span> create_window(<span class="highlight-string">"App"</span>, 800, 600)
+<span class="highlight-keyword">let</span> buffer <span class="highlight-keyword">be</span> create_buffer(800, 600)
+set_pixel(buffer, 10, 10, 16777215)
+update_window(window, buffer)</code></pre>
+
         <hr>
 
         <!-- ============================================== -->
@@ -503,7 +514,16 @@ __auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
         <!-- PART IV: ECOSYSTEM                             -->
         <!-- ============================================== -->
 
-        <h2 id="cli">22. Vinglish CLI</h2>
+        <h2 id="bindgen">23. Rust Ecosystem Bindgen</h2>
+        <p>Vinglish allows complete, zero-overhead access to the entire <strong>Rust ecosystem via crates.io</strong>. This is accomplished without writing any tedious C-FFI or Vinglish headers manually.</p>
+        <p>By creating a <code>rt_rust</code> staticlib alongside your project, you can pull in any Rust crate (e.g. <code>reqwest</code>, <code>serde</code>). Using the built-in <code>vinglish-macro</code>, you simply decorate your Rust wrapper function with <code>#[vinglish_export]</code>.</p>
+        <pre><code><span class="highlight-keyword">#[vinglish_export]</span>
+<span class="highlight-keyword">pub fn</span> <span class="highlight-function">fetch_url</span>(url: String) -&gt; String {
+    reqwest::blocking::get(url).unwrap().text().unwrap()
+}</code></pre>
+        <p>At compile time, the macro automatically generates the safe C-memory FFI wrapper, and the Vinglish compiler auto-generates the corresponding <code>public foreign function</code> declarations in <code>.ving_modules/rust_ffi/rust_ffi.ving</code>.</p>
+
+        <h2 id="cli">24. Vinglish CLI</h2>
         <p>The <code>vng</code> binary provides the primary interface to the compiler toolkit.</p>
         
         <h3>Installation</h3>

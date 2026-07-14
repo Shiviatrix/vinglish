@@ -1,0 +1,49 @@
+use std.ui
+use std.io
+
+function main() returns number
+begin
+    println("Starting Vinglish UI Demo...")
+    
+    let width be 400
+    let height be 300
+    
+    let window be create_window("Vinglish Native Desktop", width, height)
+    let buffer be create_buffer(width, height)
+    
+    if is_window_open(window) == 0 then
+    begin
+        println("Failed to create window")
+        return 1
+    end
+    
+    let frame be 0
+    
+    repeat while is_window_open(window) == 1
+    begin
+        -- Fill background with dark gray
+        fill_buffer(buffer, 1973790)
+        
+        -- Draw a moving orange square
+        let square_x be frame % width
+        let square_y be height / 2
+        
+        let y be 0
+        repeat while y < 50
+        begin
+            let x be 0
+            repeat while x < 50
+            begin
+                set_pixel(buffer, square_x + x, square_y + y, 15247447)
+                x += 1
+            end
+            y += 1
+        end
+        
+        update_window(window, buffer)
+        frame += 5
+    end
+    
+    println("Window closed.")
+    return 0
+end

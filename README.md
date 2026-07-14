@@ -18,6 +18,8 @@ By combining an intent-aware semantic analysis pipeline, an optimizing SSA-form 
 * **Human Readability:** The language grammar is designed to closely resemble English prose.
 * **Mathematical Foundation:** The compiler leverages a robust intermediate representation (MIR) to perform safe, mathematically-grounded optimizations.
 * **Zero Overhead:** The language compiles directly to low-level C. The runtime is extremely minimal, allowing the majority of the standard library to be implemented natively in Vinglish.
+* **Native Rust Ecosystem Integration:** Vinglish includes a custom `#[vinglish_export]` macro that generates seamless C-FFI bridges for any Rust crate automatically, allowing you to use world-class libraries natively without writing glue code.
+* **Native UI:** Utilize the built-in `std.ui` module, powered by Rust's `minifb`, to build cross-platform desktop UI experiences powered directly by Vinglish logic.
 
 ## Architecture Highlights
 

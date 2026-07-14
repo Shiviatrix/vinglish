@@ -683,6 +683,60 @@ fn cmd_build(
         for rt_path in &runtime_paths {
             cmd.arg(rt_path);
         }
+        
+        let rt_rust_toml = std::env::current_dir().unwrap_or_default().join("rt_rust").join("Cargo.toml");
+        if rt_rust_toml.exists() {
+            eprintln!("  Compiling Rust FFI bridge...");
+            let rt_rust_dir = rt_rust_toml.parent().unwrap();
+            
+            // Clean up old interfaces file before building
+            let workspace_root = rt_rust_dir.parent().unwrap();
+            let interfaces_file = workspace_root.join(".vinglish_interfaces.tmp");
+            let _ = std::fs::remove_file(&interfaces_file);
+            
+            let cargo_status = Command::new("cargo")
+                .arg("build")
+                .arg("--release")
+                .current_dir(rt_rust_dir)
+                .status()
+                .map_err(|e| format!("cannot invoke cargo: {}", e))?;
+                
+            if !cargo_status.success() {
+                return Err(format!("cargo build exited with status {}", cargo_status));
+            }
+            
+            // Generate the rust_ffi.ving interface file
+            if interfaces_file.exists() {
+                if let Ok(interfaces) = std::fs::read_to_string(&interfaces_file) {
+                    let rust_ffi_dir = workspace_root.join(".ving_modules").join("rust_ffi");
+                    let _ = std::fs::create_dir_all(&rust_ffi_dir);
+                    
+                    let mut content = String::from("package rust_ffi\nmodule rust_ffi\n\n");
+                    content.push_str(&interfaces);
+                    
+                    let _ = std::fs::write(rust_ffi_dir.join("rust_ffi.ving"), content);
+                }
+                let _ = std::fs::remove_file(&interfaces_file);
+            }
+            
+            // Since rt_rust is in a workspace, the target directory is at the workspace root
+            let workspace_root = rt_rust_dir.parent().unwrap();
+            let target_dir = workspace_root.join("target").join("release");
+            cmd.arg(format!("-L{}", target_dir.display()));
+            cmd.arg("-lvinglish_rt");
+            
+            // Add macOS specific frameworks required by minifb/winit
+            #[cfg(target_os = "macos")]
+            {
+                cmd.arg("-framework").arg("Cocoa");
+                cmd.arg("-framework").arg("IOKit");
+                cmd.arg("-framework").arg("Foundation");
+                cmd.arg("-framework").arg("Metal");
+                cmd.arg("-framework").arg("MetalKit");
+                cmd.arg("-framework").arg("Carbon");
+                cmd.arg("-framework").arg("QuartzCore");
+            }
+        }
 
         cmd.arg("-lm");
 
