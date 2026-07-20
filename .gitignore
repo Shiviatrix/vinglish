@@ -37,5 +37,16 @@ bench_out/
 # OS
 .DS_Store
 
+# Temp and Scratch Files
+.vinglish_interfaces.tmp
+test_*.ving
+test_*.sh
+fix_*.py
+fix_*.sh
+fix.py
+clean_*.py
+refactor*.py
+update_*.py
+
 # Independent nested projects (NOT submodules — fully separate repos)
 /VinglishZero/
