@@ -1,3 +1,0 @@
-function mutate_box(borrow mut Box b)
-begin
-end

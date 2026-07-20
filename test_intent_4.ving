@@ -1,4 +1,0 @@
-function main(x: number) returns number
-begin
-    return x
-end

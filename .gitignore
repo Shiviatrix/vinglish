@@ -39,37 +39,6 @@ bench_out/
 
 # Temp and Scratch Files
 .vinglish_interfaces.tmp
-test_intent.sh
-test_intent.ving
-test_intent_1.ving
-test_intent_2.ving
-test_intent_3.ving
-test_intent_4.ving
-test_parse.ving
-fix_copy_prop.py
-fix_crates.sh
-fix_dce.py
-fix_deps.sh
-fix_diag.py
-fix_ext.sh
-fix_gvn.py
-fix_mir_lower.py
-fix_mir_lower_2.py
-fix_mir_lower_3.py
-fix_mir_lower_4.py
-fix_mir_lower_5.py
-fix_pass_manager.py
-fix_rename.py
-fix_rename_2.py
-fix_span.py
-fix_stmts.py
-fix_traits.py
-fix_validator.py
-fix.py
-clean_diag.py
-refactor.py
-refactor2.py
-update_symbol.py
 
 # Independent nested projects (NOT submodules — fully separate repos)
 /VinglishZero/

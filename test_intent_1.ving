@@ -1,4 +1,0 @@
-function main() -> number
-begin
-    return 0
-end
