@@ -26,17 +26,9 @@ out_*
 bench_out/
 *.dSYM/
 
-# Python scripts
-*.py
-
-# Shell scripts
-*.sh
-
 # Logs
 *.log
 
-# Test Scripts
-test_*.ving
 
 # Modules
 /.eng_modules/
@@ -44,3 +36,6 @@ test_*.ving
 
 # OS
 .DS_Store
+
+# Independent nested projects (NOT submodules — fully separate repos)
+/VinglishZero/

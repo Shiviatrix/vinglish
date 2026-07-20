@@ -9,6 +9,7 @@ members = [
     "crates/vinglish-codegen",
     "crates/vinglish-fmt",
     "crates/vinglish-hir", "crates/vinglish-mir", "crates/vinglish-opt", "crates/vinglish-own", "crates/vinglish-ssa", "crates/vinglish-analysis", "crates/vinglish-llvm", "crates/vinglish-lsp", "rt_rust", "crates/vinglish-macro",
+    "crates/vinglish-ir-export",
 ]
 resolver = "2"
 
@@ -24,6 +25,8 @@ thiserror       = "1.0"
 clap            = { version = "4", features = ["derive"] }
 indexmap        = "2"
 strsim          = "0.11"
+serde           = { version = "1", features = ["derive"] }
+serde_json      = "1"
 
 [profile.release]
 opt-level     = 3

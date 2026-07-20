@@ -1291,6 +1291,7 @@ dependencies = [
  "vinglish-diagnostics",
  "vinglish-fmt",
  "vinglish-hir",
+ "vinglish-ir-export",
  "vinglish-lexer",
  "vinglish-llvm",
  "vinglish-lsp",
@@ -1336,6 +1337,17 @@ dependencies = [
 name = "vinglish-hir"
 version = "0.1.0"
 dependencies = [
+ "vinglish-lexer",
+ "vinglish-parser",
+]
+
+[[package]]
+name = "vinglish-ir-export"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "vinglish-hir",
  "vinglish-lexer",
  "vinglish-parser",
 ]

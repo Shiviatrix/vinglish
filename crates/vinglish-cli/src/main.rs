@@ -10,6 +10,7 @@ use vinglish_diagnostics::{render, Diagnostic};
 use vinglish_fmt::format_module;
 use vinglish_hir::symbol::{SymbolTable, VariableId};
 use vinglish_hir::Module as HirModule;
+use vinglish_ir_export::{to_json, ExportBuilder};
 use vinglish_lexer::tokenize;
 use vinglish_mir::validator::MirValidatorPass;
 use vinglish_mir::MirModule;
@@ -32,8 +33,11 @@ use vinglish_types::{
     long_about = "eng — compile, run, check, and format Vinglish source files.\n\nVinglish is a statically compiled language whose primary abstraction is intent.\nWrite what you mean. Let the compiler determine how to execute it correctly."
 )]
 struct Cli {
+    /// Export the stable semantic interchange document for a source file.
+    #[arg(long, value_name = "FILE")]
+    emit_ir: Option<PathBuf>,
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -109,53 +113,65 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    if let Some(file) = cli.emit_ir {
+        if let Err(error) = cmd_emit_ir(&file) {
+            eprintln!("{}", error);
+            std::process::exit(1);
+        }
+        return;
+    }
+
     match cli.command {
-        Commands::Build {
+        None => {
+            eprintln!("usage: vng --emit-ir <FILE> | vng <COMMAND>");
+            std::process::exit(2);
+        }
+        Some(Commands::Build {
             file,
             output,
             backend,
             emit,
-        } => {
+        }) => {
             if let Err(e) = cmd_build(&file, &output, &backend, emit) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
-        Commands::Run { file, args: _ } => {
+        Some(Commands::Run { file, args: _ }) => {
             if let Err(e) = cmd_run(&file) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
-        Commands::Lsp => {
+        Some(Commands::Lsp) => {
             vinglish_lsp::run_server().await;
         }
-        Commands::Check { file } => {
+        Some(Commands::Check { file }) => {
             let ok = cmd_check(&file);
             if !ok {
                 std::process::exit(1);
             }
         }
-        Commands::Fmt { files, check } => {
+        Some(Commands::Fmt { files, check }) => {
             let ok = cmd_fmt(&files, check);
             if !ok {
                 std::process::exit(1);
             }
         }
-        Commands::Benchmark { directory, runs } => {
+        Some(Commands::Benchmark { directory, runs }) => {
             if let Err(e) = cmd_benchmark(&directory, runs) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
-        Commands::Version => {
+        Some(Commands::Version) => {
             println!(
                 "eng {} — Vinglish Compiler (Stage 0)\nBuilt with: rustc {}",
                 env!("CARGO_PKG_VERSION"),
                 rustc_version()
             );
         }
-        Commands::Pkg { command } => {
+        Some(Commands::Pkg { command }) => {
             if let Err(e) = cmd_pkg(command) {
                 eprintln!("{}", e);
                 std::process::exit(1);
@@ -197,6 +213,7 @@ fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
 
 struct CompileResult {
     symbol_table: SymbolTable,
+    hir_modules: Vec<(String, HirModule)>,
     mir_module: MirModule<VariableId>,
     entry_src: String,
     entry_filename: String,
@@ -361,6 +378,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 
     let mut symbol_table = SymbolTable::new();
     let mut mir_functions = Vec::new();
+    let mut hir_modules = Vec::new();
     let mut entry_src = String::new();
     let mut entry_filename = String::new();
 
@@ -415,6 +433,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         }
 
         symbol_table = ctx.symbol_table;
+        hir_modules.push((module_name.clone(), hir.clone()));
         let mut mir_lower = MirLowerer::new(&mut symbol_table);
         let mir_mod = mir_lower.lower_module(&hir);
         mir_functions.extend(mir_mod.functions);
@@ -436,6 +455,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 
     Ok(CompileResult {
         symbol_table,
+        hir_modules,
         mir_module: MirModule {
             functions: mir_functions,
         },
@@ -448,6 +468,19 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Commands
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn cmd_emit_ir(file: &Path) -> Result<(), String> {
+    let compilation = compile_project(file)?;
+    let document = ExportBuilder::new(&compilation.symbol_table).document(
+        compilation
+            .hir_modules
+            .iter()
+            .map(|(name, module)| (name.clone(), module)),
+    );
+    let json = to_json(&document).map_err(|error| format!("cannot serialize export: {error}"))?;
+    println!("{json}");
+    Ok(())
+}
 
 fn cmd_run(file: &Path) -> Result<(), String> {
     let compile_res = compile_project(file)?;

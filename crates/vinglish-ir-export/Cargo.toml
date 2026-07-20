@@ -1,0 +1,12 @@
+[package]
+name = "vinglish-ir-export"
+version.workspace = true
+edition.workspace = true
+description = "Versioned external semantic interchange export for the Vinglish compiler"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+vinglish-hir = { path = "../vinglish-hir" }
+vinglish-lexer = { path = "../vinglish-lexer" }
+vinglish-parser = { path = "../vinglish-parser" }

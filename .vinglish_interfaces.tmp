@@ -1,0 +1,6 @@
+public foreign function eng_ui_create_window(title: string, width: number, height: number) returns number
+public foreign function eng_ui_window_is_open(id: number) returns number
+public foreign function eng_ui_create_buffer(width: number, height: number) returns number
+public foreign function eng_ui_set_pixel(buf_id: number, x: number, y: number, color: number)
+public foreign function eng_ui_window_update(win_id: number, buf_id: number)
+public foreign function eng_ui_fill_buffer(buf_id: number, color: number)

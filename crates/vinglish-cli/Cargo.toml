@@ -25,4 +25,5 @@ vinglish-hir = { path = "../vinglish-hir" }
 vinglish-analysis = { path = "../vinglish-analysis" }
 vinglish-llvm = { path = "../vinglish-llvm" }
 vinglish-lsp = { version = "0.1.0", path = "../vinglish-lsp" }
+vinglish-ir-export = { path = "../vinglish-ir-export" }
 tokio = { version = "1.52.3", features = ["full"] }

@@ -1,0 +1,8 @@
+function main() returns number
+begin
+    number x = 5
+    if x = 5 then
+        return 1
+    end
+    return 0
+end

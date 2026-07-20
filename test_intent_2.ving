@@ -1,0 +1,7 @@
+function main() returns number
+begin
+    while 1 > 0 do
+        return 1
+    end
+    return 0
+end
