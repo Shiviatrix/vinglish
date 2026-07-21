@@ -35,6 +35,7 @@ The Vinglish compiler implements a multi-stage pipeline:
 - [Language Guide](./docs/language_guide.md): An overview of the language syntax, functions, structs, and generics.
 - [Architecture](./docs/architecture.md): A detailed examination of the compiler internals, including the HIR, MIR, and Codegen phases.
 - [Standard Library](./docs/standard_library.md): An analysis of the native `std` library, detailing generic vectors, hash maps, and I/O implementations.
+- [Playground](./docs/playground.md): The native Skyline Runner example and its browser preview.
 
 ## Getting Started
 

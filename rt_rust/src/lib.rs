@@ -50,6 +50,16 @@ pub fn ui_window_is_open(id: i32) -> i32 {
 }
 
 #[vinglish_export]
+pub fn ui_space_pressed(id: i32) -> i32 {
+    if let Some(wrapper) = WINDOWS.lock().unwrap().get(&id) {
+        if wrapper.0.is_key_down(Key::Space) {
+            return 1;
+        }
+    }
+    0
+}
+
+#[vinglish_export]
 pub fn ui_create_buffer(width: i32, height: i32) -> i32 {
     let buf = vec![0; (width * height) as usize];
     let id = next_id();

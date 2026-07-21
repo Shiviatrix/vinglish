@@ -1,0 +1,56 @@
+use std.ui
+
+function draw_square(number buffer, number left, number top, number size, number color)
+begin
+    let y be 0
+    repeat while y < size
+    begin
+        let x be 0
+        repeat while x < size
+        begin
+            set_pixel(buffer, left + x, top + y, color)
+            x be x + 1
+        end
+        y be y + 1
+    end
+end
+
+function main() returns number
+begin
+    let width be 640
+    let height be 360
+    let window be create_window("Vinglish Skyline Runner", width, height)
+    let buffer be create_buffer(width, height)
+    let player_y be 250
+    let velocity be 0
+    let obstacle_x be 640
+    let score be 0
+
+    repeat while is_window_open(window) == 1
+    begin
+        if is_space_pressed(window) == 1 then begin
+            velocity be -12
+        end
+
+        velocity be velocity + 1
+        player_y be player_y + velocity
+
+        if player_y > 250 then begin
+            player_y be 250
+            velocity be 0
+        end
+
+        obstacle_x be obstacle_x - 7
+        if obstacle_x < -30 then begin
+            obstacle_x be width
+            score be score + 1
+        end
+
+        fill_buffer(buffer, 15856383)
+        draw_square(buffer, 70, player_y, 28, 13382451)
+        draw_square(buffer, obstacle_x, 260, 30, 15247447)
+        update_window(window, buffer)
+    end
+
+    return score
+end

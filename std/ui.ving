@@ -3,6 +3,7 @@ module ui
 
 public foreign function eng_ui_create_window(title: string, width: number, height: number) returns number
 public foreign function eng_ui_window_is_open(id: number) returns number
+public foreign function eng_ui_space_pressed(id: number) returns number
 public foreign function eng_ui_create_buffer(width: number, height: number) returns number
 public foreign function eng_ui_set_pixel(buf_id: number, x: number, y: number, color: number) returns number
 public foreign function eng_ui_fill_buffer(buf_id: number, color: number) returns number
@@ -16,6 +17,11 @@ end
 public function is_window_open(id: number) returns number
 begin
     return eng_ui_window_is_open(id)
+end
+
+public function is_space_pressed(id: number) returns number
+begin
+    return eng_ui_space_pressed(id)
 end
 
 public function create_buffer(width: number, height: number) returns number

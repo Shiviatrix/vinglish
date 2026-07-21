@@ -1,635 +1,407 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vinglish Language Specification and Compiler Internals</title>
-    <link rel="icon" type="image/svg+xml" href="logos/vinglish-favicon-16.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@300;500;700&family=VT323&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --sidebar-bg: #eeeeee;
-            --main-bg: #ffffff;
-            --text-color: #333333;
-            --link-color: #0066cc;
-            --link-hover: #004499;
-            --header-color: #000000;
-            --code-bg: #f8f8f8;
-            --code-border: #cccccc;
-            --sidebar-w: 250px;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--main-bg);
-            color: var(--text-color);
-            line-height: 1.6;
-            font-size: 16px;
-        }
-
-        #sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-w);
-            height: 100vh;
-            background-color: var(--sidebar-bg);
-            padding: 20px 15px;
-            overflow-y: auto;
-            border-right: 1px solid #dddddd;
-        }
-
-        #sidebar img {
-            max-width: 100%;
-            display: block;
-            margin: 0 auto 10px auto;
-        }
-
-        .version-tag {
-            text-align: center;
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 20px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-        }
-
-        #sidebar h2 {
-            font-size: 1.1em;
-            margin: 20px 0 10px 0;
-            color: var(--header-color);
-            border-bottom: 1px solid #cccccc;
-            padding-bottom: 5px;
-        }
-
-        #sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 20px;
-            font-size: 0.9em;
-        }
-
-        #sidebar li { margin-bottom: 8px; }
-        
-        #sidebar a {
-            color: var(--link-color);
-            text-decoration: none;
-        }
-
-        #sidebar a:hover { 
-            text-decoration: underline;
-        }
-
-        #content {
-            margin-left: var(--sidebar-w);
-            padding: 40px 60px;
-            max-width: 1000px;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--header-color);
-            font-weight: bold;
-        }
-
-        h1 {
-            font-size: 2.2em;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.2em;
-            color: #666666;
-            margin-bottom: 30px;
-            font-style: italic;
-        }
-
-        h2 {
-            font-size: 1.5em;
-            margin-top: 40px;
-            border-bottom: 1px solid #dddddd;
-            padding-bottom: 5px;
-        }
-
-        h3 {
-            font-size: 1.2em;
-            margin-top: 30px;
-        }
-
-        p { margin-bottom: 16px; text-align: left; }
-
-        a {
-            color: var(--link-color);
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Code Blocks */
-        pre {
-            background-color: var(--code-bg);
-            color: #333333;
-            padding: 12px;
-            border: 1px solid var(--code-border);
-            overflow-x: auto;
-            font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
-            font-size: 0.9em;
-            line-height: 1.4;
-            margin: 20px 0;
-        }
-
-        code {
-            font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
-            background-color: var(--code-bg);
-            padding: 2px 4px;
-            border: 1px solid #e1e4e5;
-            color: #333333;
-            font-size: 0.9em;
-            border-radius: 3px;
-        }
-        pre code {
-            background-color: transparent;
-            padding: 0;
-            border: none;
-            color: inherit;
-        }
-
-        .highlight-keyword { color: #0000ff; font-weight: bold; }
-        .highlight-type { color: #2b91af; }
-        .highlight-function { color: #795e26; }
-        .highlight-comment { color: #008000; font-style: italic; }
-        .highlight-string { color: #a31515; }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        
-        th, td {
-            border: 1px solid #dddddd;
-            padding: 8px 12px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-
-        /* Callouts */
-        .callout {
-            background-color: #ffffe6;
-            border: 1px solid #e6e600;
-            border-left: 6px solid #e6e600;
-            padding: 15px;
-            margin: 20px 0;
-        }
-
-        .callout.warning {
-            background-color: #ffe6e6;
-            border-color: #ff3333;
-            border-left-color: #ff3333;
-        }
-
-        .callout h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #000000;
-            font-size: 1em;
-        }
-        
-        hr {
-            border: 0;
-            border-top: 1px solid #dddddd;
-            margin: 40px 0;
-        }
-
-        #trailCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 9999;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vinglish is a readable, statically typed systems programming language with native performance.">
+  <title>Vinglish — Readable systems programming</title>
+  <link rel="icon" type="image/svg+xml" href="logos/vinglish-favicon-16.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #f7df95;
+      --paper: #fff2c8;
+      --red: #cf2d2d;
+      --blue: #075a91;
+      --green: #177144;
+      --orange: #eb7a1b;
+      --pink: #de4778;
+      --ink: #18243a;
+      --yellow: #ffd749;
+      --border: #18243a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--cream); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      overflow-x: hidden;
+      color: var(--ink);
+      font-family: "Baloo 2", system-ui, sans-serif;
+      background-color: var(--cream);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Cpath d='M46 8c10 16 24 21 38 22-14 3-28 8-38 24C36 38 22 33 8 30c14-1 28-6 38-22Z' fill='%23eb7a1b' fill-opacity='.12'/%3E%3Ccircle cx='46' cy='46' r='4' fill='%23075a91' fill-opacity='.16'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .top-strip {
+      overflow: hidden;
+      border-bottom: 3px solid var(--border);
+      color: var(--paper);
+      background: var(--blue);
+      font-family: "Space Mono", monospace;
+      font-size: .73rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .marquee { display: inline-block; min-width: 100%; padding: 9px 0; animation: roll 22s linear infinite; }
+    .topbar { border-bottom: 3px solid var(--border); background-color: var(--yellow); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'%3E%3Cpath d='M19 4c3 7 8 10 15 11-7 1-12 4-15 11-3-7-8-10-15-11 7-1 12-4 15-11Z' fill='%23cf2d2d' fill-opacity='.16'/%3E%3C/svg%3E"); box-shadow: 0 4px 0 var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; min-height: 78px; gap: 20px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-family: "Shrikhand", cursive; font-size: 1.45rem; line-height: 1; }
+    .brand img { width: 43px; height: 43px; filter: drop-shadow(3px 3px 0 var(--ink)); }
+    .nav-links { display: flex; align-items: center; gap: 6px; font-weight: 800; }
+    .nav-links a { padding: 8px 11px; border: 2px solid transparent; border-radius: 999px; transition: transform .16s, background .16s, border-color .16s; }
+    .nav-links a:hover { border-color: var(--border); background: var(--paper); transform: rotate(-2deg); }
+    .nav-cta,.button { display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--border); box-shadow: 4px 4px 0 var(--border); font-weight: 800; transition: transform .14s, box-shadow .14s; }
+    .nav-cta { padding: 8px 15px; border-radius: 9px; color: var(--paper); background: var(--red); }
+    .nav-cta:hover,.button:hover { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--border); }
+    .menu-button { display: none; width: 42px; height: 42px; border: 3px solid var(--border); border-radius: 8px; color: var(--ink); background: var(--paper); cursor: pointer; font-size: 1.15rem; }
+    .hero { position: relative; display: grid; grid-template-columns: 1.02fr .98fr; align-items: center; gap: clamp(28px,6vw,82px); min-height: 670px; padding: 72px 0 84px; }
+    .hero::before { position: absolute; z-index: -1; top: 70px; left: -6%; width: 150px; height: 150px; border: 4px solid var(--red); border-radius: 50%; content: ""; animation: wobble 4.5s ease-in-out infinite; }
+    .hero::after { position: absolute; z-index: -1; right: 41%; bottom: 38px; width: 84px; height: 84px; border: 4px solid var(--blue); border-radius: 50%; color: var(--blue); content: "✦"; display: grid; place-items: center; font-family: "Shrikhand", cursive; font-size: 3rem; transform: rotate(14deg); }
+    .eyebrow { display: inline-block; padding: 7px 14px; border: 3px solid var(--border); border-radius: 999px; color: var(--paper); background: var(--green); box-shadow: 4px 4px 0 var(--border); font-family: "Space Mono", monospace; font-size: .72rem; font-weight: 700; letter-spacing: .06em; }
+    .hero h1 { max-width: 690px; margin: 18px 0 17px; font-family: "Shrikhand", cursive; font-size: clamp(3.75rem,7.5vw,7rem); font-weight: 400; letter-spacing: -.05em; line-height: .89; text-wrap: balance; }
+    .hero h1 span { display: block; color: var(--red); text-shadow: 4px 4px 0 var(--yellow), 7px 7px 0 var(--ink); }
+    .hero-copy { max-width: 590px; margin-bottom: 26px; font-size: 1.16rem; font-weight: 600; line-height: 1.55; }
+    .hero-copy strong { color: var(--red); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 13px; }
+    .button { padding: 11px 17px; border-radius: 9px; cursor: pointer; }
+    .button.primary { color: var(--paper); background: var(--blue); }
+    .button.secondary { color: var(--ink); background: var(--paper); }
+    .microcopy { margin: 21px 0 0; font-family: "Space Mono", monospace; font-size: .72rem; font-weight: 700; letter-spacing: .03em; }
+    .hero-art { position: relative; padding: 17px; border: 4px solid var(--border); outline: 3px solid var(--yellow); outline-offset: -11px; background: var(--red); box-shadow: 11px 11px 0 var(--border); transform: rotate(1.4deg); }
+    .hero-art::after { position: absolute; right: -28px; bottom: -28px; width: 65px; height: 65px; border: 4px solid var(--border); border-radius: 50%; background: var(--pink); content: "✦"; display: grid; place-items: center; color: var(--paper); font-size: 2rem; transform: rotate(12deg); }
+    .sun { position: absolute; z-index: 0; top: -47px; right: -42px; width: 150px; height: 150px; border: 4px solid var(--border); border-radius: 50%; background: var(--yellow); animation: spin 22s linear infinite; }
+    .sun span { position: absolute; left: 50%; top: -25px; width: 8px; height: 30px; margin-left: -4px; border: 2px solid var(--border); background: var(--orange); transform-origin: 4px 100px; }
+    .sun span:nth-child(2) { transform: rotate(45deg); }.sun span:nth-child(3) { transform: rotate(90deg); }.sun span:nth-child(4) { transform: rotate(135deg); }.sun span:nth-child(5) { transform: rotate(180deg); }.sun span:nth-child(6) { transform: rotate(225deg); }.sun span:nth-child(7) { transform: rotate(270deg); }.sun span:nth-child(8) { transform: rotate(315deg); }
+    .code-board { position: relative; z-index: 1; overflow: hidden; border: 4px solid var(--border); color: #ffeeb4; background: var(--ink); }
+    .code-top { display: flex; justify-content: space-between; padding: 11px 15px; border-bottom: 3px solid var(--yellow); color: var(--ink); background: var(--yellow); font-family: "Space Mono", monospace; font-size: .75rem; font-weight: 700; }
+    pre { margin: 0; padding: 23px; overflow-x: auto; font-family: "Space Mono", monospace; font-size: clamp(.72rem,1.12vw,.87rem); line-height: 1.82; }
+    .k { color: #ff8fb7; }.t { color: #8de2b0; }.f { color: #90d9ff; }.s { color: #ffe28b; }.p { color: #ffba73; }.n { color: #e9e7e0; }.cm { color: #a7afbe; font-style: italic; }
+    .ticket-row { display: grid; grid-template-columns: repeat(4,1fr); margin-bottom: 110px; border: 4px solid var(--border); background: var(--paper); }
+    .ticket-row div { padding: 15px 11px; border-right: 3px dashed var(--border); font-family: "Space Mono", monospace; font-size: .71rem; font-weight: 700; text-align: center; }
+    .ticket-row div:last-child { border-right: 0; }.ticket-row b { color: var(--red); }
+    .section-head { max-width: 720px; margin-bottom: 37px; }.section-tag { margin-bottom: 8px; color: var(--red); font-family: "Space Mono", monospace; font-size: .76rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+    .section-head h2 { margin-bottom: 10px; font-family: "Shrikhand", cursive; font-size: clamp(2.7rem,5vw,4.8rem); font-weight: 400; letter-spacing: -.04em; line-height: .94; }.section-head p:last-child { margin-bottom: 0; font-size: 1.1rem; font-weight: 600; }
+    .features { padding: 28px 0 120px; }.feature-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+    .feature { position: relative; min-height: 285px; padding: 27px; border: 4px solid var(--border); outline: 2px solid var(--paper); outline-offset: -11px; box-shadow: 7px 7px 0 var(--border); transition: transform .16s, box-shadow .16s; }
+    .feature:hover { transform: translate(4px,4px) rotate(-1deg); box-shadow: 3px 3px 0 var(--border); }.feature:nth-child(1) { background: var(--green); color: var(--paper); }.feature:nth-child(2) { background: var(--pink); }.feature:nth-child(3) { background: var(--blue); color: var(--paper); }
+    .feature-number { display: inline-grid; width: 44px; height: 44px; margin-bottom: 24px; place-items: center; border: 3px solid currentColor; border-radius: 50%; font-family: "Space Mono", monospace; font-weight: 700; }
+    .feature h3 { margin-bottom: 8px; font-size: 1.55rem; line-height: 1; }.feature p { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.48; }
+    .resource-section { padding: 0 0 118px; }.resource-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }.resource-card { position: relative; min-height: 210px; padding: 21px; border: 4px solid var(--border); background: var(--paper); box-shadow: 6px 6px 0 var(--border); transition: transform .16s,box-shadow .16s; }.resource-card:nth-child(2) { background: #c7e9cc; }.resource-card:nth-child(3) { background: #ffc1ce; }.resource-card:nth-child(4) { background: var(--yellow); }.resource-card:hover { transform: translate(3px,3px) rotate(-1deg); box-shadow: 3px 3px 0 var(--border); }.resource-card span { display: block; margin-bottom: 23px; color: var(--red); font-family: "Space Mono", monospace; font-size: .72rem; font-weight: 700; letter-spacing: .06em; }.resource-card h3 { margin-bottom: 8px; font-size: 1.3rem; line-height: 1; }.resource-card p { margin: 0; font-size: .94rem; font-weight: 600; line-height: 1.42; }.resource-card strong { position: absolute; right: 17px; bottom: 12px; color: var(--blue); font-family: "Space Mono", monospace; font-size: 1.05rem; }
+    .motif-line { overflow: hidden; border-top: 3px solid var(--border); border-bottom: 3px solid var(--border); color: var(--paper); background: var(--orange); font-family: "Shrikhand", cursive; font-size: 1.7rem; line-height: 1.35; text-align: center; word-spacing: 18px; }
+    .docs { padding: 104px 0 120px; background-color: var(--paper); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M32 9c4 10 10 16 23 18-13 2-19 8-23 18-4-10-10-16-23-18 13-2 19-8 23-18Z' fill='%23075a91' fill-opacity='.08'/%3E%3C/svg%3E"); border-bottom: 4px solid var(--border); }
+    .docs-intro { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 39px; }.docs-link { padding: 8px 12px; border-bottom: 3px solid var(--red); color: var(--red); font-family: "Space Mono", monospace; font-size: .77rem; font-weight: 700; white-space: nowrap; }
+    .docs-layout { display: grid; grid-template-columns: 240px minmax(0,1fr); align-items: start; gap: 28px; }.docs-sidebar { position: sticky; top: 92px; padding: 14px; border: 4px solid var(--border); background: var(--yellow); box-shadow: 6px 6px 0 var(--border); }
+    .sidebar-kicker { display: block; margin: 3px 7px 10px; font-family: "Space Mono", monospace; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }.docs-sidebar a { display: block; margin: 3px 0; padding: 8px; border: 2px solid transparent; font-weight: 800; transition: transform .14s,background .14s,border-color .14s; }.docs-sidebar a:hover,.docs-sidebar a.active { border-color: var(--border); background: var(--paper); transform: rotate(-1deg); }
+    .doc-page { overflow: hidden; border: 4px solid var(--border); outline: 3px solid var(--red); outline-offset: -12px; background: #fff8dc; box-shadow: 8px 8px 0 var(--border); }.doc-section { padding: clamp(28px,5vw,52px); border-bottom: 3px dashed var(--border); scroll-margin-top: 90px; }.doc-section:last-child { border-bottom: 0; }.doc-section h2 { margin-bottom: 11px; font-family: "Shrikhand", cursive; font-size: clamp(2rem,3.4vw,3.1rem); font-weight: 400; letter-spacing: -.035em; line-height: 1; }.doc-section p { max-width: 690px; font-weight: 600; }.doc-section code { padding: 2px 5px; border: 2px solid var(--border); background: var(--yellow); font-family: "Space Mono", monospace; font-size: .84em; }
+    .doc-section pre { margin: 23px 0 7px; padding: 20px; border: 4px solid var(--border); background: var(--ink); }.doc-section pre code { padding: 0; border: 0; background: transparent; color: inherit; }
+    .doc-card-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 21px; }.doc-card { padding: 14px; border: 3px solid var(--border); background: var(--cream); }.doc-card:nth-child(even) { background: #c7e9cc; }.doc-card span { display: block; margin-bottom: 4px; color: var(--red); font-family: "Space Mono", monospace; font-size: .76rem; font-weight: 700; }.doc-card p { margin: 0; font-size: .9rem; }
+    .result-callout { display: flex; gap: 13px; margin-top: 22px; padding: 16px; border: 4px solid var(--border); color: var(--ink); background: #f8b1be; }.result-callout svg { flex: 0 0 auto; width: 20px; stroke: var(--red); }.result-callout p { margin: 0; }
+    .playground { padding: 112px 0; background: var(--blue); color: var(--paper); border-bottom: 4px solid var(--border); }.playground .section-tag { color: var(--yellow); }.playground .section-head p:last-child { color: #e8e9d8; }.playground-grid { display: grid; grid-template-columns: minmax(0,1.12fr) minmax(300px,.88fr); gap: 27px; align-items: start; }.game-shell { padding: 14px; border: 4px solid var(--border); background: var(--yellow); box-shadow: 9px 9px 0 var(--border); }.game-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 11px; color: var(--ink); font-family: "Space Mono", monospace; font-size: .76rem; font-weight: 700; }.game-hud span { padding: 5px 8px; border: 2px solid var(--border); background: var(--paper); }.runner-canvas { display: block; width: 100%; height: auto; border: 4px solid var(--border); background: var(--paper); image-rendering: pixelated; touch-action: manipulation; }.game-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }.game-button { padding: 9px 13px; border: 3px solid var(--border); color: var(--paper); background: var(--red); box-shadow: 3px 3px 0 var(--border); cursor: pointer; font-weight: 800; transition: transform .14s,box-shadow .14s; }.game-button:hover { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--border); }.game-note { margin: 3px 0 0; color: var(--ink); font-family: "Space Mono", monospace; font-size: .68rem; font-weight: 700; }.source-panel { overflow: hidden; border: 4px solid var(--border); background: var(--ink); box-shadow: 8px 8px 0 var(--border); }.source-panel header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; color: var(--ink); background: var(--yellow); font-family: "Space Mono", monospace; font-size: .72rem; font-weight: 700; }.source-panel pre { max-height: 410px; padding: 19px; overflow: auto; font-size: .72rem; }.source-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 19px; }.source-actions a { padding: 9px 12px; border: 3px solid var(--paper); font-family: "Space Mono", monospace; font-size: .72rem; font-weight: 700; }.source-actions a:hover { color: var(--blue); background: var(--yellow); }
+    .cta { padding: 92px 0; background: var(--green); }.cta-box { position: relative; overflow: hidden; padding: clamp(34px,6vw,66px); border: 4px solid var(--border); outline: 3px solid var(--yellow); outline-offset: -12px; color: var(--paper); background: var(--red); box-shadow: 10px 10px 0 var(--border); }.cta-box::after { position: absolute; right: -29px; top: -29px; width: 130px; height: 130px; border: 4px solid var(--border); border-radius: 50%; background: var(--yellow); content: "V"; display: grid; place-items: center; color: var(--blue); font-family: "Shrikhand", cursive; font-size: 4.2rem; transform: rotate(15deg); }.cta-box h2 { max-width: 690px; margin-bottom: 13px; font-family: "Shrikhand", cursive; font-size: clamp(2.7rem,5vw,4.7rem); font-weight: 400; letter-spacing: -.05em; line-height: .94; }.cta-box p { max-width: 570px; margin-bottom: 23px; font-size: 1.1rem; font-weight: 600; }
+    .install { display: inline-flex; align-items: center; gap: 13px; max-width: 100%; padding: 8px 8px 8px 14px; border: 3px solid var(--border); color: var(--ink); background: var(--paper); font-family: "Space Mono", monospace; font-size: .77rem; }.copy-button { padding: 9px 11px; border: 2px solid var(--border); color: var(--paper); background: var(--blue); cursor: pointer; font-family: "Baloo 2",sans-serif; font-weight: 800; }
+    footer { padding: 30px 0; color: var(--paper); background: var(--ink); font-family: "Space Mono", monospace; font-size: .7rem; }.footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; }.footer-links { display: flex; gap: 18px; }.footer-links a:hover { color: var(--yellow); }
+    .reveal { animation: stamp .6s ease both; }
+    @keyframes roll { from { transform: translateX(0); } to { transform: translateX(-37%); } } @keyframes spin { to { transform: rotate(360deg); } } @keyframes wobble { 50% { transform: rotate(9deg) scale(1.1); } } @keyframes stamp { from { opacity: 0; transform: translateY(18px) rotate(1deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+    @media (max-width:820px) { .nav { min-height: 66px; }.menu-button { display: block; }.nav-links { position: absolute; z-index: 20; top: 126px; right: 18px; display: none; width: min(280px,calc(100vw - 36px)); padding: 10px; border: 4px solid var(--border); background: var(--yellow); box-shadow: 6px 6px 0 var(--border); }.nav-links.open { display: grid; }.nav-cta { display: none; }.hero { grid-template-columns: 1fr; min-height: auto; padding: 68px 0 78px; }.hero-art { max-width: 590px; justify-self: center; }.ticket-row { grid-template-columns: repeat(2,1fr); }.ticket-row div:nth-child(2) { border-right: 0; }.ticket-row div:nth-child(-n+2) { border-bottom: 3px dashed var(--border); }.feature-grid,.resource-grid { grid-template-columns: repeat(2,1fr); }.playground-grid { grid-template-columns: 1fr; }.docs-layout { grid-template-columns: 1fr; }.docs-sidebar { position: relative; top: 0; display: flex; gap: 4px; overflow-x: auto; white-space: nowrap; }.sidebar-kicker { display: none; }.docs-sidebar a { flex: 0 0 auto; } }
+    @media (max-width:560px) { .shell { width: min(100% - 26px,1180px); }.hero h1 { font-size: clamp(3.45rem,16vw,5rem); }.hero-actions { display: grid; }.button { width: 100%; }.ticket-row { margin-bottom: 80px; }.ticket-row div { padding: 13px 7px; font-size: .61rem; }.features,.resource-section { padding-bottom: 82px; }.resource-grid { grid-template-columns: 1fr; }.playground { padding: 78px 0; }.docs { padding: 78px 0; }.docs-intro { display: block; }.docs-link { display: inline-block; margin-top: 15px; }.doc-card-grid { grid-template-columns: 1fr; }.install { display: flex; width: 100%; font-size: .62rem; }.copy-button { margin-left: auto; white-space: nowrap; }.footer-inner { align-items: flex-start; flex-direction: column; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+  </style>
 </head>
 <body>
-    <canvas id="trailCanvas"></canvas>
+  <div class="top-strip"><div class="marquee">✦ VINGLISH · READABLE SYSTEMS PROGRAMMING ✦ STATICALLY TYPED · NATIVE PERFORMANCE ✦ CLEAR SOURCE · PRECISE COMPILATION ✦ VINGLISH · READABLE SYSTEMS PROGRAMMING ✦</div></div>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="Vinglish home"><img src="logos/vinglish-icon-color.svg" alt=""><span>Vinglish</span></a>
+      <button class="menu-button" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+      <nav class="nav-links" aria-label="Primary navigation"><a href="#features">Capabilities</a><a href="#resources">Resources</a><a href="#docs">Documentation</a><a href="#playground">Playground</a><a href="https://github.com/Shiviatrix/vinglish" target="_blank" rel="noreferrer">GitHub ↗</a></nav>
+      <a class="nav-cta" href="#get-started">Begin building →</a>
+    </div>
+  </header>
+  <main id="top">
+    <section class="shell hero">
+      <div class="reveal">
+        <span class="eyebrow">⚡ STATICALLY TYPED · NATIVE PERFORMANCE</span>
+        <h1>Write with clarity.<span>Compile with confidence.</span></h1>
+        <p class="hero-copy">Vinglish is a <strong>systems language engineered for readability</strong>: write with clarity, then let HIR, SSA-form MIR, and the optimiser lower your program to efficient native C.</p>
+        <div class="hero-actions"><a class="button primary" href="#get-started">Start building →</a><a class="button secondary" href="docs/language_guide.md">Read the language guide ↗</a></div>
+        <p class="microcopy">NO VM · NO GC · PREDICTABLE NATIVE PERFORMANCE</p>
+      </div>
+      <div class="hero-art reveal">
+        <div class="sun"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="code-board">
+          <div class="code-top"><span>VINGLISH REFERENCE</span><span>geometry.ving</span></div>
+          <pre><code><span class="k">type</span> <span class="t">Point</span>
+<span class="k">begin</span>
+    <span class="n">x</span>: <span class="t">number</span>
+    <span class="n">y</span>: <span class="t">number</span>
+<span class="k">end</span>
 
-    <nav id="sidebar">
-        <img src="logos/vinglish-icon-color.svg" alt="Vinglish Logo">
-        <div class="version-tag">Version 0.1.0</div>
-        
-        <h2>I. The Language</h2>
-        <ul>
-            <li><a href="#motivation">1. Motivation & History</a></li>
-            <li><a href="#lexical">2. Lexical Structure</a></li>
-            <li><a href="#types">3. Types & Semantics</a></li>
-            <li><a href="#control-flow">4. Control Flow</a></li>
-            <li><a href="#memory">5. Memory & Ownership</a></li>
-            <li><a href="#generics">6. Generics & Polymorphism</a></li>
-            <li><a href="#error-handling">7. Error Handling</a></li>
-            <li><a href="#formatting">8. String Formatting</a></li>
-            <li><a href="#structs">9. Structs & Layout</a></li>
-        </ul>
+<span class="k">function</span> <span class="f">translate</span> <span class="k">on</span> <span class="t">Point</span> (<span class="t">number</span> dx, <span class="t">number</span> dy)
+<span class="k">returns</span> <span class="t">Point</span>
+<span class="k">begin</span>
+    <span class="k">return</span> <span class="t">Point</span> {
+        x: self.x + dx,
+        y: self.y + dy
+    }
+<span class="k">end</span>
 
-        <h2>II. Standard Library</h2>
-        <ul>
-            <li><a href="#std-overview">10. Library Overview</a></li>
-            <li><a href="#std-memory">11. Memory Allocation</a></li>
-            <li><a href="#std-vector">12. Dynamic Vectors</a></li>
-            <li><a href="#std-hashmap">13. Hash Maps</a></li>
-            <li><a href="#std-io">14. File I/O</a></li>
-            <li><a href="#std-ui">15. Native UI Engine</a></li>
-        </ul>
-
-        <h2>III. Compiler Internals</h2>
-        <ul>
-            <li><a href="#architecture">16. The Pipeline</a></li>
-            <li><a href="#frontend">17. Lexer & Parser</a></li>
-            <li><a href="#hir">18. High-Level IR (HIR)</a></li>
-            <li><a href="#mir">19. Mid-Level IR & SSA</a></li>
-            <li><a href="#opt-cfg">20. Opt: CFG Simplification</a></li>
-            <li><a href="#opt-gvn">21. Opt: GVN & Constant Fold</a></li>
-            <li><a href="#codegen">22. Codegen Backends</a></li>
-        </ul>
-        
-        <h2>IV. Ecosystem</h2>
-        <ul>
-            <li><a href="#bindgen">23. Rust Ecosystem Bindgen</a></li>
-            <li><a href="#cli">24. Vinglish CLI</a></li>
-            <li><a href="#lsp">25. Language Server (LSP)</a></li>
-            <li><a href="#roadmap">26. Future Roadmap</a></li>
-            <li><a href="#benchmarks">27. Benchmarks</a></li>
-        </ul>
-    </nav>
-
-    <main id="content">
-        <h1>The Vinglish Specification</h1>
-        <div class="subtitle">Comprehensive Language Guide and Compiler Internals</div>
-        
-        <p>This document serves as the exhaustive, unabridged specification of the <strong>Vinglish</strong> programming language, its standard library, and the internal architecture of its Rust-based compiler. It is designed to guide developers from the surface-level syntax down to the bare metal representation in the C-codegen backend.</p>
-
-        <hr>
-
-        <!-- ============================================== -->
-        <!-- PART I: THE LANGUAGE                           -->
-        <!-- ============================================== -->
-
-        <h2 id="motivation">1. Motivation & History</h2>
-        <p>Systems programming languages typically fall into two camps: low-level, highly symbolic languages (C, C++) that offer ultimate control but sacrifice human readability, or modern, safe languages (Rust) that introduce immense cognitive overhead and complex syntax. <strong>Vinglish</strong> bridges this divide.</p>
-        <p>The core philosophy of Vinglish is: <em>Code should read like English prose, but the compiler should rigorously understand and optimize the developer's intent.</em> By parsing naturalistic keywords (<code>is below</code>, <code>repeat while</code>, <code>be</code>) and feeding them into an aggressively optimizing, mathematically pure Static Single Assignment (SSA) pipeline, Vinglish offers the readability of pseudocode with the zero-cost abstractions of C.</p>
-
-        <h2 id="lexical">2. Lexical Structure</h2>
-        <p>Vinglish programs are composed of a stream of ASCII tokens. The lexer ignores whitespace (spaces, tabs, newlines) outside of string literals.</p>
-        
-        <h3>Keywords</h3>
-        <p>The following keywords are reserved and carry semantic weight:</p>
-        <pre><code><span class="highlight-keyword">public, private, package, module, use, fn, function, returns, begin, end,
-if, then, else, repeat, while, let, be, is, below, above, borrow, mutable,
-struct, type, address</span></code></pre>
-
-        <h3>Identifiers & Comments</h3>
-        <p>Identifiers must begin with an alphabetic character or underscore, followed by alphanumeric characters or underscores. Line comments begin with <code>//</code> and block comments are currently unsupported to encourage concise, single-line annotations.</p>
-
-        <h2 id="types">3. Types & Semantics</h2>
-        <p>Vinglish employs a static, strongly-typed system. All variables, function parameters, and return types must be resolvable at compile-time during the High-Level Intermediate Representation (HIR) phase.</p>
-
-        <h3>Primitive Types</h3>
-        <ul>
-            <li><code>number</code>: Represents the default architecture-dependent integer (equivalent to <code>int64_t</code> on 64-bit platforms).</li>
-            <li><code>address&lt;T&gt;</code>: A raw, unmanaged memory pointer pointing to a value of type <code>T</code>. Equivalent to <code>T*</code> in C.</li>
-            <li><code>boolean</code>: Logical true or false. (Implemented natively as a 1-byte integer).</li>
-        </ul>
-
-        <h3>Type Definitions</h3>
-        <p>Types can be aliased using the <code>type</code> keyword, heavily used when defining generic structural boundaries.</p>
-
-        <h2 id="control-flow">4. Control Flow</h2>
-        <p>Control flow in Vinglish is designed to read rhythmically, avoiding the "bracket fatigue" common in C-family languages. The <code>begin</code> and <code>end</code> keywords delineate scope.</p>
-
-        <h3>Conditional Logic</h3>
-        <p>The <code>if / then / else</code> construct supports relational operators modeled on English:</p>
-        <ul>
-            <li><code>is</code> (equality: <code>==</code>)</li>
-            <li><code>is below</code> (less than: <code>&lt;</code>)</li>
-            <li><code>is above</code> (greater than: <code>&gt;</code>)</li>
-        </ul>
-        <pre><code><span class="highlight-keyword">if</span> x <span class="highlight-keyword">is below</span> 10 <span class="highlight-keyword">then</span>
-    <span class="highlight-comment">// Executed if x &lt; 10</span>
-    x <span class="highlight-keyword">be</span> x + 1
-<span class="highlight-keyword">else</span>
-    <span class="highlight-comment">// Executed otherwise</span>
-    x <span class="highlight-keyword">be</span> 0
-<span class="highlight-keyword">end</span></code></pre>
-
-        <h3>Iteration</h3>
-        <p>Looping is handled via the <code>repeat while</code> construct. Vinglish does not currently feature a traditional <code>for</code> loop, preferring explicit index management or iterator patterns defined in the standard library.</p>
-        <pre><code><span class="highlight-keyword">let</span> i <span class="highlight-keyword">be</span> 0
-<span class="highlight-keyword">repeat while</span> i <span class="highlight-keyword">is below</span> 100
-    <span class="highlight-comment">// Loop body</span>
-    i <span class="highlight-keyword">be</span> i + 1
-<span class="highlight-keyword">end</span></code></pre>
-
-        <h2 id="memory">5. Memory & Ownership</h2>
-        <p>Vinglish does <strong>not</strong> include a Garbage Collector (GC). The language requires the developer to manage memory allocations manually, but introduces syntactical safety barriers via the <code>borrow</code> system.</p>
-
-        <div class="callout warning">
-            <h4>Manual Allocation Risk</h4>
-            <p>Failure to invoke <code>eng_free</code> on an address initialized via <code>eng_alloc</code> will result in a memory leak. The standard library encapsulates these raw calls into safe data structures like <code>Vector&lt;T&gt;</code>.</p>
+<span class="k">let</span> here <span class="k">be</span> <span class="t">Point</span> { x: <span class="p">10</span>, y: <span class="p">20</span> }
+<span class="f">println</span>(<span class="f">fmt!</span>(<span class="s">"Point x-coordinate: {here.x}"</span>))</code></pre>
         </div>
+      </div>
+    </section>
+    <section class="shell ticket-row" aria-label="Compiler pipeline"><div><b>01</b> .VING SOURCE</div><div><b>02</b> HIR SEMANTICS</div><div><b>03</b> MIR + SSA</div><div><b>04</b> NATIVE C</div></section>
+    <section class="shell features" id="features">
+      <div class="section-head reveal"><p class="section-tag">Language principles</p><h2>Readable systems programming.<br>Native performance.</h2><p>Vinglish gives systems work a direct, expressive language without hiding the controls that low-level software requires.</p></div>
+      <div class="feature-grid">
+        <article class="feature reveal"><span class="feature-number">01</span><h3>Zero-overhead execution.</h3><p>Your readable source lowers cleanly to low-level C. The runtime stays minimal and your intent remains in control.</p></article>
+        <article class="feature reveal"><span class="feature-number">02</span><h3>Precise, readable syntax.</h3><p>Types, borrows, results, and methods remain easy to follow without hiding the controls systems software requires.</p></article>
+        <article class="feature reveal"><span class="feature-number">03</span><h3>Native Rust interoperability.</h3><p>Use Rust capabilities through foreign declarations and a macro-generated bridge, without a large layer of glue code.</p></article>
+      </div>
+    </section>
+    <section class="shell resource-section" id="resources">
+      <div class="section-head reveal"><p class="section-tag">Project resources</p><h2>One project. Every path explained.</h2><p>Move from first program to compiler internals through the language guide, standard library, semantic contract, and source repository.</p></div>
+      <div class="resource-grid">
+        <a class="resource-card reveal" href="docs/language_guide.md"><span>01 / LANGUAGE</span><h3>Language guide</h3><p>Syntax, types, extension methods, ownership, `Result of T`, generics, and formatting.</p><strong>OPEN →</strong></a>
+        <a class="resource-card reveal" href="docs/standard_library.md"><span>02 / STANDARD LIBRARY</span><h3>Native modules</h3><p>Vectors, I/O, networking, files, threads, native UI, and the runtime boundary.</p><strong>OPEN →</strong></a>
+        <a class="resource-card reveal" href="docs/architecture.md"><span>03 / COMPILER</span><h3>Architecture</h3><p>Module resolution, HIR, MIR in SSA form, GVN, DCE, and C code generation.</p><strong>OPEN →</strong></a>
+        <a class="resource-card reveal" href="https://github.com/Shiviatrix/vinglish" target="_blank" rel="noreferrer"><span>04 / SOURCE</span><h3>GitHub repository</h3><p>Explore examples, compiler crates, native runtime code, benchmarks, and current development.</p><strong>VISIT ↗</strong></a>
+      </div>
+    </section>
+    <div class="motif-line">✦ ☀ ✦ VINGLISH · LANGUAGE AND TOOLCHAIN ✦ ☀ ✦</div>
+    <section class="docs" id="docs">
+      <div class="shell">
+        <div class="docs-intro reveal"><div class="section-head"><p class="section-tag">Authoritative reference</p><h2>A complete language reference.</h2><p>Start with the source language, then follow the compiler all the way to a native binary.</p></div><a class="docs-link" href="docs/language_guide.md">OPEN THE FULL GUIDE →</a></div>
+        <div class="docs-layout">
+          <aside class="docs-sidebar" aria-label="Documentation sections"><span class="sidebar-kicker">On this page</span><a class="active" href="#language">The language</a><a href="#records">Types & methods</a><a href="#generics">Generics</a><a href="#errors">Error handling</a><a href="#pipeline">Compiler pipeline</a></aside>
+          <article class="doc-page">
+            <section class="doc-section" id="language"><p class="section-tag">01 / Foundations</p><h2>Clarity is a systems feature.</h2><p>Vinglish begins with direct declarations, predictable blocks, and inferred local types. Each .ving file is a complete, independently compilable module.</p><pre><code><span class="k">function</span> <span class="f">add</span>(<span class="t">number</span> left, <span class="t">number</span> right) <span class="k">returns</span> <span class="t">number</span>
+<span class="k">begin</span>
+    <span class="k">let</span> total <span class="k">be</span> left + right
+    <span class="k">return</span> total
+<span class="k">end</span></code></pre><div class="doc-card-grid"><div class="doc-card"><span>vng check</span><p>Types, ownership, and diagnostics—before a binary is made.</p></div><div class="doc-card"><span>vng fmt</span><p>Keep your source neat, steady, and easy to read.</p></div></div></section>
+            <section class="doc-section" id="records"><p class="section-tag">02 / Types & methods</p><h2>Data has shape. Behavior has a home.</h2><p>Use <code>type</code> for records, <code>name: type</code> for fields, and braces for construction. Use <code>on</code> to give a type its own behaviour.</p><pre><code><span class="k">type</span> <span class="t">Point</span>
+<span class="k">begin</span>
+    x: <span class="t">number</span>
+    y: <span class="t">number</span>
+<span class="k">end</span>
 
-        <h3>Borrow Semantics</h3>
-        <p>When passing structures across function boundaries, Vinglish enforces ownership clarity:</p>
-        <ul>
-            <li><code>borrow</code>: Passes an immutable reference to the function. The function can read, but the HIR compiler will reject any assignment to the borrowed data.</li>
-            <li><code>borrow mutable</code>: Passes a mutable reference. The function may alter the underlying data.</li>
-        </ul>
-        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">transform</span>(<span class="highlight-keyword">borrow mutable</span> <span class="highlight-type">Vector</span>&lt;<span class="highlight-type">number</span>&gt; v)
-<span class="highlight-keyword">begin</span>
-    <span class="highlight-comment">// 'v' can be modified here.</span>
-<span class="highlight-keyword">end</span></code></pre>
+<span class="k">function</span> <span class="f">translate</span> <span class="k">on</span> <span class="t">Point</span> (<span class="t">number</span> dx, <span class="t">number</span> dy) <span class="k">returns</span> <span class="t">Point</span>
+<span class="k">begin</span>
+    <span class="k">return</span> <span class="t">Point</span> { x: self.x + dx, y: self.y + dy }
+<span class="k">end</span></code></pre></section>
+            <section class="doc-section" id="generics"><p class="section-tag">03 / Generics</p><h2>Reusable and explicit.</h2><p>A <code>Vector of T</code> is written <code>Vector&lt;T&gt;</code> in source. Generic calls remain explicit and statically checked, without a dynamic dispatch layer.</p><pre><code><span class="k">use</span> std.collections.vector
 
-        <h2 id="generics">6. Generics & Polymorphism</h2>
-        <p>Vinglish achieves polymorphism through compile-time monomorphization of generics. A generic type parameter <code>&lt;T&gt;</code> acts as a placeholder during the parsing and initial HIR phases.</p>
-        <p>When a generic function or struct is instantiated (e.g., <code>Vector&lt;number&gt;</code>), the compiler generates a specialized, concrete version of that entity. This completely eliminates dynamic dispatch overhead at runtime.</p>
-        <pre><code><span class="highlight-keyword">struct</span> <span class="highlight-type">Pair</span>&lt;T&gt;
-    first: T
-    second: T
-<span class="highlight-keyword">end</span>
-
-<span class="highlight-keyword">function</span> <span class="highlight-function">make_pair</span>&lt;T&gt;(a: T, b: T) <span class="highlight-keyword">returns</span> <span class="highlight-type">Pair</span>&lt;T&gt;
-<span class="highlight-keyword">begin</span>
-    <span class="highlight-keyword">let</span> p <span class="highlight-keyword">be</span> <span class="highlight-type">Pair</span>&lt;T&gt; { first: a, second: b }
-    <span class="highlight-keyword">return</span> p
-<span class="highlight-keyword">end</span></code></pre>
-
-        <h2 id="error-handling">7. Error Handling</h2>
-        <p>Vinglish avoids exceptions entirely, utilizing explicit <code>Result&lt;T, E&gt;</code> types combined with the postfix <code>?</code> operator for safe error propagation. Errors must be handled or explicitly propagated, ensuring resilient code.</p>
-        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">read_config</span>() <span class="highlight-keyword">returns</span> <span class="highlight-type">Result</span>&lt;<span class="highlight-type">text</span>, <span class="highlight-type">text</span>&gt;
-<span class="highlight-keyword">begin</span>
-    <span class="highlight-keyword">let</span> file <span class="highlight-keyword">be</span> open(<span class="highlight-string">"config.txt"</span>)<span class="highlight-keyword">?</span>
-    <span class="highlight-keyword">let</span> content <span class="highlight-keyword">be</span> read_to_string(<span class="highlight-keyword">borrow</span> file)<span class="highlight-keyword">?</span>
-    <span class="highlight-keyword">return</span> <span class="highlight-function">Ok</span>(content)
-<span class="highlight-keyword">end</span></code></pre>
-
-        <h2 id="formatting">8. String Formatting</h2>
-        <p>Dynamic string interpolation is handled natively at compile time via the <code>fmt!</code> macro. It parses the format string to evaluate expressions and automatically coerces primitive types into a safe textual representation.</p>
-        <pre><code><span class="highlight-keyword">public function</span> <span class="highlight-function">greet</span>(name: <span class="highlight-type">text</span>, age: <span class="highlight-type">number</span>)
-<span class="highlight-keyword">begin</span>
-    <span class="highlight-keyword">let</span> msg <span class="highlight-keyword">be</span> <span class="highlight-function">fmt!</span>(<span class="highlight-string">"Hello, my name is {name} and I am {age} years old."</span>)
-    print(msg)
-<span class="highlight-keyword">end</span></code></pre>
-
-        <h2 id="structs">9. Structs & Layout</h2>
-        <p>Structs in Vinglish map 1:1 with C structures. They guarantee memory layout order, making them ideal for systems programming, foreign function interfacing (FFI), and network packet serialization.</p>
-        <p>Struct instantiation utilizes brace syntax. Every field must be initialized.</p>
-
-        <hr>
-
-        <!-- ============================================== -->
-        <!-- PART II: STANDARD LIBRARY                      -->
-        <!-- ============================================== -->
-
-        <h2 id="std-overview">10. Library Overview</h2>
-        <p>The Vinglish standard library (<code>std</code>) is a collection of modules written entirely in Vinglish. Because the language supports raw memory operations and seamless C interoperability, almost no internal C code is required. The library proves the language's capability to bootstrap itself.</p>
-
-        <h2 id="std-memory">11. Memory Allocation</h2>
-        <p>The <code>std.runtime</code> module exposes intrinsics mapped directly to OS-level memory allocators (via the <code>rt.c</code> runtime wrapper).</p>
-        <ul>
-            <li><code>eng_alloc(bytes: number) -&gt; address&lt;T&gt;</code>: Allocates uninitialized heap memory.</li>
-            <li><code>eng_free(ptr: address&lt;T&gt;)</code>: Frees the previously allocated memory block.</li>
-            <li><code>eng_read(ptr: address&lt;T&gt;, offset: number) -&gt; T</code>: Reads a value at a specific index offset.</li>
-            <li><code>eng_write(ptr: address&lt;T&gt;, offset: number, val: T)</code>: Writes a value to a specific index.</li>
-        </ul>
-
-        <h2 id="std-vector">12. Dynamic Vectors</h2>
-        <p>The <code>Vector of T</code> is the quintessential dynamically resizing contiguous array. Internally, it holds a raw address, a length, and a capacity.</p>
-        <div class="callout">
-            <h4>Reallocation Strategy</h4>
-            <p>When <code>vec.len is vec.capacity</code>, the <code>push</code> function calculates <code>new_cap = capacity * 2</code>, allocates a new block, copies existing elements via a <code>repeat while</code> loop, and frees the old block. This guarantees O(1) amortized insertion time.</p>
+<span class="k">let</span> values <span class="k">be</span> <span class="f">vector_new</span>&lt;<span class="t">number</span>&gt;()
+<span class="f">push</span>(<span class="k">borrow mutable</span> values, <span class="p">42</span>)
+<span class="f">println</span>(<span class="f">get</span>(<span class="k">borrow</span> values, <span class="p">0</span>))
+<span class="f">vector_free</span>(<span class="k">borrow mutable</span> values)</code></pre></section>
+            <section class="doc-section" id="errors"><p class="section-tag">04 / Error handling</p><h2>Failure is explicit in the type.</h2><p><code>Result of T</code> makes recoverable failure visible. Return <code>Ok(value)</code> or <code>Err(message)</code>; use <code>?</code> to pass the error through an operation that can also fail.</p><pre><code><span class="k">function</span> <span class="f">connect</span>() <span class="k">returns</span> <span class="t">Result of number</span>
+<span class="k">begin</span>
+    <span class="k">let</span> socket <span class="k">be</span> <span class="f">tcp_connect</span>(<span class="s">"127.0.0.1"</span>, <span class="p">8080</span>)<span class="p">?</span>
+    <span class="f">tcp_close</span>(<span class="k">borrow</span> socket)
+    <span class="k">return</span> <span class="f">Ok</span>(<span class="p">0</span>)
+<span class="k">end</span></code></pre><div class="result-callout"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4m0 4h.01"/><path d="M10.3 3.6 2.7 17a2 2 0 0 0 1.73 3h15.14a2 2 0 0 0 1.73-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/></svg><p><strong>Explicit by design:</strong> an error cannot disappear by accident when the caller has to produce another <code>Result of T</code>.</p></div></section>
+            <section class="doc-section" id="pipeline"><p class="section-tag">05 / Compiler pipeline</p><h2>Validated source. Optimized native output.</h2><p>The compiler resolves a program into HIR, lowers it to SSA-form MIR, then applies constant propagation, GVN, DCE, and control-flow simplification before code generation.</p><div class="doc-card-grid"><div class="doc-card"><span>HIR</span><p>Names, types, imports, ownership, and semantic validity.</p></div><div class="doc-card"><span>MIR + SSA</span><p>Clear control flow and single-assignment data flow.</p></div><div class="doc-card"><span>GVN + DCE</span><p>Remove redundant calculations and code without observable effect.</p></div><div class="doc-card"><span>C backend</span><p>Transparent C output plus a minimal runtime.</p></div></div></section>
+          </article>
         </div>
-        <pre><code><span class="highlight-keyword">use</span> std.collections.vector
+      </div>
+    </section>
+    <section class="playground" id="playground">
+      <div class="shell">
+        <div class="section-head reveal"><p class="section-tag">Interactive example</p><h2>Skyline Runner</h2><p>Play the browser preview with <strong>Space</strong>, <strong>Up</strong>, or a tap to jump. The panel beside it shows the native Vinglish program that uses `std.ui` and Rust-backed input.</p></div>
+        <div class="playground-grid">
+          <div class="game-shell reveal">
+            <div class="game-hud"><span>SKYLINE RUNNER</span><span id="runnerScore">SCORE 0</span><span id="runnerStatus">READY</span></div>
+            <canvas class="runner-canvas" id="runnerCanvas" width="680" height="360" aria-label="Skyline Runner game">Your browser does not support the game canvas.</canvas>
+            <div class="game-controls"><button class="game-button" id="runnerStart" type="button">Start runner</button><button class="game-button" id="runnerJump" type="button">Jump</button><p class="game-note">SPACE / ↑ / TAP TO JUMP · AVOID THE TOWERS</p></div>
+          </div>
+          <div class="reveal">
+            <div class="source-panel"><header><span>NATIVE EXAMPLE</span><span>skyline_runner.ving</span></header><pre><code><span class="k">use</span> std.ui
 
-<span class="highlight-keyword">public function</span> <span class="highlight-function">main</span>()
-<span class="highlight-keyword">begin</span>
-    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_new of <span class="highlight-type">number</span>()
-    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_push(my_vec, 100)
-    <span class="highlight-keyword">let</span> my_vec <span class="highlight-keyword">be</span> vector_push(my_vec, 200)
-    
-    <span class="highlight-comment">// Safe deallocation</span>
-    vector_free(my_vec)
-<span class="highlight-keyword">end</span></code></pre>
+<span class="k">function</span> <span class="f">main</span>() <span class="k">returns</span> <span class="t">number</span>
+<span class="k">begin</span>
+    <span class="k">let</span> window <span class="k">be</span> <span class="f">create_window</span>(<span class="s">"Skyline Runner"</span>, <span class="p">640</span>, <span class="p">360</span>)
+    <span class="k">let</span> player_y <span class="k">be</span> <span class="p">250</span>
+    <span class="k">let</span> velocity <span class="k">be</span> <span class="p">0</span>
 
-        <h2 id="std-hashmap">13. Hash Maps</h2>
-        <p>The <code>HashMap of K, V</code> (located in <code>std.collections.map</code>) utilizes an open-addressing, linear-probing architecture to maximize CPU cache locality. The hashing algorithm resolves collisions by scanning adjacent memory slots. Internally, it leverages native C interop via <code>eng_map.c</code>.</p>
-        <p>Examples successfully leverage <code>eng_map_new()</code>, <code>eng_map_insert()</code>, and <code>eng_map_get()</code> natively within Vinglish.</p>
-
-        <h2 id="std-io">14. File I/O</h2>
-        <p>The <code>std.io</code> module provides wrappers around standard input, output, and file descriptors. Files are represented as structs containing the integer descriptor, enabling buffered reads and writes natively in Vinglish.</p>
-
-        <h2 id="std-ui">15. Native UI Engine</h2>
-        <p>The <code>std.ui</code> module offers a fully native desktop windowing and rendering engine built into Vinglish, backed by Rust's highly performant <code>minifb</code>.</p>
-        <p>Vinglish provides simple handles for windows and pixel buffers. Developers can build high-performance GUIs, animations, and graphic simulations by painting pixels on the screen synchronously, without touching any C code or HTML.</p>
-        <pre><code><span class="highlight-keyword">use</span> std.ui
-<span class="highlight-keyword">let</span> window <span class="highlight-keyword">be</span> create_window(<span class="highlight-string">"App"</span>, 800, 600)
-<span class="highlight-keyword">let</span> buffer <span class="highlight-keyword">be</span> create_buffer(800, 600)
-set_pixel(buffer, 10, 10, 16777215)
-update_window(window, buffer)</code></pre>
-
-        <hr>
-
-        <!-- ============================================== -->
-        <!-- PART III: COMPILER INTERNALS                   -->
-        <!-- ============================================== -->
-
-        <h2 id="architecture">15. The Pipeline</h2>
-        <p>The Vinglish compiler, built in Rust, executes a strict, unidirectional pipeline. Each stage strictly enforces mathematical and logical correctness before handing off to the next layer.</p>
-        <pre><code>Source Code (.ving) 
-       ↓ (Lexer & Parser)
-Abstract Syntax Tree (AST) ───────→ (C Codegen Backend) → C Source Code (.c)
-       ↓ (Semantic Analysis & Type Checking)                  ↓ (GCC / Clang)
-High-Level IR (HIR)                                           Executable Binary
-       ↓ (SSA Conversion & CFG Generation)
-Mid-Level IR (MIR)
-       ↓ (Optimization Passes: DCE, GVN, Constant Fold)
-Optimized MIR
-       ↓ (LLVM Codegen Backend)
-Executable Binary</code></pre>
-
-        <h2 id="frontend">16. Lexer & Parser</h2>
-        <p>The Lexer converts raw text into a token stream. The Parser utilizes a recursive descent algorithm with Pratt parsing (Operator-Precedence parsing) for expressions. This accurately handles operator precedence, converting English keywords (like <code>is below</code>) into strict binary operations within the AST.</p>
-
-        <h2 id="hir">17. High-Level IR (HIR)</h2>
-        <p>The AST is flattened into the HIR. This is where <strong>Symbol Resolution</strong> occurs. The compiler maps all identifiers to unique <code>SymbolId</code>s. Module imports (<code>use std.math</code>) are resolved into an <strong>Import Graph</strong>, allowing the compiler to selectively merge required definitions and detect namespace collisions.</p>
-        <p><strong>Alias Analysis</strong> is also performed here. By tracking pointer assignments and references, the compiler validates that mutations do not violate borrowing rules.</p>
-
-        <h2 id="mir">18. Mid-Level IR & SSA</h2>
-        <p>The HIR is translated into the Mid-Level IR (MIR). This is the crown jewel of the Vinglish compiler.</p>
-        <p>MIR utilizes <strong>Static Single Assignment (SSA)</strong> form. In SSA, every variable is assigned exactly once. When a variable is reassigned in the source (e.g., <code>x = x + 1</code>), the MIR generates a new version of that variable (e.g., <code>x_2 = x_1 + 1</code>).</p>
-        
-        <div class="callout">
-            <h4>Phi (Φ) Nodes</h4>
-            <p>At control flow merge points (e.g., the end of an <code>if/else</code> block), the MIR inserts a Phi node. The Phi node selects the correct version of a variable based on which basic block executed previously (e.g., <code>x_3 = Φ(x_1, x_2)</code>). This pure mathematical mapping allows optimization passes to trace data-flow flawlessly.</p>
+    <span class="k">repeat while</span> <span class="f">is_window_open</span>(window) == <span class="p">1</span>
+    <span class="k">begin</span>
+        <span class="k">if</span> <span class="f">is_space_pressed</span>(window) == <span class="p">1</span> <span class="k">then begin</span>
+            velocity <span class="k">be</span> -<span class="p">12</span>
+        <span class="k">end</span>
+        player_y <span class="k">be</span> player_y + velocity
+        <span class="cm">-- draw, advance, and update</span>
+    <span class="k">end</span>
+<span class="k">end</span></code></pre></div>
+            <div class="source-actions"><a href="examples/skyline_runner.ving">VIEW FULL SOURCE →</a><a href="docs/playground.md">READ PLAYGROUND NOTES →</a></div>
+          </div>
         </div>
+      </div>
+    </section>
+    <section class="cta" id="get-started"><div class="shell"><div class="cta-box reveal"><p class="section-tag">Start with a .ving file</p><h2>Build with clear intent.</h2><p>Read the guide, inspect the pipeline, and take your first idea all the way to a native binary.</p><div class="install"><span>vng build hello.ving --output hello</span><button class="copy-button" type="button" data-copy="vng build hello.ving --output hello">Copy command</button></div></div></div></section>
+  </main>
+  <footer><div class="shell footer-inner"><span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span><nav class="footer-links" aria-label="Footer navigation"><a href="docs/language_guide.md">Guide</a><a href="docs/architecture.md">Architecture</a><a href="docs/standard_library.md">Library</a></nav></div></footer>
+  <script>
+    const menuButton = document.querySelector(".menu-button");
+    const navLinks = document.querySelector(".nav-links");
+    const copyButton = document.querySelector(".copy-button");
+    const sections = document.querySelectorAll(".doc-section");
+    const sideLinks = document.querySelectorAll(".docs-sidebar a");
+    menuButton.addEventListener("click", () => {
+      const open = navLinks.classList.toggle("open");
+      menuButton.setAttribute("aria-expanded", String(open));
+    });
+    navLinks.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+      navLinks.classList.remove("open");
+      menuButton.setAttribute("aria-expanded", "false");
+    }));
+    const runnerCanvas = document.querySelector("#runnerCanvas");
+    const runnerStart = document.querySelector("#runnerStart");
+    const runnerJump = document.querySelector("#runnerJump");
+    const runnerScore = document.querySelector("#runnerScore");
+    const runnerStatus = document.querySelector("#runnerStatus");
 
-        <h2 id="opt-cfg">19. Opt: CFG Simplification</h2>
-        <p>The <code>cfg_simplify.rs</code> pass analyzes the Basic Blocks of the MIR. It performs:</p>
-        <ul>
-            <li><strong>Dead Block Elimination:</strong> Removes blocks that have no incoming edges.</li>
-            <li><strong>Block Merging:</strong> If Block A unconditionally jumps to Block B, and Block B has no other incoming edges, the two blocks are merged into a single contiguous block, reducing branch overhead.</li>
-        </ul>
+    if (runnerCanvas && runnerStart && runnerJump && runnerScore && runnerStatus) {
+      const runnerContext = runnerCanvas.getContext("2d");
+      const runner = { running: false, ended: false, score: 0, playerY: 242, velocity: 0, obstacleX: 720, obstacleHeight: 54, spawnDelay: 0, lastTime: 0 };
+      const floorY = 290;
+      const playerX = 90;
+      const playerSize = 31;
 
-        <h2 id="opt-gvn">20. Opt: GVN & Constant Fold</h2>
-        <p><strong>Global Value Numbering (GVN):</strong> The compiler assigns a unique hash to every computed expression. If it encounters the same expression (e.g., <code>a * b</code>) later in the control flow, and neither <code>a</code> nor <code>b</code> have been modified (guaranteed by SSA), it replaces the second computation with a direct reference to the first result.</p>
-        <p><strong>Constant Folding (<code>constant_folding.rs</code>):</strong> Traverses the SSA graph identifying expressions composed entirely of literal constants. It evaluates these at compile-time (e.g., folding <code>5 * 4</code> directly into <code>20</code>) and propagates the result downstream.</p>
+      const updateRunnerLabels = () => {
+        runnerScore.textContent = "SCORE " + Math.floor(runner.score);
+        runnerStatus.textContent = runner.ended ? "TRY AGAIN" : runner.running ? "RUNNING" : "READY";
+        runnerStart.textContent = runner.ended ? "Run again" : runner.running ? "Restart runner" : "Start runner";
+      };
 
-        <h2 id="codegen">21. Codegen Backends</h2>
-        <p>Vinglish currently utilizes a dual-backend architecture, adapting to different goals:</p>
-        <ul>
-            <li><strong>C Backend (`--backend c`):</strong> Currently serves as a rapid bootstrapping backend that bypasses the MIR entirely and consumes the AST directly. It generates C code and links `rt.c`, allowing us to rely on GCC/Clang for heavy optimizations.</li>
-            <li><strong>LLVM Backend (`crates/eng-llvm`):</strong> The long-term production target. It consumes the highly-optimized MIR natively to produce robust binaries via LLVM IR without an intermediate C translation step.</li>
-        </ul>
-        
-        <h3>Structure Topological Sorting</h3>
-        <p>C requires that structures are defined before they are used. If <code>Struct A</code> contains a <code>Struct B</code> by value, <code>Struct B</code> must be declared first. The Vinglish codegen performs a topological sort on the dependency graph of all structs to emit them in the mathematically correct order, resolving cyclic pointer references automatically via forward declarations.</p>
-        
-        <h3><code>__auto_type</code> Inference</h3>
-        <p>To elegantly handle the translation of Vinglish generics to C, the codegen utilizes the GNU C extension <code>__auto_type</code>. This prevents the compiler from needing to generate deeply convoluted generic C macros, instead relying on the C compiler to infer the type of the evaluated expression.</p>
-        <pre><code><span class="highlight-comment">// Generated C code for generic assignment</span>
-__auto_type var_3 = eng_std_vector_push(var_1, var_2);</code></pre>
+      const resetRunner = () => {
+        runner.running = true;
+        runner.ended = false;
+        runner.score = 0;
+        runner.playerY = floorY - playerSize;
+        runner.velocity = 0;
+        runner.obstacleX = 720;
+        runner.obstacleHeight = 54;
+        runner.spawnDelay = 0;
+        updateRunnerLabels();
+      };
 
-        <hr>
+      const jumpRunner = () => {
+        if (!runner.running) resetRunner();
+        if (runner.playerY >= floorY - playerSize - 1) runner.velocity = -11.5;
+      };
 
-        <!-- ============================================== -->
-        <!-- PART IV: ECOSYSTEM                             -->
-        <!-- ============================================== -->
-
-        <h2 id="bindgen">23. Rust Ecosystem Bindgen</h2>
-        <p>Vinglish allows complete, zero-overhead access to the entire <strong>Rust ecosystem via crates.io</strong>. This is accomplished without writing any tedious C-FFI or Vinglish headers manually.</p>
-        <p>By creating a <code>rt_rust</code> staticlib alongside your project, you can pull in any Rust crate (e.g. <code>reqwest</code>, <code>serde</code>). Using the built-in <code>vinglish-macro</code>, you simply decorate your Rust wrapper function with <code>#[vinglish_export]</code>.</p>
-        <pre><code><span class="highlight-keyword">#[vinglish_export]</span>
-<span class="highlight-keyword">pub fn</span> <span class="highlight-function">fetch_url</span>(url: String) -&gt; String {
-    reqwest::blocking::get(url).unwrap().text().unwrap()
-}</code></pre>
-        <p>At compile time, the macro automatically generates the safe C-memory FFI wrapper, and the Vinglish compiler auto-generates the corresponding <code>public foreign function</code> declarations in <code>.ving_modules/rust_ffi/rust_ffi.ving</code>.</p>
-
-        <h2 id="cli">24. Vinglish CLI</h2>
-        <p>The <code>vng</code> binary provides the primary interface to the compiler toolkit.</p>
-        
-        <h3>Installation</h3>
-        <p>You can install the Vinglish compiler on any machine with a single terminal command. This script will automatically download the source, build the optimized binary, and configure your standard library paths:</p>
-        <pre><code>curl -fsSL https://raw.githubusercontent.com/Shiviatrix/vinglish/main/install.sh | bash</code></pre>
-        <p><em>Note: This requires <a href="https://rustup.rs/" style="color: var(--saffron);">Rust</a> and Git to be installed on your system.</em></p>
-
-        <h3>Usage</h3>
-        <p>Currently, the CLI supports the <code>build</code> command, which accepts a root <code>.ving</code> file, resolves its dependency graph, invokes the internal Rust pipeline, links <code>rt.c</code>, and spawns the host C compiler.</p>
-        <pre><code>vng build my_program.ving</code></pre>
-
-        <h2 id="lsp">23. Language Server (LSP) Support</h2>
-        <p>Because the compiler retains an intact HIR that understands alias analysis and full symbol mapping, Vinglish is perfectly positioned for a Language Server Protocol implementation.</p>
-        <ul>
-            <li><strong>Hover:</strong> The SSA graph directly maps identifiers to their inferred types.</li>
-            <li><strong>Diagnostics:</strong> Borrow-checking errors and semantic validation are emitted as JSON LSP diagnostics.</li>
-            <li><strong>Code Actions:</strong> The optimizer's knowledge of Dead Code and Redundant computations can be exposed as automated quick-fixes.</li>
-        </ul>
-
-        <h2 id="roadmap">24. Future Roadmap</h2>
-        <p>The roadmap for Vinglish prioritizes ecosystem expansion over language mutations:</p>
-        <ol>
-            <li><strong>The Package Manager (<code>vng</code>):</strong> A native dependency resolver allowing commands like <code>vng pkg init</code>, <code>vng build</code>, <code>vng pkg add std.net</code>.</li>
-            <li><strong>Standard Library Maturation:</strong> Implementing cryptographic hashing, highly concurrent threading models, and a non-blocking TCP server entirely natively.</li>
-            <li><strong>LLVM Backend:</strong> While the C backend is excellent for bootstrapping, a native LLVM IR backend is planned for even tighter optimization control and faster compilation speeds (bypassing the C compiler intermediary).</li>
-        </ol>
-
-        <h2 id="benchmarks">25. Benchmarks</h2>
-        <p>The Vinglish compiler includes an automated benchmarking suite to continually monitor the performance of the generated code against other mainstream languages like Rust, C++, and Go.</p>
-        <p>You can execute the benchmarking suite using the built-in CLI command:</p>
-        <pre><code>vng benchmark benchmarks --runs 5</code></pre>
-        <p>The performance metrics are tracked daily through our continuous integration pipelines, ensuring the C and LLVM codegen backends maintain zero-cost abstraction guarantees.</p>
-
-    </main>
-
-    <script>
-        document.querySelectorAll('#sidebar a').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-
-        // Kolam Cursor Trail Animation
-        const canvas = document.getElementById('trailCanvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+      const drawRunner = () => {
+        runnerContext.fillStyle = "#fff2c8";
+        runnerContext.fillRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+        runnerContext.fillStyle = "#ffd749";
+        runnerContext.fillRect(0, 0, runnerCanvas.width, 52);
+        runnerContext.fillStyle = "#cf2d2d";
+        runnerContext.beginPath();
+        runnerContext.arc(584, 69, 31, 0, Math.PI * 2);
+        runnerContext.fill();
+        runnerContext.fillStyle = "#075a91";
+        for (let index = 0; index < 10; index += 1) {
+          const towerX = index * 79 - ((runner.score * 0.65) % 79);
+          const towerHeight = 48 + (index % 3) * 21;
+          runnerContext.fillRect(towerX, floorY - towerHeight, 52, towerHeight);
+          runnerContext.fillStyle = "#ffd749";
+          runnerContext.fillRect(towerX + 10, floorY - towerHeight + 12, 8, 8);
+          runnerContext.fillRect(towerX + 30, floorY - towerHeight + 26, 8, 8);
+          runnerContext.fillStyle = "#075a91";
         }
-        window.addEventListener('resize', resize);
-        resize();
-
-        // Retro Indian Palette (Saffron, Marigold, Ruby, Emerald)
-        const colors = ['#FF9933', '#FFC107', '#9B1B30', '#138808'];
-
-        class Particle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.angle = Math.random() * Math.PI * 2;
-                this.radius = Math.random() * 2.5 + 1; // Smaller, more subtle particles
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-                this.life = 1.0;
-                this.decay = Math.random() * 0.03 + 0.015;
-                this.speed = Math.random() * 1.5 + 0.5;
-                this.turnSpeed = (Math.random() - 0.5) * 0.3;
-            }
-            update() {
-                this.angle += this.turnSpeed;
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-                this.life -= this.decay;
-            }
-            draw() {
-                if (this.life <= 0) return;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius * this.life, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = this.life;
-                ctx.fill();
-            }
+        runnerContext.fillStyle = "#177144";
+        runnerContext.fillRect(0, floorY, runnerCanvas.width, 70);
+        runnerContext.fillStyle = "#18243a";
+        for (let index = 0; index < runnerCanvas.width; index += 24) runnerContext.fillRect(index, floorY + 18, 13, 4);
+        runnerContext.fillStyle = "#eb7a1b";
+        runnerContext.fillRect(runner.obstacleX, floorY - runner.obstacleHeight, 30, runner.obstacleHeight);
+        runnerContext.fillStyle = "#ffd749";
+        runnerContext.fillRect(runner.obstacleX + 7, floorY - runner.obstacleHeight + 13, 16, 9);
+        runnerContext.fillStyle = "#cf2d2d";
+        runnerContext.fillRect(playerX, runner.playerY, playerSize, playerSize);
+        runnerContext.fillStyle = "#fff2c8";
+        runnerContext.font = "bold 24px Shrikhand";
+        runnerContext.fillText("V", playerX + 6, runner.playerY + 24);
+        runnerContext.strokeStyle = "#18243a";
+        runnerContext.lineWidth = 4;
+        runnerContext.strokeRect(playerX, runner.playerY, playerSize, playerSize);
+        if (runner.ended) {
+          runnerContext.fillStyle = "rgba(24,36,58,.88)";
+          runnerContext.fillRect(158, 104, 364, 108);
+          runnerContext.strokeStyle = "#ffd749";
+          runnerContext.lineWidth = 5;
+          runnerContext.strokeRect(158, 104, 364, 108);
+          runnerContext.fillStyle = "#fff2c8";
+          runnerContext.font = "700 28px Baloo 2";
+          runnerContext.fillText("Run complete · Press Space", 197, 151);
+          runnerContext.font = "700 18px Space Mono";
+          runnerContext.fillText("Score: " + Math.floor(runner.score), 268, 184);
         }
+      };
 
-        document.addEventListener('mousemove', (e) => {
-            // Spawn fewer, more elegant particles per mouse move
-            for (let i = 0; i < 3; i++) {
-                particles.push(new Particle(e.clientX, e.clientY));
-            }
-        });
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = 1.0;
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-            }
-            particles = particles.filter(p => p.life > 0);
-            requestAnimationFrame(animate);
+      const updateRunner = (delta) => {
+        if (!runner.running) return;
+        const step = Math.min(delta / 16.67, 2);
+        runner.velocity += 0.62 * step;
+        runner.playerY += runner.velocity * step;
+        if (runner.playerY >= floorY - playerSize) {
+          runner.playerY = floorY - playerSize;
+          runner.velocity = 0;
         }
-        animate();
-    </script>
+        runner.obstacleX -= (5.2 + runner.score * 0.018) * step;
+        if (runner.obstacleX < -32) {
+          runner.obstacleX = 700 + Math.random() * 120;
+          runner.obstacleHeight = 48 + Math.random() * 70;
+          runner.score += 10;
+        }
+        const playerBottom = runner.playerY + playerSize;
+        const obstacleTop = floorY - runner.obstacleHeight;
+        if (playerX + playerSize > runner.obstacleX && playerX < runner.obstacleX + 30 && playerBottom > obstacleTop) {
+          runner.running = false;
+          runner.ended = true;
+        }
+        runner.score += 0.11 * step;
+        updateRunnerLabels();
+      };
+
+      const runnerLoop = (timestamp) => {
+        const delta = runner.lastTime ? timestamp - runner.lastTime : 16.67;
+        runner.lastTime = timestamp;
+        updateRunner(delta);
+        drawRunner();
+        window.requestAnimationFrame(runnerLoop);
+      };
+
+      runnerStart.addEventListener("click", resetRunner);
+      runnerJump.addEventListener("click", jumpRunner);
+      runnerCanvas.addEventListener("pointerdown", jumpRunner);
+      window.addEventListener("keydown", (event) => {
+        if (event.code !== "Space" && event.code !== "ArrowUp") return;
+        if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+        event.preventDefault();
+        jumpRunner();
+      });
+      updateRunnerLabels();
+      window.requestAnimationFrame(runnerLoop);
+    }
+    const sectionObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      sideLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id));
+    }), { rootMargin: "-20% 0px -65% 0px", threshold: 0 });
+    sections.forEach((section) => sectionObserver.observe(section));
+    copyButton.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(copyButton.dataset.copy); copyButton.textContent = "Copied"; }
+      catch (error) { copyButton.textContent = "Select & copy"; }
+      window.setTimeout(() => { copyButton.textContent = "Copy command"; }, 1800);
+    });
+  </script>
 </body>
 </html>

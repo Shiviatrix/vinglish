@@ -2,23 +2,36 @@
 
 ## Purpose
 
-The Vinglish compiler exports a stable semantic interchange document for
-external tooling. The document is not compiler HIR. HIR remains an internal
-representation, free to change without breaking consumers of this contract.
+Vinglish can emit a stable semantic interchange document for external tooling.
+The document is intentionally **not** compiler HIR: HIR is internal and may
+change as the compiler evolves. Consumers integrate with this versioned JSON
+contract instead.
 
-The boundary is intentionally one-way:
+The boundary is one-way:
 
 ```text
-source -> lexer -> parser -> HIR -> export builder -> JSON document
+.ving source → lexer → parser → HIR → export builder → JSON document
 ```
 
-External tools consume only the JSON document. The compiler has no dependency
-on those tools, and the document does not contain compiler IDs, symbol tables,
-or HIR variant names.
+External tools consume JSON output. The compiler does not depend on those tools,
+and the document never exposes compiler IDs, symbol-table internals, or HIR enum
+names.
+
+## Producing an export
+
+Pass a `.ving` source file to `vng --emit-ir` and redirect standard output to a
+file or another process:
+
+```bash
+vng --emit-ir examples/fibonacci.ving > fibonacci.vinglish-export.json
+```
+
+Standard output is reserved for JSON so it can be piped safely. Compiler
+diagnostics and failures are written to standard error.
 
 ## Versioning
 
-Every document has these required top-level fields:
+Every document starts with these required top-level fields:
 
 ```json
 {
@@ -28,40 +41,42 @@ Every document has these required top-level fields:
 }
 ```
 
-`format` identifies the contract family. `version` is a whole-number schema
-version. Consumers must reject unknown versions rather than guessing at their
-meaning. Version 1 is additive only within optional fields; incompatible
-changes require a new version.
+`format` identifies this contract family. `version` is a whole-number schema
+version. Consumers must reject versions they do not recognize rather than infer
+their meaning. Version 1 permits additive changes only in optional fields;
+incompatible changes require a new version.
 
-## Version 1 Vocabulary
+## Version 1 vocabulary
 
-Version 1 describes only semantic concepts needed by the first external
-reasoning integration:
+Version 1 describes the semantic concepts required for first-generation analysis
+and reasoning integrations:
 
-- program and modules
-- functions and parameters
-- variables, assignments, and mutations
-- calls and returns
-- while loops and conditionals
-- semantic type descriptions
+- Programs and modules.
+- Functions and parameters.
+- Variables, assignments, and mutations.
+- Calls and returns.
+- While loops and conditionals.
+- Semantic type descriptions.
 
-Expressions retain only identifiers, literals, calls, binary and unary
-operations, collections, and an `unsupported` marker. The marker retains a
-source range without exposing a compiler-internal construct.
+Expressions preserve identifiers, literals, calls, binary and unary operations,
+and collections. An `unsupported` marker preserves a source range for a source
+construct not represented by this version of the contract, without leaking a
+compiler-internal construct.
 
-## CLI
+## Consumer requirements
 
-The compiler emits the document on standard output:
+Consumers should treat the contract as data, not as an executable description
+of Vinglish. In particular, a consumer should:
 
-```bash
-vng --emit-ir examples/fibonacci.ving > fibonacci.vinglish-export.json
-```
-
-Standard output is reserved for JSON so another tool can consume it directly.
-Compiler diagnostics remain on standard error.
+- Check both `format` and `version` before using `program`.
+- Accept missing optional fields.
+- Reject unknown required schema versions.
+- Preserve source spans for diagnostics and editor integrations.
+- Avoid depending on field ordering or compiler implementation details.
 
 ## Ownership
 
-The `vinglish-ir-export` crate owns the schema and its HIR-to-transport
-builder. It may depend on compiler crates. No external consumer should depend
-on this crate; consumers implement the documented versioned JSON contract.
+The `vinglish-ir-export` crate owns the schema and its builder from compiler HIR
+to the transport document. It may depend on compiler crates. External
+integrations should not depend on that crate; they should implement this
+published JSON contract instead.
