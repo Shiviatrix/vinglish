@@ -426,7 +426,7 @@ impl<'a> Interpreter<'a> {
                     let fields = store
                         .get(&struct_id)
                         .ok_or_else(|| InterpError::new("Struct not found in store"))?;
-                    let val = fields.get(field_id).cloned().unwrap_or(Value::Unit);
+                    let val = fields.get(&field_id.field_id).cloned().unwrap_or(Value::Unit);
                     locals.insert(*dest, val);
                 } else {
                     return Err(InterpError::new("Cannot load field from non-struct"));
@@ -444,7 +444,7 @@ impl<'a> Interpreter<'a> {
                 if let Value::Struct(struct_id) = obj_val {
                     let mut store = get_struct_store().lock().unwrap();
                     if let Some(fields) = store.get_mut(&struct_id) {
-                        fields.insert(*field_id, val);
+                        fields.insert(field_id.field_id, val);
                     } else {
                         return Err(InterpError::new("Struct not found in store"));
                     }
@@ -457,7 +457,8 @@ impl<'a> Interpreter<'a> {
                 for arg_op in arg_ops {
                     args.push(self.eval_operand(arg_op, locals)?);
                 }
-                let ret = self.call_function(*func_id, args)?;
+                let func_id = match func_id { vinglish_mir::CallTarget::Direct(id) => *id, vinglish_mir::CallTarget::Foreign { c_symbol } => return Err(InterpError { message: format!("cannot interpret foreign call `{c_symbol}`") }) };
+                let ret = self.call_function(func_id, args)?;
                 locals.insert(*dest, ret);
             }
             Instruction::<SsaValueId>::HeapAllocate(dest, _ty)

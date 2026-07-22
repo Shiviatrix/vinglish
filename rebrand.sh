@@ -39,9 +39,6 @@ find . -type f -name "*.rs" -not -path "*/target/*" -not -path "*/.git/*" \
 sed -i '' -e 's/eng_modules/ving_modules/g' .gitignore
 
 # 8. Rename studio directory
-if [ -d "vinglish-studio" ]; then
-    mv vinglish-studio vinglish-studio
-fi
 
 # 9. Clean and build
 cargo clean

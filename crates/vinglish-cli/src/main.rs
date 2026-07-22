@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use clap::{Parser, Subcommand};
 
-use vinglish_codegen::{emit_c, Interpreter};
+use vinglish_codegen::{emit_mir_c, Interpreter};
 use vinglish_diagnostics::{render, Diagnostic};
 use vinglish_fmt::format_module;
 use vinglish_hir::symbol::{SymbolTable, VariableId};
@@ -217,7 +217,6 @@ struct CompileResult {
     mir_module: MirModule<VariableId>,
     entry_src: String,
     entry_filename: String,
-    combined_ast: vinglish_parser::ast::Module,
 }
 
 fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBuf, String> {
@@ -383,7 +382,10 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
     let mut entry_filename = String::new();
 
     for module_name in &compilation_order {
-        let (ast, src, path) = parsed.get(module_name).unwrap();
+        let (parsed_ast, src, path) = parsed.get(module_name).unwrap();
+        // Healing is an in-memory compilation transformation; parsed module
+        // cache remains immutable for diagnostics and dependency loading.
+        let mut ast = parsed_ast.clone();
         if module_name == &entry_name {
             entry_src = src.clone();
             entry_filename = path.display().to_string();
@@ -397,26 +399,33 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         };
 
         let mut name_pass = NameResolutionPass::new();
-        name_pass.run(ast, &mut ctx);
+        name_pass.run(&ast, &mut ctx);
 
         let mut type_pass = TypeInferencePass::new();
-        let hir = type_pass
-            .run(ast, &mut ctx)
-            .unwrap_or_else(|| HirModule { items: vec![] });
+        let hir = type_pass.run_with_healing(&mut ast, &mut ctx);
 
         let validator = HirValidatorPass::new();
         validator.validate(&mut ctx, &hir);
 
         let mut has_errors = false;
         for e in &ctx.type_errors {
-            let mut diag = Diagnostic::error("T0001", &e.message, e.span);
+            let mut diag = Diagnostic::error("T0001", &e.message(), e.span());
             diag.enrich(src);
             let rendered = render(&[diag], &path.display().to_string());
             eprint!("{}", rendered);
             has_errors = true;
         }
+        for warning in &ctx.healing_warnings {
+            let mut diag = Diagnostic::warning(
+                "T1001",
+                format!("Automatically healed type mismatch using {:?}", warning.rule),
+                warning.span,
+            );
+            diag.enrich(src);
+            eprint!("{}", render(&[diag], &path.display().to_string()));
+        }
 
-        let own_errors = check_module(ast);
+        let own_errors = check_module(&ast);
         for e in &own_errors {
             let mut diag = Diagnostic::error("O0001", &e.message, e.span);
             if let Some(note) = &e.note {
@@ -439,20 +448,6 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         mir_functions.extend(mir_mod.functions);
     }
 
-    let mut combined_items = Vec::new();
-    for module_name in &compilation_order {
-        let (ast, _, _) = parsed.get(module_name).unwrap();
-        for item in &ast.items {
-            if !matches!(item, vinglish_parser::ast::Item::Use(_)) {
-                combined_items.push(item.clone());
-            }
-        }
-    }
-    let combined_ast = vinglish_parser::ast::Module {
-        items: combined_items,
-        span: vinglish_lexer::Span::dummy(),
-    };
-
     Ok(CompileResult {
         symbol_table,
         hir_modules,
@@ -461,7 +456,6 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         },
         entry_src,
         entry_filename,
-        combined_ast,
     })
 }
 
@@ -700,7 +694,7 @@ fn cmd_build(
     }
 
     if backend == "c" {
-        let c_src = emit_c(&compile_res.combined_ast)
+        let c_src = emit_mir_c(&ssa_module, &symbol_table)
             .map_err(|e| format!("code generation error: {}", e))?;
         let c_file = output.with_extension("c");
         fs::write(&c_file, &c_src).map_err(|e| format!("cannot write C source: {}", e))?;

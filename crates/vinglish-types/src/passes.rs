@@ -1,4 +1,4 @@
-use crate::TypeError;
+use crate::{healer::HealingWarning, TypeError};
 use vinglish_hir::symbol::{
     FunctionId, FunctionSymbol, SymbolId, SymbolKind, SymbolTable, TypeId, TypeSymbol, VariableId,
 };
@@ -46,9 +46,12 @@ impl ScopedId {
     }
 }
 
+#[derive(Clone)]
 pub struct CompilerContext {
     pub symbol_table: SymbolTable,
     pub type_errors: Vec<TypeError>,
+    /// Successful bounded repairs are non-fatal but must be visible to users.
+    pub healing_warnings: Vec<HealingWarning>,
     pub types: HashMap<u32, TypeId>, // Map ast node id -> resolved TypeId
     pub scope_stack: Vec<HashMap<String, ScopedId>>,
     pub current_return_type: Option<Type>,
@@ -95,6 +98,7 @@ impl CompilerContext {
                         ty,
                         generic_params: gen_params,
                         is_variant_constructor: None,
+                        is_foreign: true,
                     },
                 );
                 if let Some(fs) = symbol_table.get_func_mut(sym_id) {
@@ -108,6 +112,7 @@ impl CompilerContext {
         Self {
             symbol_table,
             type_errors: Vec::new(),
+            healing_warnings: Vec::new(),
             types: HashMap::new(),
             scope_stack: vec![scope],
             current_return_type: None,
@@ -250,6 +255,7 @@ impl CompilerPass for NameResolutionPass {
                                 ty: Type::Unit, // Will be inferred in type_pass
                                 generic_params: generic_params.clone(),
                                 is_variant_constructor: Some((id, index + 1)), // + 1 for tag
+                                is_foreign: false,
                             },
                         );
                         if let Some(fs) = ctx.symbol_table.get_func_mut(fn_id) {
@@ -288,6 +294,7 @@ impl CompilerPass for NameResolutionPass {
                             ty: Type::Unit, // Will be inferred later
                             generic_params,
                             is_variant_constructor: None,
+                            is_foreign: f.is_foreign,
                         },
                     );
                     if let Some(fs) = ctx.symbol_table.get_func_mut(id) {

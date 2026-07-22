@@ -10,6 +10,7 @@ members = [
     "crates/vinglish-fmt",
     "crates/vinglish-hir", "crates/vinglish-mir", "crates/vinglish-opt", "crates/vinglish-own", "crates/vinglish-ssa", "crates/vinglish-analysis", "crates/vinglish-llvm", "crates/vinglish-lsp", "rt_rust", "crates/vinglish-macro",
     "crates/vinglish-ir-export",
+    "crates/vinglish-decompile",
 ]
 resolver = "2"
 

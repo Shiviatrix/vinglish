@@ -1,0 +1,10 @@
+[package]
+name = "vinglish-decompile"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Deterministic metadata reader for Vinglish C emission"
+
+[dependencies]
+thiserror.workspace = true

@@ -1,6 +1,7 @@
+use vinglish_hir::layout::{CAbi, LayoutResolver};
 use vinglish_hir::symbol::{SymbolId, SymbolKind, SymbolTable, TypeId, VariableId, VariableSymbol};
 use vinglish_hir::{Expr as HirExpr, Item as HirItem, Module as HirModule, Stmt as HirStmt};
-use vinglish_mir::{BasicBlock, BlockId, Instruction, MirFunction, MirModule, Operand, Terminator};
+use vinglish_mir::{AllocationLayout, BasicBlock, BlockId, CallTarget, FieldAccess, Instruction, MirFunction, MirModule, Operand, Terminator};
 
 pub struct MirLowerer<'a> {
     symbol_table: &'a mut SymbolTable,
@@ -71,6 +72,21 @@ impl<'a> MirLowerer<'a> {
         self.current_instrs.push(instr);
     }
 
+    fn allocation_layout(&self, type_id: TypeId) -> AllocationLayout {
+        let resolved = LayoutResolver::new(self.symbol_table, CAbi::LP64).layout_type(type_id);
+        match resolved {
+            Ok(layout) => AllocationLayout { layout: type_id, size: layout.size, align: layout.align },
+            // Primitive/result runtime values currently use one word until they
+            // receive named record definitions in the type table.
+            Err(_) => AllocationLayout { layout: type_id, size: 8, align: 8 },
+        }
+    }
+
+    fn field_access(&self, layout: TypeId, field_id: vinglish_hir::symbol::FieldId) -> FieldAccess {
+        let byte_offset = LayoutResolver::new(self.symbol_table, CAbi::LP64).field_offset(layout, field_id).unwrap_or((field_id.0 as u32) * 8);
+        FieldAccess { field_id, byte_offset, layout }
+    }
+
     pub fn lower_module(&mut self, hir: &HirModule) -> MirModule<vinglish_hir::symbol::VariableId> {
         let mut functions = Vec::new();
         for item in &hir.items {
@@ -134,17 +150,18 @@ impl<'a> MirLowerer<'a> {
                 if let Some(fs) = self.symbol_table.get_func(func_id) {
                     if let Some((enum_id, variant_index)) = fs.is_variant_constructor {
                         let temp = self.new_temp(*ty, expr.span());
-                        self.push_instr(Instruction::HeapAllocate(temp, enum_id));
-                        self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Constant(vinglish_parser::ast::Literal::Int(variant_index as i64))));
+                        self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(enum_id)));
+                        self.push_instr(Instruction::StoreField(temp, self.field_access(enum_id, vinglish_hir::symbol::FieldId(0)), Operand::Constant(vinglish_parser::ast::Literal::Int(variant_index as i64))));
                         if !lowered_args.is_empty() {
-                            self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(variant_index), lowered_args[0].clone()));
+                            self.push_instr(Instruction::StoreField(temp, self.field_access(enum_id, vinglish_hir::symbol::FieldId(variant_index)), lowered_args[0].clone()));
                         }
                         return Operand::Var(temp);
                     }
                 }
 
                 let temp = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::Call(temp, func_id, lowered_args));
+                let target = self.symbol_table.get_func(func_id).map(|symbol| if symbol.is_foreign { CallTarget::Foreign { c_symbol: symbol.name.clone() } } else { CallTarget::Direct(func_id) }).unwrap_or(CallTarget::Direct(func_id));
+                self.push_instr(Instruction::Call(temp, target, lowered_args));
                 Operand::Var(temp)
             }
             HirExpr::BinOp {
@@ -227,12 +244,12 @@ impl<'a> MirLowerer<'a> {
             }
             HirExpr::StructInit { id, fields, ty, .. } => {
                 let temp = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::HeapAllocate(temp, *id));
+                self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(*id)));
                 if let Some(SymbolKind::Type(ts)) = self.symbol_table.get(id.0).cloned() {
                     for (i, fexpr) in fields.iter().enumerate() {
                         if let Some(field_sym) = ts.fields.get(i) {
                             let val = self.lower_expr(fexpr);
-                            self.push_instr(Instruction::StoreField(temp, field_sym.id, val));
+                            self.push_instr(Instruction::StoreField(temp, self.field_access(*id, field_sym.id), val));
                         }
                     }
                 }
@@ -246,7 +263,7 @@ impl<'a> MirLowerer<'a> {
             } => {
                 let obj_op = self.lower_expr(object);
                 let temp = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::LoadField(temp, obj_op, *field_id));
+                self.push_instr(Instruction::LoadField(temp, obj_op, self.field_access(object.ty(), *field_id)));
                 Operand::Var(temp)
             }
             HirExpr::MacroCall { name, args, ty, .. } => {
@@ -259,18 +276,18 @@ impl<'a> MirLowerer<'a> {
                 if name == "Ok" {
                     // Result struct layout: { tag: number, payload: T }
                     let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
-                    self.push_instr(Instruction::HeapAllocate(temp, vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0))));
+                    self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)))));
                     let tag_temp = self.new_temp(int_ty_id, expr.span());
                     self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(1)))); // tag 1 = Ok
-                    self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
-                    self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(1), lowered_args[0].clone()));
+                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(0)), Operand::Var(tag_temp)));
+                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(1)), lowered_args[0].clone()));
                 } else if name == "Err" {
                     let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
-                    self.push_instr(Instruction::HeapAllocate(temp, vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0))));
+                    self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)))));
                     let tag_temp = self.new_temp(int_ty_id, expr.span());
                     self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(0)))); // tag 0 = Err
-                    self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(0), Operand::Var(tag_temp)));
-                    self.push_instr(Instruction::StoreField(temp, vinglish_hir::symbol::FieldId(1), lowered_args[0].clone()));
+                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(0)), Operand::Var(tag_temp)));
+                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(1)), lowered_args[0].clone()));
                 } else {
                     self.push_instr(Instruction::CallIntrinsic(temp, name.clone(), lowered_args));
                 }
@@ -280,7 +297,7 @@ impl<'a> MirLowerer<'a> {
                 let inner_val = self.lower_expr(inner);
                 let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
                 let tag_temp = self.new_temp(int_ty_id, expr.span());
-                self.push_instr(Instruction::LoadField(tag_temp, inner_val.clone(), vinglish_hir::symbol::FieldId(0)));
+                self.push_instr(Instruction::LoadField(tag_temp, inner_val.clone(), self.field_access(*ty, vinglish_hir::symbol::FieldId(0))));
                 
                 let bool_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Bool);
                 let is_ok = self.new_temp(bool_ty_id, expr.span());
@@ -299,7 +316,7 @@ impl<'a> MirLowerer<'a> {
                 // Ok block: load field 1 (Ok payload)
                 self.switch_to_block(ok_block);
                 let ok_val = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::LoadField(ok_val, inner_val, vinglish_hir::symbol::FieldId(1)));
+                self.push_instr(Instruction::LoadField(ok_val, inner_val, self.field_access(*ty, vinglish_hir::symbol::FieldId(1))));
                 Operand::Var(ok_val)
             }
             _ => Operand::Constant(vinglish_parser::ast::Literal::Unit),
@@ -356,7 +373,7 @@ impl<'a> MirLowerer<'a> {
                         } else {
                             VariableId(SymbolId(0))
                         },
-                        *field_id,
+                        self.field_access(object.ty(), *field_id),
                         final_val,
                     ));
                 }

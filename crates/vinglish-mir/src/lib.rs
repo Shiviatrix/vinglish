@@ -41,6 +41,31 @@ pub enum Operand<V: Clone + Copy + fmt::Display> {
     Var(V),
 }
 
+/// Fully resolved callee identity. Foreign calls never require an AST lookup in
+/// a backend: their ABI spelling is part of MIR.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CallTarget {
+    Direct(FunctionId),
+    Foreign { c_symbol: String },
+}
+
+/// Field ABI fact captured at lowering time. `layout` identifies the record
+/// contract and `byte_offset` is the C address calculation input.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FieldAccess {
+    pub field_id: FieldId,
+    pub byte_offset: u32,
+    pub layout: TypeId,
+}
+
+/// Allocation ABI fact captured at lowering time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AllocationLayout {
+    pub layout: TypeId,
+    pub size: u32,
+    pub align: u32,
+}
+
 impl<V: Clone + Copy + fmt::Display> fmt::Display for Operand<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -53,12 +78,12 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Operand<V> {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction<V: Clone + Copy + fmt::Display> {
     Assign(V, Operand<V>),
-    LoadField(V, Operand<V>, FieldId),
-    StoreField(V, FieldId, Operand<V>),
-    Call(V, FunctionId, Vec<Operand<V>>),
+    LoadField(V, Operand<V>, FieldAccess),
+    StoreField(V, FieldAccess, Operand<V>),
+    Call(V, CallTarget, Vec<Operand<V>>),
     CallIntrinsic(V, String, Vec<Operand<V>>),
-    HeapAllocate(V, TypeId),
-    StackAllocate(V, TypeId),
+    HeapAllocate(V, AllocationLayout),
+    StackAllocate(V, AllocationLayout),
     BinaryOp(V, BinOp, Operand<V>, Operand<V>),
     UnaryOp(V, UnOp, Operand<V>),
     Borrow(V, Operand<V>),
@@ -73,10 +98,10 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
         match self {
             Instruction::Assign(dest, op) => write!(f, "{} = {}", dest, op),
             Instruction::LoadField(dest, obj, field) => {
-                write!(f, "{} = {}.field_{}", dest, obj, field.0)
+                write!(f, "{} = {}.field_{}@{}", dest, obj, field.field_id.0, field.byte_offset)
             }
             Instruction::StoreField(obj, field, val) => {
-                write!(f, "{}.field_{} = {}", obj, field.0, val)
+                write!(f, "{}.field_{}@{} = {}", obj, field.field_id.0, field.byte_offset, val)
             }
             Instruction::Call(dest, func, args) => {
                 let args_str = args
@@ -84,7 +109,7 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                     .map(|a| a.to_string())
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "{} = call fn_{}({})", dest, func.0 .0, args_str)
+                match func { CallTarget::Direct(id) => write!(f, "{} = call fn_{}({})", dest, id.0 .0, args_str), CallTarget::Foreign { c_symbol } => write!(f, "{} = call foreign {}({})", dest, c_symbol, args_str) }
             }
             Instruction::CallIntrinsic(dest, name, args) => {
                 let args_str = args
@@ -94,11 +119,11 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                     .join(", ");
                 write!(f, "{} = call_intrinsic {}({})", dest, name, args_str)
             }
-            Instruction::HeapAllocate(dest, ty) => {
-                write!(f, "{} = heap_allocate type_{}", dest, ty.0 .0)
+            Instruction::HeapAllocate(dest, layout) => {
+                write!(f, "{} = heap_allocate type_{}[{}:{}]", dest, layout.layout.0 .0, layout.size, layout.align)
             }
-            Instruction::StackAllocate(dest, ty) => {
-                write!(f, "{} = stack_allocate type_{}", dest, ty.0 .0)
+            Instruction::StackAllocate(dest, layout) => {
+                write!(f, "{} = stack_allocate type_{}[{}:{}]", dest, layout.layout.0 .0, layout.size, layout.align)
             }
             Instruction::BinaryOp(dest, op, left, right) => {
                 write!(f, "{} = {} {:?} {}", dest, left, op, right)

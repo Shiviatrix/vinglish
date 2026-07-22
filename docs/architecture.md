@@ -9,11 +9,12 @@ artifact.
 .ving source
     │
     ├── lexer and parser ──────── AST + module graph
-    ├── semantic analysis ────── HIR
+    ├── semantic analysis ────── HIR + deterministic healing
     ├── MIR lowering ─────────── MIR
     ├── SSA construction ─────── optimized analysis form
     ├── optimization passes ──── simplified MIR
-    └── code generation ──────── C + minimal runtime → native binary
+    ├── MIR C code generation ── typed C + provenance metadata → native binary
+    └── decompilation ────────── generated C metadata → MIR identity graph
 ```
 
 The language remains English-like at the source level while the optimizer works
@@ -61,6 +62,9 @@ HIR construction and validation include:
 - Validation of `Result of T` signatures, expressions, and return paths.
 - Ownership, borrowing, alias, escape, and promotion analysis.
 - Diagnostics with source spans and intent-aware suggestions.
+- A bounded `healer.rs` recovery loop for structured type mismatches. It tests
+  deterministic AST rewrites against a clean re-check and emits a warning only
+  when the rebuilt program passes ordinary type checking.
 
 A `Vector<number>` resolves to a concrete generic instantiation, while a
 `Result of number` function carries its explicit success-or-error contract
@@ -109,7 +113,7 @@ during compiler development without coupling user programs to a specific IR.
 
 ## Code generation
 
-The default backend lowers Vinglish to C, combines it with the minimal runtime,
+The default backend lowers optimized SSA MIR to C, combines it with the minimal runtime,
 and invokes the host C toolchain to produce a native binary. This gives Vinglish
 predictable low-level interoperability and a transparent bootstrap path.
 
@@ -122,7 +126,10 @@ vng build app.ving --emit mir
 An LLVM-oriented backend is also present for native IR generation work. Both
 backends consume compiler-validated forms rather than reinterpreting source
 text. The C backend is the practical default for inspectable output and direct
-access to platform toolchains.
+access to platform toolchains. It embeds versioned `vinglish:mir` comments for
+every emitted block, instruction, and terminator. Standard C preprocessing
+discards the comments; `vinglish-decompile` reads them to recover the MIR
+identity graph without inferring semantics from arbitrary C syntax.
 
 ## Rust FFI and native capabilities
 

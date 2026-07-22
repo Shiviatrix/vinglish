@@ -23,17 +23,39 @@ use vinglish_hir::TypeDef as HirTypeDef;
 // Errors
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Stable source identity used by recovery.  The parser does not yet allocate
+/// node IDs, so source ranges are the canonical identity for this transition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AstNodeId {
+    pub start: u32,
+    pub end: u32,
+}
+
+impl From<Span> for AstNodeId {
+    fn from(span: Span) -> Self { Self { start: span.start, end: span.end } }
+}
+
+/// Typed failures from inference.  Only `Mismatch` participates in healing;
+/// all other diagnostics remain ordinary, non-recoverable compiler errors.
 #[derive(Debug, Clone)]
-pub struct TypeError {
-    pub message: String,
-    pub span: Span,
+pub enum TypeError {
+    Mismatch { expected: Type, actual: Type, node_id: AstNodeId, span: Span },
+    Message { message: String, span: Span },
 }
 
 impl TypeError {
     pub fn new(msg: impl Into<String>, span: Span) -> Self {
-        Self {
-            message: msg.into(),
-            span,
+        Self::Message { message: msg.into(), span }
+    }
+
+    pub fn span(&self) -> Span {
+        match self { Self::Mismatch { span, .. } | Self::Message { span, .. } => *span }
+    }
+
+    pub fn message(&self) -> String {
+        match self {
+            Self::Mismatch { expected, actual, .. } => format!("type mismatch: expected `{expected}`, got `{actual}`"),
+            Self::Message { message, .. } => message.clone(),
         }
     }
 }
@@ -150,10 +172,12 @@ impl UnionFind {
                 }
                 Ok(())
             }
-            (t1, t2) => Err(TypeError::new(
-                format!("type mismatch: expected `{}`, got `{}`", t1, t2),
+            (expected, actual) => Err(TypeError::Mismatch {
+                expected,
+                actual,
+                node_id: AstNodeId::from(span),
                 span,
-            )),
+            }),
         }
     }
 
@@ -296,6 +320,41 @@ impl CompilerPass for TypeInferencePass {
         }
 
         Some(HirModule { items: hir_items })
+    }
+}
+
+impl TypeInferencePass {
+    /// Run the normal pass, then make at most one transactional, deterministic
+    /// repair attempt for the first structured mismatch. This is the live
+    /// `TypeError::Mismatch -> healer::attempt_heal` interception point.
+    pub fn run_with_healing(&mut self, ast: &mut Module, ctx: &mut CompilerContext) -> HirModule {
+        let baseline = ctx.clone();
+        let initial_hir = self.run(ast, ctx).unwrap_or_else(|| HirModule { items: vec![] });
+        let Some(mismatch) = ctx.type_errors.iter().find(|error| matches!(error, TypeError::Mismatch { .. })).cloned() else {
+            return initial_hir;
+        };
+
+        let warning = crate::healer::attempt_heal(&mismatch, ast, |candidate| {
+            let mut retry_ctx = baseline.clone();
+            let mut retry_pass = TypeInferencePass::new();
+            retry_pass.run(candidate, &mut retry_ctx);
+            if retry_ctx.type_errors.is_empty() { Ok(()) } else { Err(()) }
+        });
+        let Some(warning) = warning else { return initial_hir; };
+
+        // Re-run from the pre-inference context so no symbols, inference
+        // variables, or diagnostics from the rejected AST survive.
+        *ctx = baseline;
+        *self = TypeInferencePass::new();
+        let healed_hir = self.run(ast, ctx).unwrap_or_else(|| HirModule { items: vec![] });
+        if ctx.type_errors.is_empty() {
+            ctx.healing_warnings.push(warning);
+            healed_hir
+        } else {
+            // Defensive fallback: the checker used by `attempt_heal` already
+            // proved this should not happen, but never hide a real failure.
+            initial_hir
+        }
     }
 }
 
@@ -619,6 +678,7 @@ impl TypeInferencePass {
                     ty: fn_ty.clone(),
                     generic_params: vec![],
                     is_variant_constructor: None,
+                    is_foreign: f.is_foreign,
                 },
             );
             if let Some(fs) = ctx.symbol_table.get_func_mut(method_id) {
@@ -698,7 +758,9 @@ impl TypeInferencePass {
                 };
                 if let Some(expr) = &let_stmt.value {
                     let (expr_ty, h) = self.infer_expr(ctx, expr);
-                    self.unify(ctx, ty.clone(), expr_ty, let_stmt.span);
+                    // The initializer is the mutable candidate if its declared
+                    // type cannot be satisfied.
+                    self.unify(ctx, ty.clone(), expr_ty, expr.span());
                     hir_init = h;
                 }
 
@@ -731,7 +793,7 @@ impl TypeInferencePass {
             Stmt::Assign(a) => {
                 let (target_ty, ht) = self.infer_expr(ctx, &a.target);
                 let (value_ty, hv) = self.infer_expr(ctx, &a.value);
-                self.unify(ctx, target_ty.clone(), value_ty, a.span);
+                self.unify(ctx, target_ty.clone(), value_ty, a.value.span());
                 (
                     Type::Unit,
                     HirStmt::Assign {
@@ -744,6 +806,7 @@ impl TypeInferencePass {
             }
             Stmt::Return(r) => {
                 let mut hir_val = None;
+                let value_span = r.value.as_ref().map(Expr::span).unwrap_or(r.span);
                 let val_ty = if let Some(expr) = &r.value {
                     let (ty, hv) = self.infer_expr(ctx, expr);
                     hir_val = Some(hv);
@@ -753,7 +816,7 @@ impl TypeInferencePass {
                 };
 
                 if let Some(expected) = ctx.current_return_type.clone() {
-                    self.unify(ctx, expected, val_ty, r.span);
+                    self.unify(ctx, expected, val_ty, value_span);
                 }
 
                 (
@@ -1121,7 +1184,7 @@ impl TypeInferencePass {
                 }
 
                 let expected_fn_ty = Type::Function(arg_tys, Box::new(ret_ty.clone()));
-                self.unify(ctx, callee_ty, expected_fn_ty, *span);
+                self.unify(ctx, expected_fn_ty, callee_ty, callee.span());
                 self.record(ctx, *span, ret_ty.clone());
                 (
                     ret_ty.clone(),
@@ -1143,7 +1206,7 @@ impl TypeInferencePass {
                 let (rt, hr) = self.infer_expr(ctx, right);
                 let result = match op {
                     BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Mod => {
-                        self.unify(ctx, lt.clone(), rt, *span);
+                        self.unify(ctx, lt.clone(), rt, right.span());
                         lt
                     }
                     BinOp::Eq
@@ -1155,12 +1218,12 @@ impl TypeInferencePass {
                     | BinOp::IsBelow
                     | BinOp::IsAbove
                     | BinOp::Exceeds => {
-                        self.unify(ctx, lt, rt, *span);
+                        self.unify(ctx, lt, rt, right.span());
                         Type::Bool
                     }
                     BinOp::And | BinOp::Or => {
-                        self.unify(ctx, lt, Type::Bool, *span);
-                        self.unify(ctx, rt, Type::Bool, *span);
+                        self.unify(ctx, Type::Bool, lt, left.span());
+                        self.unify(ctx, Type::Bool, rt, right.span());
                         Type::Bool
                     }
                 };
@@ -1408,7 +1471,7 @@ impl TypeInferencePass {
                 let result = match op {
                     UnOp::Neg => inner,
                     UnOp::Not => {
-                        self.unify(ctx, inner, Type::Bool, *span);
+                        self.unify(ctx, Type::Bool, inner, operand.span());
                         Type::Bool
                     }
                     UnOp::Borrow(mutable) => Type::Reference(Box::new(inner), *mutable),

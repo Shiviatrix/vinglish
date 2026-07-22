@@ -10,7 +10,50 @@ Vinglish is a modern, statically-typed systems programming language developed as
 
 By combining an intent-aware semantic analysis pipeline, an optimizing SSA-form Mid-Level Intermediate Representation (MIR), and a zero-overhead C-codegen backend, Vinglish successfully merges high-level syntactical expression with low-level systems control.
 
+```vinglish
+type Counter
+begin
+    value: number
+end
+
+function count_to(limit: number) returns number
+begin
+    let counter be Counter { value: 0 }
+
+    repeat while counter.value is below limit
+    begin
+        counter.value += 1
+    end
+
+    return counter.value
+end
+```
+
 ---
+
+## Cool Features
+
+### Self-Healing Compiler Pipeline
+
+Vinglish type checking records structured constraints rather than treating a
+diagnostic as a terminal string. For a recoverable mismatch, the compiler can
+evaluate a bounded, deterministic rewrite—currently including auto-dereference
+and `to_text` conversion—against the expected type, actual type, and source
+node. It rebuilds the affected AST in memory, re-runs ordinary inference from a
+clean compiler context, and commits the rewrite only if the program validates.
+Successful repairs are emitted as warnings; failed candidates preserve the
+original fatal diagnostic. No heuristic model or external semantic engine is
+involved.
+
+### Bi-Directional MIR ↔ C Compilation
+
+The production C route consumes optimized SSA MIR. Every generated basic block,
+instruction, and terminator receives a versioned `/* vinglish:mir ... */`
+comment carrying its deterministic MIR identity and canonical payload. Standard
+C compilers discard these comments, so they have zero runtime and object-code
+cost. The `vinglish-decompile` crate reads the tags to recover the MIR identity
+graph and provides the boundary for canonical MIR reconstruction; reverse
+lowering witnesses preserve source-level structure for AST serialization.
 
 ## Core Philosophy
 
@@ -28,7 +71,9 @@ The Vinglish compiler implements a multi-stage pipeline:
 1. **HIR (High-Level IR):** Performs comprehensive type resolution, modular symbol graph construction, and alias analysis.
 2. **MIR (Mid-Level IR):** A mathematically pure, Static Single Assignment (SSA) form utilized for advanced optimization.
 3. **Optimizations:** Includes Constant Folding, Global Value Numbering (GVN), Dead Code Elimination (DCE), and Control Flow Graph (CFG) Simplification.
-4. **Code Generation:** Translates the optimized MIR into highly performant C code.
+4. **MIR Code Generation:** Translates optimized SSA MIR into typed C with
+   explicit foreign linkage, C-layout offsets, a static string pool, and
+   zero-cost reconstruction metadata.
 
 ## Documentation
 
@@ -54,7 +99,7 @@ curl -fsSL https://raw.githubusercontent.com/Shiviatrix/vinglish/main/install.sh
 To compile an Vinglish source file to an executable binary, execute the following command:
 
 ```bash
-cargo run --bin eng-cli -- compile my_file.eng
+cargo run -p vinglish-cli --bin vng -- build my_file.ving --backend c
 ```
 
 This command initiates the full compilation pipeline (Lex, Parse, HIR, MIR, Optimize, C-Codegen), links the generated code with the minimal C runtime (`rt/eng_runtime.c`), and outputs the final binary executable.

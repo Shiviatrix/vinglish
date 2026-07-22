@@ -1310,11 +1310,19 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "thiserror 1.0.69",
+ "vinglish-decompile",
  "vinglish-hir",
  "vinglish-lexer",
  "vinglish-mir",
  "vinglish-parser",
  "vinglish-types",
+]
+
+[[package]]
+name = "vinglish-decompile"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
 ]
 
 [[package]]

@@ -10,5 +10,6 @@ vinglish-parser = { path = "../vinglish-parser" }
 vinglish-types  = { path = "../vinglish-types" }
 vinglish-hir    = { path = "../vinglish-hir" }
 vinglish-mir    = { path = "../vinglish-mir" }
+vinglish-decompile = { path = "../vinglish-decompile" }
 thiserror.workspace  = true
 indexmap.workspace   = true

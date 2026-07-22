@@ -280,8 +280,9 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 self.ssa_values.insert(*dest, result);
             }
 
-            Instruction::Call(dest, func_id, args) => {
-                let result = self.compile_call(*func_id, args, &format!("ssa_{}", dest.0))?;
+            Instruction::Call(dest, target, args) => {
+                let func_id = match target { vinglish_mir::CallTarget::Direct(id) => *id, vinglish_mir::CallTarget::Foreign { c_symbol } => return Err(format!("foreign MIR call `{c_symbol}` is not implemented by the LLVM backend")) };
+                let result = self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
                 if let Some(val) = result {
                     self.ssa_values.insert(*dest, val);
                 } else {
@@ -291,8 +292,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 }
             }
 
-            Instruction::HeapAllocate(dest, type_id) => {
-                let struct_type = self.get_or_create_struct_type(*type_id);
+            Instruction::HeapAllocate(dest, layout) => {
+                let struct_type = self.get_or_create_struct_type(layout.layout);
                 let size = struct_type
                     .size_of()
                     .ok_or_else(|| "Cannot get struct size".to_string())?;
@@ -310,8 +311,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 self.ssa_values.insert(*dest, ptr);
             }
 
-            Instruction::StackAllocate(dest, type_id) => {
-                let struct_type = self.get_or_create_struct_type(*type_id);
+            Instruction::StackAllocate(dest, layout) => {
+                let struct_type = self.get_or_create_struct_type(layout.layout);
                 let alloca = self
                     .builder
                     .build_alloca(struct_type, &format!("ssa_{}", dest.0))
@@ -326,7 +327,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 // We need to figure out the struct type for the GEP.
                 // For now, we infer it from what we know about the object.
                 // In a more complete implementation, we'd carry type information through MIR.
-                let field_idx = field_id.0 as u32;
+                let field_idx = field_id.field_id.0 as u32;
 
                 // Try to find the struct type from the obj's allocation
                 let struct_type = self
@@ -363,7 +364,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                     .ok_or_else(|| format!("SSA value {} not found for store", obj))?;
                 let ptr_val = obj_val.into_pointer_value();
                 let store_val = self.resolve_operand(val)?;
-                let field_idx = field_id.0 as u32;
+                let field_idx = field_id.field_id.0 as u32;
 
                 let struct_type = self
                     .infer_struct_type_for_var(*obj)

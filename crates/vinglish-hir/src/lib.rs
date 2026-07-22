@@ -1,5 +1,6 @@
 pub mod symbol;
 pub mod types;
+pub mod layout;
 
 use crate::symbol::{FieldId, FunctionId, TypeId, VariableId};
 use vinglish_lexer::span::Span;

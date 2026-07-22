@@ -212,6 +212,7 @@ pub struct FunctionSymbol {
     pub ty: Type,
     pub generic_params: Vec<TypeVar>,
     pub is_variant_constructor: Option<(TypeId, usize)>,
+    pub is_foreign: bool,
 }
 
 #[derive(Debug, Clone)]
