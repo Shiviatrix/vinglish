@@ -1,5 +1,0 @@
-function main()
-begin
-    let x be "hello"
-    let y be x + 1
-end
