@@ -1,3 +1,5 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use minifb::{Window, WindowOptions, Key};
 use std::sync::Mutex;
 use std::collections::HashMap;
@@ -26,9 +28,7 @@ fn next_id() -> i32 {
 
 #[vinglish_export]
 pub fn ui_create_window(title: String, width: i32, height: i32) -> i32 {
-    let mut options = WindowOptions::default();
-    options.resize = true;
-    
+    let options = WindowOptions { resize: true, ..Default::default() };
     match Window::new(&title, width as usize, height as usize, options) {
         Ok(window) => {
             let id = next_id();

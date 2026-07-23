@@ -85,7 +85,7 @@ impl Formatter {
                     if let Some(payload) = &variant.payload {
                         self.line(&format!("{} {}", variant.name.name, fmt_type(payload)));
                     } else {
-                        self.line(&format!("{}", variant.name.name));
+                        self.line(&variant.name.name.to_string());
                     }
                 }
                 self.dedent();

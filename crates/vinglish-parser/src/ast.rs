@@ -82,7 +82,7 @@ pub enum Pattern {
 // Literals
 // ─────────────────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Literal {
     Int(i64),
     Float(f64),
@@ -181,7 +181,7 @@ impl Expr {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum BinOp {
     Add,
     Sub,
@@ -201,7 +201,7 @@ pub enum BinOp {
     Exceeds,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum UnOp {
     Neg,
     Not,

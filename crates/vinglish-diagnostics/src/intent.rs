@@ -15,9 +15,7 @@ pub fn resolve_intent(
     }
 
     // Node 2: Lexical Proximity (Typos)
-    if lexical::check_lexical_proximity(bad_token_text, diag) {
-        return;
-    }
+    lexical::check_lexical_proximity(bad_token_text, diag);
 
     // (Future) Node 3: Semantic Consistency (Handled higher up in HIR/Types)
 }

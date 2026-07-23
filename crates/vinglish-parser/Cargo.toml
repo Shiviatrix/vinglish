@@ -8,3 +8,4 @@ description = "Vinglish Grammar Parser — recursive-descent AST builder"
 vinglish-lexer   = { path = "../vinglish-lexer" }
 thiserror.workspace = true
 vinglish-diagnostics = { path = "../vinglish-diagnostics" }
+serde = { workspace = true, features = ["derive"] }

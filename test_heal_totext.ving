@@ -1,0 +1,12 @@
+use std.io
+
+function greet(text name)
+begin
+    print(name)
+end
+
+function main()
+begin
+    let age be 25
+    greet(age)
+end

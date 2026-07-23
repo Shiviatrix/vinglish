@@ -92,7 +92,7 @@ impl OwnershipValidator {
                         }
                         Instruction::<SsaValueId>::BorrowMut(dest, op) => {
                             if let Operand::<SsaValueId>::Var(src) = op {
-                                if let Some(move_span) = moved.get(src) {
+                                if let Some(_move_span) = moved.get(src) {
                                     errors.push(diagnostics::borrow_after_move(symbol_table, *src, get_span(*dest)));
                                 } else if mutably_borrowed.contains_key(src) {
                                     errors.push(diagnostics::double_mutable_borrow(symbol_table, *src, get_span(*dest)));

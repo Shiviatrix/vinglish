@@ -360,12 +360,8 @@ impl<'t> Parser<'t> {
 
     fn parse_ident_list(&mut self) -> Vec<Ident> {
         let mut idents = Vec::new();
-        loop {
-            if let Some(id) = self.expect_ident() {
-                idents.push(id);
-            } else {
-                break;
-            }
+        while let Some(id) = self.expect_ident() {
+            idents.push(id);
             if !self.eat(&Token::Comma) {
                 break;
             }
@@ -1063,7 +1059,7 @@ impl<'t> Parser<'t> {
                 }
                 Token::Bang => {
                     self.advance();
-                    let call_start = self.current_span();
+                    let _call_start = self.current_span();
                     self.expect(&Token::LParen);
                     let mut args = Vec::new();
                     while !matches!(self.current(), Token::RParen | Token::EOF) {
@@ -1463,12 +1459,8 @@ impl<'t> Parser<'t> {
         let start = self.current_span();
         self.expect(&Token::Use);
         let mut path = Vec::new();
-        loop {
-            if let Some(id) = self.expect_ident() {
-                path.push(id);
-            } else {
-                break;
-            }
+        while let Some(id) = self.expect_ident() {
+            path.push(id);
             if !self.eat(&Token::Dot) {
                 break;
             }

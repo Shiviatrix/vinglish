@@ -4,7 +4,7 @@ use vinglish_hir::symbol::{FieldId, FunctionId, TypeId};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, serde::Serialize, serde::Deserialize)]
 pub struct BlockId(pub usize);
 
 impl fmt::Display for BlockId {
@@ -13,12 +13,12 @@ impl fmt::Display for BlockId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MirModule<V: Clone + Copy + fmt::Display> {
     pub functions: Vec<MirFunction<V>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MirFunction<V: Clone + Copy + fmt::Display> {
     pub id: FunctionId,
     pub is_foreign: bool,
@@ -28,14 +28,14 @@ pub struct MirFunction<V: Clone + Copy + fmt::Display> {
     pub locals: Vec<V>, // includes parameters and synthesized temporaries
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BasicBlock<V: Clone + Copy + fmt::Display> {
     pub id: BlockId,
     pub instrs: Vec<Instruction<V>>,
     pub terminator: Terminator<V>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Operand<V: Clone + Copy + fmt::Display> {
     Constant(Literal),
     Var(V),
@@ -43,7 +43,7 @@ pub enum Operand<V: Clone + Copy + fmt::Display> {
 
 /// Fully resolved callee identity. Foreign calls never require an AST lookup in
 /// a backend: their ABI spelling is part of MIR.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum CallTarget {
     Direct(FunctionId),
     Foreign { c_symbol: String },
@@ -51,7 +51,7 @@ pub enum CallTarget {
 
 /// Field ABI fact captured at lowering time. `layout` identifies the record
 /// contract and `byte_offset` is the C address calculation input.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct FieldAccess {
     pub field_id: FieldId,
     pub byte_offset: u32,
@@ -59,7 +59,7 @@ pub struct FieldAccess {
 }
 
 /// Allocation ABI fact captured at lowering time.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct AllocationLayout {
     pub layout: TypeId,
     pub size: u32,
@@ -75,7 +75,7 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Operand<V> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Instruction<V: Clone + Copy + fmt::Display> {
     Assign(V, Operand<V>),
     LoadField(V, Operand<V>, FieldAccess),
@@ -145,7 +145,7 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Terminator<V: Clone + Copy + fmt::Display> {
     Return(Option<Operand<V>>),
     Jump(BlockId),

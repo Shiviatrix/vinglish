@@ -494,7 +494,7 @@ impl TypeInferencePass {
                     ts.add_field("tag".to_string(), Type::Int, Visibility::Public);
                 }
 
-                for (index, v) in e.variants.iter().enumerate() {
+                for (_index, v) in e.variants.iter().enumerate() {
                     let ty = v.payload.as_ref().map(|ty_expr| {
                         type_expr_to_type(ty_expr, &env)
                     }).unwrap_or(Type::Unit);

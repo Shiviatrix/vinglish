@@ -403,6 +403,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn float_literal() {
         let result = toks("3.14");
         assert_eq!(result, vec![Token::Float(3.14)]);

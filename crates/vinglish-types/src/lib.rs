@@ -5,6 +5,9 @@ pub mod passes;
 pub mod type_pass;
 pub mod validator;
 
+#[cfg(test)]
+mod healer_stress;
+
 pub use vinglish_hir::symbol;
 pub use vinglish_hir::types::{Type, TypeVar};
 pub use env::TypeEnv;

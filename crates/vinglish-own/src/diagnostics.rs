@@ -15,7 +15,7 @@ pub fn use_after_move(
     var: SsaValueId,
     moved_to: SsaValueId,
     use_span: Span,
-    move_span: Span,
+    _move_span: Span,
 ) -> Diagnostic {
     let name = get_var_name(symbol_table, var);
     let to_name = get_var_name(symbol_table, moved_to);

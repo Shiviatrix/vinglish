@@ -12,3 +12,4 @@ vinglish-mir    = { path = "../vinglish-mir" }
 thiserror.workspace = true
 strsim.workspace = true
 indexmap.workspace  = true
+rand = "0.10.2"

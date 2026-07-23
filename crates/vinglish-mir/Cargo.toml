@@ -10,3 +10,4 @@ description.workspace = true
 vinglish-hir = { path = "../vinglish-hir" }
 vinglish-parser = { path = "../vinglish-parser" }
 vinglish-lexer = { path = "../vinglish-lexer" }
+serde = { workspace = true, features = ["derive"] }

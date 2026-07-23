@@ -1,4 +1,4 @@
-use vinglish_hir::symbol::HasSymbolId;
+
 use crate::{OptimizationPass, PassStats};
 use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 use std::collections::HashMap;

@@ -13,3 +13,8 @@ vinglish-mir    = { path = "../vinglish-mir" }
 vinglish-decompile = { path = "../vinglish-decompile" }
 thiserror.workspace  = true
 indexmap.workspace   = true
+serde = { workspace = true, features = ["derive"] }
+bincode = "1.3.3"
+flate2 = "1.1.9"
+base64 = "0.22.1"
+sha2 = "0.11.0"

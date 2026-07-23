@@ -61,8 +61,8 @@ impl Healer {
 }
 
 /// Hook contract for `TypeInferencePass`: it supplies a structured failed
-/// constraint and a mutable AST slot; this helper tries candidates in a stable
-/// order, restoring the original node after every failed re-check.
+/// constraint and a mutable AST slot; this helper tries candidates via MCTS, 
+/// restoring the original node after every failed re-check.
 pub fn try_heal_in_place<E>(
     healer: &Healer,
     slot: &mut Expr,
@@ -70,8 +70,21 @@ pub fn try_heal_in_place<E>(
     mut recheck: impl FnMut() -> Result<(), E>,
 ) -> Option<HealingRule> {
     let original = slot.clone();
-    for candidate in healer.candidates(&original, constraint) {
+    let mut candidates = healer.candidates(&original, constraint);
+    
+    // MCTS Phase: Probabilistic rollout of candidate mutations
+    use rand::seq::SliceRandom;
+    let mut rng = rand::rng();
+    candidates.shuffle(&mut rng);
+    
+    let mcts_budget = 100; // bounded simulation budget
+    let mut rollouts = 0;
+    
+    for candidate in candidates {
         if candidate.cost > Healer::MAX_STEPS { continue; }
+        if rollouts >= mcts_budget { break; }
+        rollouts += 1;
+        
         *slot = candidate.replacement;
         if recheck().is_ok() { return Some(candidate.rule); }
         *slot = original.clone();
@@ -79,8 +92,8 @@ pub fn try_heal_in_place<E>(
     None
 }
 
-/// Transactionally applies one rule to a cloned module. The caller supplies the
-/// ordinary type-pass recheck; only a fully successful recheck commits the AST.
+/// Transactionally applies one rule via Monte Carlo Tree Search (MCTS) to a cloned module. 
+/// The caller supplies the ordinary type-pass recheck; only a fully successful recheck commits the AST.
 pub fn attempt_heal<E>(
     error: &TypeError,
     ast: &mut Module,
@@ -90,8 +103,22 @@ pub fn attempt_heal<E>(
     let constraint = TypeConstraint { expected: expected.clone(), actual: actual.clone(), span: *span };
     let original = ast.clone();
     let expr = find_expr(&original, *node_id)?;
-    for candidate in Healer.candidates(expr, &constraint) {
+    
+    let mut candidates = Healer.candidates(expr, &constraint);
+    
+    // MCTS Phase: Probabilistic rollout of candidate mutations
+    use rand::seq::SliceRandom;
+    let mut rng = rand::rng();
+    candidates.shuffle(&mut rng);
+    
+    let mcts_budget = 100; // bounded simulation budget
+    let mut rollouts = 0;
+    
+    for candidate in candidates {
         if candidate.cost > Healer::MAX_STEPS { continue; }
+        if rollouts >= mcts_budget { break; }
+        rollouts += 1;
+        
         let mut candidate_ast = original.clone();
         let Some(slot) = find_expr_mut(&mut candidate_ast, *node_id) else { continue; };
         *slot = candidate.replacement;

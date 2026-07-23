@@ -7,4 +7,9 @@ license.workspace = true
 description = "Deterministic metadata reader for Vinglish C emission"
 
 [dependencies]
+base64 = "0.22.1"
+bincode = "1.3.3"
+flate2 = "1.1.9"
+serde = { workspace = true, features = ["derive"] }
+sha2 = "0.11.0"
 thiserror.workspace = true
