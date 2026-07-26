@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// TODO: Describe implementation.
 pub struct CfgSimplifyPass;
 
 impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for CfgSimplifyPass {

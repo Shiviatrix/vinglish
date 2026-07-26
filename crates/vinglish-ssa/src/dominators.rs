@@ -2,6 +2,7 @@ use vinglish_hir::symbol::VariableId;
 use vinglish_mir::{BlockId, MirFunction, Terminator};
 use std::collections::{HashMap, HashSet};
 
+/// TODO: Describe implementation.
 pub struct DominatorTree {
     pub idom: HashMap<BlockId, BlockId>,
     pub children: HashMap<BlockId, Vec<BlockId>>,
@@ -9,6 +10,7 @@ pub struct DominatorTree {
 }
 
 impl DominatorTree {
+    /// TODO: Describe implementation.
     pub fn new(func: &MirFunction<VariableId>) -> Self {
         if func.blocks.is_empty() {
             return Self {

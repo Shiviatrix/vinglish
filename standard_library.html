@@ -30,32 +30,19 @@
       <a class="nav-cta" href="index.html#get-started">Begin building →</a>
     </div>
   </header>
-  <main>
-    <section class="shell hero hero-inner">
-      <div class="reveal">
-        <span class="eyebrow">AUTHORITATIVE REFERENCE</span>
-        <h1>Native capabilities.<br><span>Zero overhead.</span></h1>
-      </div>
-    </section>
-    
-    <div class="motif-line">✦ ☀ ✦ VINGLISH · STANDARD LIBRARY ✦ ☀ ✦</div>
-    
-    <section class="docs">
-      <div class="shell">
-        <div class="docs-layout">
-          <aside class="docs-sidebar"><span class="sidebar-kicker">On this page</span><a href="#map">A focused native layer.</a><a href="#collections"><code>Vector&lt;T&gt;</code> and <code>Map</code></a><a href="#io">Console input, output, and formatting.</a><a href="#net">Failures remain explicit.</a><a href="#ui">Desktop windows without hidden glue.</a></aside>
-          <article class="doc-page">
-            <section class="doc-section" id="map"><p class="section-tag">01 / MODULE MAP</p><h2>A focused native layer.</h2><pre><code>std/<br>├── collections/vector.ving<br>├── collections/map.ving<br>├── io.ving · string.ving · math.ving<br>├── file.ving · net.ving · thread.ving<br>└── ui.ving · runtime.ving</code></pre><p>Import modules by dotted path. Public declarations cross the module boundary; implementation details remain local.</p></section>
-<section class="doc-section" id="collections"><p class="section-tag">02 / COLLECTIONS</p><h2><code>Vector&lt;T&gt;</code> and <code>Map</code></h2><pre><code><span class="k">use</span> std.collections.vector<br><span class="k">let</span> scores <span class="k">be</span> <span class="f">vector_new</span>&lt;<span class="t">number</span>&gt;()<br><span class="f">push</span>(<span class="k">borrow mutable</span> scores, <span class="n">42</span>)<br><span class="f">vector_free</span>(<span class="k">borrow mutable</span> scores)</code></pre><p>Collections own their allocations. Release allocation-backed values exactly once when they are no longer needed.</p></section>
-<section class="doc-section" id="io"><p class="section-tag">03 / I/O & TEXT</p><h2>Console input, output, and formatting.</h2><pre><code><span class="k">use</span> std.io<br><span class="k">let</span> user <span class="k">be</span> <span class="f">read_line</span>()<br><span class="f">println</span>(<span class="f">fmt!</span>(<span class="s">"Hello, {user}."</span>))</code></pre><p><code>std.io</code> supplies console and basic text helpers; <code>std.string</code> contains allocation-backed string operations.</p></section>
-<section class="doc-section" id="net"><p class="section-tag">04 / NETWORKING</p><h2>Failures remain explicit.</h2><p><code>std.net</code> wraps TCP sockets in <code>TcpSocket</code>. Connect, send, and receive operations return <code>Result of T</code>.</p></section>
-<section class="doc-section" id="ui"><p class="section-tag">05 / NATIVE UI</p><h2>Desktop windows without hidden glue.</h2><p><code>std.ui</code> exposes windows, buffers, pixels, and input through Vinglish foreign declarations backed by the Rust runtime bridge.</p></section>
-
-          </article>
+  
+    <main id="top">
+      <section class="shell">
+        <div class="reveal">
+          <h1>Standard Library</h1>
+          <p>The Vinglish standard library is located in the <code>std/</code> directory, with C implementations in <code>rt/</code>.</p>
+          <hr>
+          <h2>Standard Library Reference</h2>
+          <p>For a detailed factual list of modules and their capabilities, please see <code>docs/reference/standard-library.md</code>.</p>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
+
   <footer>
     <div class="shell footer-inner">
       <span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span>

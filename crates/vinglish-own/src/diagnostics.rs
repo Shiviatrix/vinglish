@@ -10,6 +10,7 @@ fn get_var_name(symbol_table: &SymbolTable, var: SsaValueId) -> String {
     }
 }
 
+/// TODO: Describe implementation.
 pub fn use_after_move(
     symbol_table: &SymbolTable,
     var: SsaValueId,
@@ -51,6 +52,7 @@ pub fn use_after_move(
     .with_note(format!("help: consider borrowing `&{}` instead of moving it", clean_name))
 }
 
+/// TODO: Describe implementation.
 pub fn double_mutable_borrow(symbol_table: &SymbolTable, var: SsaValueId, span: Span) -> Diagnostic {
     let name = get_var_name(symbol_table, var);
     Diagnostic::error(
@@ -61,6 +63,7 @@ pub fn double_mutable_borrow(symbol_table: &SymbolTable, var: SsaValueId, span: 
     .with_note(format!("`{}` was already borrowed mutably.", name))
 }
 
+/// TODO: Describe implementation.
 pub fn borrow_after_move(symbol_table: &SymbolTable, var: SsaValueId, span: Span) -> Diagnostic {
     let name = get_var_name(symbol_table, var);
     Diagnostic::error(

@@ -6,6 +6,7 @@
 use crate::symbol::{FieldId, SymbolTable, TypeId};
 use crate::types::Type;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CAbi {
     pub pointer_size: u32,
@@ -22,19 +23,25 @@ impl CAbi {
     pub const LP64: Self = Self { pointer_size: 8, pointer_align: 8, long_size: 8, long_align: 8, double_size: 8, double_align: 8 };
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldLayout { pub id: FieldId, pub offset: u32, pub size: u32, pub align: u32 }
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeLayout { pub type_id: TypeId, pub size: u32, pub align: u32, pub fields: Vec<FieldLayout> }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LayoutError { UnknownType(TypeId), RecursiveByValue(TypeId), UnresolvedType(String) }
 
+/// TODO: Describe implementation.
 pub struct LayoutResolver<'a> { symbols: &'a SymbolTable, abi: CAbi }
 
 impl<'a> LayoutResolver<'a> {
+    /// TODO: Describe implementation.
     pub fn new(symbols: &'a SymbolTable, abi: CAbi) -> Self { Self { symbols, abi } }
 
+    /// TODO: Describe implementation.
     pub fn layout_type(&self, id: TypeId) -> Result<TypeLayout, LayoutError> {
         let symbol = self.symbols.get_type(id).ok_or(LayoutError::UnknownType(id))?;
         let mut fields = Vec::with_capacity(symbol.fields.len());
@@ -50,6 +57,7 @@ impl<'a> LayoutResolver<'a> {
         Ok(TypeLayout { type_id: id, size: align_up(offset, record_align), align: record_align, fields })
     }
 
+    /// TODO: Describe implementation.
     pub fn field_offset(&self, record: TypeId, field: FieldId) -> Result<u32, LayoutError> {
         self.layout_type(record)?.fields.into_iter().find(|layout| layout.id == field).map(|layout| layout.offset).ok_or(LayoutError::UnknownType(record))
     }
@@ -72,6 +80,7 @@ impl<'a> LayoutResolver<'a> {
     }
 }
 
+/// TODO: Describe implementation.
 pub(crate) fn align_up(value: u32, align: u32) -> u32 { (value + align - 1) & !(align - 1) }
 
 #[cfg(test)]

@@ -286,7 +286,7 @@ fn load_module_graph(
     if !parse_errors.is_empty() {
         for e in &parse_errors {
             let mut found = match e {
-                vinglish_parser::error::ParseError::Expected { found: ref f, .. } => f.clone(),
+                vinglish_parser::error::ParseError::Expected { found: f, .. } => f.clone(),
                 _ => String::new(),
             };
             

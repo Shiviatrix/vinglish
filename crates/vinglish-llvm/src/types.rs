@@ -3,15 +3,18 @@ use vinglish_hir::types::Type;
 use inkwell::context::Context;
 use inkwell::types::{BasicMetadataTypeEnum, BasicTypeEnum, StructType};
 
+/// TODO: Describe implementation.
 pub struct TypeLowering<'ctx> {
     context: &'ctx Context,
 }
 
 impl<'ctx> TypeLowering<'ctx> {
+    /// TODO: Describe implementation.
     pub fn new(context: &'ctx Context) -> Self {
         Self { context }
     }
 
+    /// TODO: Describe implementation.
     pub fn lower_type(&self, ty: &Type, symbol_table: &SymbolTable) -> Option<BasicTypeEnum<'ctx>> {
         match ty {
             Type::Int => Some(self.context.i64_type().into()),
@@ -51,6 +54,7 @@ impl<'ctx> TypeLowering<'ctx> {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn lower_struct_type(
         &self,
         symbol_table: &SymbolTable,
@@ -93,18 +97,22 @@ impl<'ctx> TypeLowering<'ctx> {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn i64_type(&self) -> BasicTypeEnum<'ctx> {
         self.context.i64_type().into()
     }
 
+    /// TODO: Describe implementation.
     pub fn f64_type(&self) -> BasicTypeEnum<'ctx> {
         self.context.f64_type().into()
     }
 
+    /// TODO: Describe implementation.
     pub fn bool_type(&self) -> BasicTypeEnum<'ctx> {
         self.context.bool_type().into()
     }
 
+    /// TODO: Describe implementation.
     pub fn ptr_type(&self) -> BasicTypeEnum<'ctx> {
         self.context
             .ptr_type(inkwell::AddressSpace::default())

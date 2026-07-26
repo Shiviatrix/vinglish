@@ -6,6 +6,7 @@ use vinglish_hir::symbol::SymbolTable;
 use vinglish_mir::{Instruction, MirModule, Operand};
 use std::collections::HashMap;
 
+/// TODO: Describe implementation.
 pub struct OwnershipValidator;
 
 impl Default for OwnershipValidator {
@@ -15,10 +16,12 @@ impl Default for OwnershipValidator {
 }
 
 impl OwnershipValidator {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn validate(
         &self,
         symbol_table: &SymbolTable,

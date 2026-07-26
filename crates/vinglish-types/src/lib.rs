@@ -1,8 +1,14 @@
+/// TODO: Describe implementation.
 pub mod env;
+/// TODO: Describe implementation.
 pub mod healer;
+/// TODO: Describe implementation.
 pub mod mir_lower;
+/// TODO: Describe implementation.
 pub mod passes;
+/// TODO: Describe implementation.
 pub mod type_pass;
+/// TODO: Describe implementation.
 pub mod validator;
 
 #[cfg(test)]

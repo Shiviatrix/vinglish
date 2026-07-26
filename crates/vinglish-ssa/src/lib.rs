@@ -1,7 +1,11 @@
 use vinglish_hir::symbol::VariableId;
+/// TODO: Describe implementation.
 pub mod dominators;
+/// TODO: Describe implementation.
 pub mod phi;
+/// TODO: Describe implementation.
 pub mod rename;
+/// TODO: Describe implementation.
 pub mod validator;
 
 use vinglish_mir::MirModule;
@@ -9,6 +13,7 @@ use vinglish_mir::MirModule;
 pub use dominators::DominatorTree;
 pub use validator::SSAValidator;
 
+/// TODO: Describe implementation.
 pub struct SSAConversionPass;
 
 impl Default for SSAConversionPass {
@@ -18,10 +23,12 @@ impl Default for SSAConversionPass {
 }
 
 impl SSAConversionPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn run(
         &mut self,
         mut module: MirModule<VariableId>,

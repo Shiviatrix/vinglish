@@ -3,6 +3,7 @@ use vinglish_hir::symbol::VariableId;
 use vinglish_mir::{BlockId, Instruction, MirFunction};
 use std::collections::{HashMap, HashSet};
 
+/// TODO: Describe implementation.
 pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &DominatorTree) {
     // 1. Find blocks where each variable is assigned
     let mut defs: HashMap<VariableId, HashSet<BlockId>> = HashMap::new();

@@ -4,12 +4,14 @@ use vinglish_mir::{BlockId, MirFunction, MirModule, Operand};
 use std::collections::HashMap;
 use std::fmt;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct Lifetime {
     pub created_at: Option<(BlockId, usize)>, // (BlockId, Instruction Index)
     pub last_used_at: Option<(BlockId, usize)>, // For terminators, index is blocks.instructions.len()
 }
 
+/// TODO: Describe implementation.
 pub struct LifetimeGraph {
     pub alias_lifetimes: HashMap<AliasId, Lifetime>,
 }
@@ -21,6 +23,7 @@ impl Default for LifetimeGraph {
 }
 
 impl LifetimeGraph {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             alias_lifetimes: HashMap::new(),
@@ -57,6 +60,7 @@ impl fmt::Display for LifetimeGraph {
     }
 }
 
+/// TODO: Describe implementation.
 pub struct LifetimeAnalysisPass;
 
 impl Default for LifetimeAnalysisPass {
@@ -66,10 +70,12 @@ impl Default for LifetimeAnalysisPass {
 }
 
 impl LifetimeAnalysisPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn run(&self, module: &MirModule<SsaValueId>, alias_graph: &AliasGraph) -> LifetimeGraph {
         let mut graph = LifetimeGraph::new();
 

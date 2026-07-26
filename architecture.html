@@ -30,31 +30,20 @@
       <a class="nav-cta" href="index.html#get-started">Begin building →</a>
     </div>
   </header>
-  <main>
-    <section class="shell hero hero-inner">
-      <div class="reveal">
-        <span class="eyebrow">AUTHORITATIVE REFERENCE</span>
-        <h1>Readable source.<br><span>Explicit machinery.</span></h1>
-      </div>
-    </section>
-    
-    <div class="motif-line">✦ ☀ ✦ VINGLISH · ARCHITECTURE ✦ ☀ ✦</div>
-    
-    <section class="docs">
-      <div class="shell">
-        <div class="docs-layout">
-          <aside class="docs-sidebar"><span class="sidebar-kicker">On this page</span><a href="#pipeline">One explicit path.</a><a href="#hir">HIR establishes semantics.</a><a href="#mir">MIR makes flow visible.</a><a href="#codegen">MIR emits typed C.</a></aside>
-          <article class="doc-page">
-            <section class="doc-section" id="pipeline"><p class="section-tag">01 / PIPELINE</p><h2>One explicit path.</h2><pre><code>.ving source<br>→ lexer + parser → AST<br>→ semantic analysis → HIR<br>→ MIR lowering → SSA MIR<br>→ optimization → MIR C backend<br>→ C + runtime → native binary</code></pre><p>Imports form a module graph. Every pass owns a narrow invariant and validates it before the next representation is used.</p></section>
-<section class="doc-section" id="hir"><p class="section-tag">02 / MEANING</p><h2>HIR establishes semantics.</h2><p>Name resolution, type inference, generic instantiation, and ownership checks convert parsed syntax into typed HIR. The healer applies a bounded deterministic rewrite candidate only for structured type mismatches and re-runs normal checking before producing a warning.</p><div class="doc-card-grid"><div class="doc-card"><span>STRUCTURED ERRORS</span><p>Expected type, actual type, source node, and span are compiler data—not parsed strings.</p></div><div class="doc-card"><span>LAYOUT CONTRACTS</span><p>LP64 record size, alignment, and field offsets are resolved during MIR lowering.</p></div></div></section>
-<section class="doc-section" id="mir"><p class="section-tag">03 / OPTIMIZATION</p><h2>MIR makes flow visible.</h2><p>Basic blocks, branches, calls, loads, stores, allocations, and returns are explicit. SSA construction adds dominance-aware renaming and phi nodes. Constant folding, GVN, DCE, copy propagation, and CFG simplification operate here.</p></section>
-<section class="doc-section" id="codegen"><p class="section-tag">04 / REVERSIBLE OUTPUT</p><h2>MIR emits typed C.</h2><p>The C backend consumes optimized SSA MIR directly. Calls carry linkage, aggregate access carries byte offsets, and text literals enter a static pool. Versioned <code>vinglish:mir</code> comments identify every block, instruction, and terminator; host compilers discard them with no runtime cost.</p></section>
-
-          </article>
+  
+    <main id="top">
+      <section class="shell">
+        <div class="reveal">
+          <h1>Compiler Architecture</h1>
+          <p>The Vinglish compiler architecture is documented in the <code>docs/explanation/architecture.md</code> file.</p>
+          <hr>
+          <h2>Pipeline Overview</h2>
+          <p>Source file -&gt; Lexer -&gt; Parser -&gt; Type Inference -&gt; MIR Lowering -&gt; SSA Conversion -&gt; Optimization -&gt; C Code Generation.</p>
+          <p>For more details, see <code>docs/explanation/compiler-pipeline.md</code>.</p>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
+
   <footer>
     <div class="shell footer-inner">
       <span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span>

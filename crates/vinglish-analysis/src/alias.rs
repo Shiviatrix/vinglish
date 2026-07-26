@@ -3,6 +3,7 @@ use vinglish_mir::{Instruction, MirFunction, MirModule, Operand};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AliasId(pub usize);
 
@@ -12,6 +13,7 @@ impl fmt::Display for AliasId {
     }
 }
 
+/// TODO: Describe implementation.
 pub struct AliasGraph {
     pub value_to_alias: HashMap<SsaValueId, AliasId>,
     pub alias_to_values: HashMap<AliasId, HashSet<SsaValueId>>,
@@ -26,6 +28,7 @@ impl Default for AliasGraph {
 }
 
 impl AliasGraph {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             value_to_alias: HashMap::new(),
@@ -35,6 +38,7 @@ impl AliasGraph {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn new_alias(&mut self) -> AliasId {
         let id = AliasId(self.next_alias_id);
         self.next_alias_id += 1;
@@ -42,11 +46,13 @@ impl AliasGraph {
         id
     }
 
+    /// TODO: Describe implementation.
     pub fn assign_alias(&mut self, value: SsaValueId, alias: AliasId) {
         self.value_to_alias.insert(value, alias);
         self.alias_to_values.get_mut(&alias).unwrap().insert(value);
     }
 
+    /// TODO: Describe implementation.
     pub fn get_alias(&self, value: SsaValueId) -> Option<AliasId> {
         self.value_to_alias.get(&value).copied()
     }
@@ -83,6 +89,7 @@ impl fmt::Display for AliasGraph {
     }
 }
 
+/// TODO: Describe implementation.
 pub struct AliasAnalysisPass;
 
 impl Default for AliasAnalysisPass {
@@ -92,10 +99,12 @@ impl Default for AliasAnalysisPass {
 }
 
 impl AliasAnalysisPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn run(&self, module: &MirModule<SsaValueId>) -> AliasGraph {
         let mut graph = AliasGraph::new();
 

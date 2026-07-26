@@ -4,6 +4,7 @@ use vinglish_parser::ast::{BinOp, Literal, UnOp};
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// TODO: Describe implementation.
 pub struct ConstantFoldingPass;
 
 impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for ConstantFoldingPass {

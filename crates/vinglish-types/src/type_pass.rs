@@ -44,14 +44,17 @@ pub enum TypeError {
 }
 
 impl TypeError {
+    /// TODO: Describe implementation.
     pub fn new(msg: impl Into<String>, span: Span) -> Self {
         Self::Message { message: msg.into(), span }
     }
 
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self { Self::Mismatch { span, .. } | Self::Message { span, .. } => *span }
     }
 
+    /// TODO: Describe implementation.
     pub fn message(&self) -> String {
         match self {
             Self::Mismatch { expected, actual, .. } => format!("type mismatch: expected `{expected}`, got `{actual}`"),
@@ -230,6 +233,7 @@ impl UnionFind {
     }
 }
 
+/// TODO: Describe implementation.
 pub struct TypeInferencePass {
     uf: UnionFind,
 }
@@ -241,6 +245,7 @@ impl Default for TypeInferencePass {
 }
 
 impl TypeInferencePass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             uf: UnionFind::new(),
@@ -1609,6 +1614,7 @@ fn get_path_string(expr: &Expr) -> Option<String> {
     }
 }
 
+/// TODO: Describe implementation.
 pub fn infer_module(ast: &Module) -> (SymbolTable, Vec<TypeError>, HirModule) {
     let mut ctx = CompilerContext::new();
 

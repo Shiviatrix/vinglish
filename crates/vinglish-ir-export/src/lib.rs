@@ -13,7 +13,9 @@ use vinglish_hir::{
 use vinglish_lexer::Span;
 use vinglish_parser::ast::{AssignOp, BinOp, Literal, UnOp};
 
+/// TODO: Describe implementation.
 pub const FORMAT_NAME: &str = "vinglish.semantic-export";
+/// TODO: Describe implementation.
 pub const CURRENT_VERSION: u32 = 1;
 
 /// The complete external document emitted by `ving --emit-ir`.
@@ -25,6 +27,7 @@ pub struct ExportDocument {
 }
 
 impl ExportDocument {
+    /// TODO: Describe implementation.
     pub fn new(modules: Vec<Module>) -> Self {
         Self {
             format: FORMAT_NAME.to_owned(),
@@ -34,11 +37,13 @@ impl ExportDocument {
     }
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Program {
     pub modules: Vec<Module>,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Module {
     pub name: String,
@@ -47,6 +52,7 @@ pub struct Module {
     pub statements: Vec<Statement>,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Function {
     pub name: String,
@@ -59,6 +65,7 @@ pub struct Function {
     pub span: SourceRange,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Parameter {
     pub name: String,
@@ -169,6 +176,7 @@ pub enum Statement {
     },
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MutationOperation {
@@ -178,12 +186,14 @@ pub enum MutationOperation {
     Divide,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum LoopKind {
     While { condition: Expression },
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Call {
     pub callee: Box<Expression>,
@@ -191,6 +201,7 @@ pub struct Call {
     pub span: SourceRange,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Expression {
@@ -225,6 +236,7 @@ pub enum Expression {
     },
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum LiteralValue {
@@ -235,6 +247,7 @@ pub enum LiteralValue {
     Unit,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BinaryOperation {
@@ -253,6 +266,7 @@ pub enum BinaryOperation {
     Or,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UnaryOperation {
@@ -269,10 +283,12 @@ pub struct ExportBuilder<'a> {
 }
 
 impl<'a> ExportBuilder<'a> {
+    /// TODO: Describe implementation.
     pub fn new(symbols: &'a SymbolTable) -> Self {
         Self { symbols }
     }
 
+    /// TODO: Describe implementation.
     pub fn document<I, S>(&self, modules: I) -> ExportDocument
     where
         I: IntoIterator<Item = (S, &'a HirModule)>,
@@ -286,6 +302,7 @@ impl<'a> ExportBuilder<'a> {
         )
     }
 
+    /// TODO: Describe implementation.
     pub fn module(&self, name: String, module: &HirModule) -> Module {
         let mut functions = Vec::new();
         let mut statements = Vec::new();
@@ -595,6 +612,7 @@ impl<'a> ExportBuilder<'a> {
     }
 }
 
+/// TODO: Describe implementation.
 pub fn to_json(document: &ExportDocument) -> Result<String, serde_json::Error> {
     serde_json::to_string_pretty(document)
 }

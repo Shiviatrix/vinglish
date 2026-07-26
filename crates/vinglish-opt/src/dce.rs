@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// TODO: Describe implementation.
 pub struct DeadCodeEliminationPass;
 
 impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for DeadCodeEliminationPass {

@@ -27,6 +27,7 @@ pub struct Suggestion {
 }
 
 impl Suggestion {
+    /// TODO: Describe implementation.
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: label.into(),
@@ -34,10 +35,12 @@ impl Suggestion {
             confidence: None,
         }
     }
+    /// TODO: Describe implementation.
     pub fn with_replacement(mut self, r: impl Into<String>) -> Self {
         self.replacement = Some(r.into());
         self
     }
+    /// TODO: Describe implementation.
     pub fn with_confidence(mut self, c: f32) -> Self {
         self.confidence = Some(c);
         self
@@ -59,6 +62,7 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
+    /// TODO: Describe implementation.
     pub fn error(code: impl Into<String>, message: impl Into<String>, span: Span) -> Self {
         Self {
             severity: Severity::Error,
@@ -73,6 +77,7 @@ impl Diagnostic {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn warning(code: impl Into<String>, message: impl Into<String>, span: Span) -> Self {
         Self {
             severity: Severity::Warning,
@@ -87,6 +92,7 @@ impl Diagnostic {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn hint(message: impl Into<String>, span: Span) -> Self {
         Self {
             severity: Severity::Hint,
@@ -101,11 +107,13 @@ impl Diagnostic {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn with_suggestion(mut self, s: Suggestion) -> Self {
         self.suggestions.push(s);
         self
     }
 
+    /// TODO: Describe implementation.
     pub fn with_note(mut self, note: impl Into<String>) -> Self {
         self.notes.push(note.into());
         self

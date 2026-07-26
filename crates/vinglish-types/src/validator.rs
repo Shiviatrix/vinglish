@@ -5,6 +5,7 @@ use vinglish_hir::Item as HirItem;
 use vinglish_hir::Module as HirModule;
 use vinglish_hir::Stmt as HirStmt;
 
+/// TODO: Describe implementation.
 pub struct HirValidatorPass;
 
 impl Default for HirValidatorPass {
@@ -14,6 +15,7 @@ impl Default for HirValidatorPass {
 }
 
 impl HirValidatorPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
@@ -235,6 +237,7 @@ impl CompilerPass for HirValidatorPass {
 }
 
 impl HirValidatorPass {
+    /// TODO: Describe implementation.
     pub fn validate(&self, ctx: &mut CompilerContext, hir: &HirModule) {
         for item in &hir.items {
             self.validate_item(ctx, item);

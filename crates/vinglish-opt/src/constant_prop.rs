@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// TODO: Describe implementation.
 pub struct ConstantPropagationPass;
 
 impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for ConstantPropagationPass {

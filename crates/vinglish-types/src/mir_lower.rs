@@ -3,6 +3,7 @@ use vinglish_hir::symbol::{SymbolId, SymbolKind, SymbolTable, TypeId, VariableId
 use vinglish_hir::{Expr as HirExpr, Item as HirItem, Module as HirModule, Stmt as HirStmt};
 use vinglish_mir::{AllocationLayout, BasicBlock, BlockId, CallTarget, FieldAccess, Instruction, MirFunction, MirModule, Operand, Terminator};
 
+/// TODO: Describe implementation.
 pub struct MirLowerer<'a> {
     symbol_table: &'a mut SymbolTable,
     next_block_id: usize,
@@ -13,6 +14,7 @@ pub struct MirLowerer<'a> {
 }
 
 impl<'a> MirLowerer<'a> {
+    /// TODO: Describe implementation.
     pub fn new(symbol_table: &'a mut SymbolTable) -> Self {
         Self {
             symbol_table,
@@ -87,6 +89,7 @@ impl<'a> MirLowerer<'a> {
         FieldAccess { field_id, byte_offset, layout }
     }
 
+    /// TODO: Describe implementation.
     pub fn lower_module(&mut self, hir: &HirModule) -> MirModule<vinglish_hir::symbol::VariableId> {
         let mut functions = Vec::new();
         for item in &hir.items {

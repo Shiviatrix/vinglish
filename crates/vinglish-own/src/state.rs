@@ -1,6 +1,7 @@
 use vinglish_hir::symbol::SsaValueId;
 use std::fmt;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum OwnershipState {
     #[default]

@@ -1,6 +1,7 @@
 use vinglish_parser::ast::*;
 use thiserror::Error;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Error)]
 pub enum CEmitError {
     #[error("unsupported construct: {0}")]

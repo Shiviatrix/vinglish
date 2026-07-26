@@ -8,6 +8,7 @@ use vinglish_parser::ast::Visibility;
 use vinglish_parser::ast::{Item as AstItem, Module as AstModule};
 use std::collections::HashMap;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy)]
 pub enum ScopedId {
     Type(TypeId),
@@ -16,6 +17,7 @@ pub enum ScopedId {
 }
 
 impl ScopedId {
+    /// TODO: Describe implementation.
     pub fn as_var(&self) -> Option<VariableId> {
         if let ScopedId::Var(id) = self {
             Some(*id)
@@ -23,6 +25,7 @@ impl ScopedId {
             None
         }
     }
+    /// TODO: Describe implementation.
     pub fn as_func(&self) -> Option<FunctionId> {
         if let ScopedId::Func(id) = self {
             Some(*id)
@@ -30,6 +33,7 @@ impl ScopedId {
             None
         }
     }
+    /// TODO: Describe implementation.
     pub fn as_type(&self) -> Option<TypeId> {
         if let ScopedId::Type(id) = self {
             Some(*id)
@@ -37,6 +41,7 @@ impl ScopedId {
             None
         }
     }
+    /// TODO: Describe implementation.
     pub fn as_raw_id(&self) -> SymbolId {
         match self {
             ScopedId::Type(id) => id.0,
@@ -46,6 +51,7 @@ impl ScopedId {
     }
 }
 
+/// TODO: Describe implementation.
 #[derive(Clone)]
 pub struct CompilerContext {
     pub symbol_table: SymbolTable,
@@ -65,10 +71,12 @@ impl Default for CompilerContext {
 }
 
 impl CompilerContext {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self::with_symbol_table(SymbolTable::new())
     }
 
+    /// TODO: Describe implementation.
     pub fn with_symbol_table(mut symbol_table: SymbolTable) -> Self {
         let mut scope = HashMap::new();
 
@@ -120,20 +128,24 @@ impl CompilerContext {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn push_scope(&mut self) {
         self.scope_stack.push(HashMap::new());
     }
 
+    /// TODO: Describe implementation.
     pub fn pop_scope(&mut self) {
         self.scope_stack.pop();
     }
 
+    /// TODO: Describe implementation.
     pub fn define(&mut self, name: String, id: ScopedId) {
         if let Some(scope) = self.scope_stack.last_mut() {
             scope.insert(name, id);
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn lookup(&self, name: &str) -> Option<ScopedId> {
         for scope in self.scope_stack.iter().rev() {
             if let Some(id) = scope.get(name) {
@@ -155,10 +167,12 @@ impl CompilerContext {
     }
 }
 
+/// TODO: Describe implementation.
 pub trait CompilerPass {
     fn run(&mut self, ast: &AstModule, ctx: &mut CompilerContext) -> Option<HirModule>;
 }
 
+/// TODO: Describe implementation.
 pub struct NameResolutionPass;
 
 impl Default for NameResolutionPass {
@@ -168,6 +182,7 @@ impl Default for NameResolutionPass {
 }
 
 impl NameResolutionPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }

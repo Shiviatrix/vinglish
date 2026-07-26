@@ -6,6 +6,7 @@ pub struct Span {
 }
 
 impl Span {
+    /// Creates a new `Span` with the given start and end offsets.
     #[inline]
     pub fn new(start: u32, end: u32) -> Self {
         Self { start, end }
@@ -26,10 +27,12 @@ impl Span {
         }
     }
 
+    /// Returns the length of the span in bytes.
     pub fn len(self) -> u32 {
         self.end.saturating_sub(self.start)
     }
 
+    /// Returns true if the span has a length of 0.
     pub fn is_empty(self) -> bool {
         self.len() == 0
     }
@@ -49,11 +52,13 @@ pub struct Spanned<T> {
 }
 
 impl<T> Spanned<T> {
+    /// Creates a new `Spanned` node with the given span.
     #[inline]
     pub fn new(node: T, span: Span) -> Self {
         Self { node, span }
     }
 
+    /// Maps the inner node value to a new type using the provided function, preserving the span.
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Spanned<U> {
         Spanned {
             node: f(self.node),

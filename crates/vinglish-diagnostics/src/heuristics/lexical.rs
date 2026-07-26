@@ -6,6 +6,7 @@ const ENGLIST_KEYWORDS: &[&str] = &[
     "number", "string", "boolean", "true", "false", "and", "or", "not", "is", "below", "above"
 ];
 
+/// TODO: Describe implementation.
 pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> bool {
     let mut scored: Vec<(&str, f64)> = ENGLIST_KEYWORDS
         .iter()

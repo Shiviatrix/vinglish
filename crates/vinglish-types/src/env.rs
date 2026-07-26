@@ -10,6 +10,7 @@ pub struct TypeScheme {
 }
 
 impl TypeScheme {
+    /// TODO: Describe implementation.
     pub fn mono(ty: Type) -> Self {
         Self { vars: vec![], ty }
     }
@@ -64,6 +65,7 @@ pub struct TypeEnv {
 }
 
 impl TypeEnv {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         let mut env = Self {
             scopes: vec![HashMap::new()],
@@ -118,20 +120,24 @@ impl TypeEnv {
         );
     }
 
+    /// TODO: Describe implementation.
     pub fn push_scope(&mut self) {
         self.scopes.push(HashMap::new());
     }
 
+    /// TODO: Describe implementation.
     pub fn pop_scope(&mut self) {
         self.scopes.pop();
     }
 
+    /// TODO: Describe implementation.
     pub fn define(&mut self, name: &str, scheme: TypeScheme) {
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name.to_string(), scheme);
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn get(&self, name: &str) -> Option<TypeScheme> {
         for scope in self.scopes.iter().rev() {
             if let Some(scheme) = scope.get(name) {
@@ -141,10 +147,12 @@ impl TypeEnv {
         None
     }
 
+    /// TODO: Describe implementation.
     pub fn define_struct(&mut self, name: &str, symbol: TypeSymbol) {
         self.structs.insert(name.to_string(), symbol);
     }
 
+    /// TODO: Describe implementation.
     pub fn lookup(&self, name: &str) -> Option<&TypeScheme> {
         for scope in self.scopes.iter().rev() {
             if let Some(scheme) = scope.get(name) {

@@ -2,11 +2,13 @@ use crate::{MirFunction, MirModule, Terminator};
 use vinglish_hir::symbol::SymbolTable;
 use std::collections::HashSet;
 
+/// TODO: Describe implementation.
 #[derive(Debug)]
 pub struct MirValidationError {
     pub message: String,
 }
 
+/// TODO: Describe implementation.
 pub struct MirValidatorPass;
 
 impl Default for MirValidatorPass {
@@ -16,10 +18,12 @@ impl Default for MirValidatorPass {
 }
 
 impl MirValidatorPass {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn validate<V: Clone + Copy + std::fmt::Display>(
         &self,
         symbol_table: &SymbolTable,

@@ -12,6 +12,7 @@ use base64::Engine;
 use flate2::read::ZlibDecoder;
 use std::io::Read;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum DecompileError {
     #[error("Missing VINGLISH_MIR_PAYLOAD comment in the source file")]
@@ -26,6 +27,7 @@ pub enum DecompileError {
     Deserialize,
 }
 
+/// TODO: Describe implementation.
 pub trait MirSnapshotDecoder {
     type MirModule;
     type Error: std::error::Error + Send + Sync + 'static;

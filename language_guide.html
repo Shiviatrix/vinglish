@@ -30,32 +30,24 @@
       <a class="nav-cta" href="index.html#get-started">Begin building →</a>
     </div>
   </header>
-  <main>
-    <section class="shell hero hero-inner">
-      <div class="reveal">
-        <span class="eyebrow">AUTHORITATIVE REFERENCE</span>
-        <h1>Write what you mean.<br><span>Compile what you intend.</span></h1>
-      </div>
-    </section>
-    
-    <div class="motif-line">✦ ☀ ✦ VINGLISH · LANGUAGE GUIDE ✦ ☀ ✦</div>
-    
-    <section class="docs">
-      <div class="shell">
-        <div class="docs-layout">
-          <aside class="docs-sidebar"><span class="sidebar-kicker">On this page</span><a href="#start">Getting started</a><a href="#types">Types and records</a><a href="#flow">Control flow reads directly.</a><a href="#generics">Generics stay explicit.</a><a href="#errors">Errors are in the type.</a></aside>
-          <article class="doc-page">
-            <section class="doc-section" id="start"><p class="section-tag">01 / FOUNDATIONS</p><h2>Getting started</h2><p>Source files use <code>.ving</code>. Check, run, build, and format with the <code>vng</code> driver.</p><pre><code>vng check hello.ving<br>vng run hello.ving<br>vng build hello.ving --output hello</code></pre><pre><code><span class="k">use</span> std.io<br><span class="k">function</span> <span class="f">main</span>()<br><span class="k">begin</span><br>  <span class="f">println</span>(<span class="s">"Hello from Vinglish."</span>)<br><span class="k">end</span></code></pre></section>
-<section class="doc-section" id="types"><p class="section-tag">02 / DATA</p><h2>Types and records</h2><p>Use <code>type</code> for records. Fields are named, checked, and lowered to deterministic layouts.</p><pre><code><span class="k">type</span> <span class="t">Point</span><br><span class="k">begin</span><br>  x: <span class="t">number</span><br>  y: <span class="t">number</span><br><span class="k">end</span></code></pre><p>The scalar vocabulary is <code>number</code>, <code>decimal</code>, <code>text</code>, <code>boolean</code>, and <code>address&lt;T&gt;</code>. Use <code>borrow</code> and <code>borrow mutable</code> to state aliasing intent.</p></section>
-<section class="doc-section" id="flow"><p class="section-tag">03 / CONTROL</p><h2>Control flow reads directly.</h2><pre><code><span class="k">repeat while</span> current &lt;= limit<br><span class="k">begin</span><br>  total <span class="k">be</span> total + current<br>  current <span class="k">be</span> current + <span class="n">1</span><br><span class="k">end</span></code></pre><p><code>if</code>, <code>repeat while</code>, and <code>match</code> lower to explicit control-flow blocks before optimization.</p></section>
-<section class="doc-section" id="generics"><p class="section-tag">04 / REUSE</p><h2>Generics stay explicit.</h2><p>Use concrete type arguments such as <code>Vector&lt;number&gt;</code> and declare reusable records with <code>type Pair&lt;T&gt;</code>.</p></section>
-<section class="doc-section" id="errors"><p class="section-tag">05 / FAILURE</p><h2>Errors are in the type.</h2><p><code>Result of T</code> makes recoverable failure visible. Return <code>Ok(value)</code> or <code>Err(message)</code>; <code>?</code> propagates a compatible result.</p><div class="doc-card-grid"><div class="doc-card"><span>TYPE CHECKING</span><p>Structured constraints validate the program before MIR lowering.</p></div><div class="doc-card"><span>DETERMINISTIC REPAIR</span><p>An eligible mismatch can be rebuilt and rechecked before it becomes fatal.</p></div></div></section>
-
-          </article>
+  
+    <main id="top">
+      <section class="shell">
+        <div class="reveal">
+          <h1>Language Guide</h1>
+          <p>The Vinglish language design and semantics are documented in the <code>docs/</code> directory.</p>
+          <hr>
+          <h2>Reference Manuals</h2>
+          <p>Please see the following reference documents for factual information regarding the language:</p>
+          <ul>
+            <li><a href="docs/reference/type-system.md">Type System</a></li>
+            <li><a href="docs/reference/ownership.md">Ownership</a></li>
+            <li><a href="docs/tutorials/first-program.md">First Program Tutorial</a></li>
+          </ul>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
+
   <footer>
     <div class="shell footer-inner">
       <span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span>

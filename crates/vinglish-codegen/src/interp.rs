@@ -5,6 +5,7 @@ use vinglish_hir::symbol::{FieldId, FunctionId, SsaValueId, SymbolTable};
 use vinglish_mir::{BlockId, Instruction, MirFunction, MirModule, Operand, Terminator};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Value
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ pub enum Value {
     Reference(Box<Value>),
 }
 
+/// TODO: Describe implementation.
 #[derive(Clone)]
 pub struct NativeFn {
     pub name: &'static str,
@@ -43,6 +45,7 @@ impl PartialEq for NativeFn {
 }
 
 impl Value {
+    /// TODO: Describe implementation.
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Bool(b) => *b,
@@ -52,6 +55,7 @@ impl Value {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn to_display(&self) -> String {
         match self {
             Value::Int(i) => i.to_string(),
@@ -78,6 +82,7 @@ impl Value {
     }
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Errors
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,6 +108,7 @@ impl fmt::Display for InterpError {
 
 impl std::error::Error for InterpError {}
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Interpreter
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,6 +135,7 @@ fn get_struct_store() -> &'static Mutex<HashMap<u64, HashMap<FieldId, Value>>> {
 }
 
 impl<'a> Interpreter<'a> {
+    /// TODO: Describe implementation.
     pub fn new(symbol_table: &'a SymbolTable) -> Self {
         let mut interp = Self {
             _symbol_table: symbol_table,
@@ -204,6 +211,7 @@ impl<'a> Interpreter<'a> {
         interp
     }
 
+    /// TODO: Describe implementation.
     pub fn run_module(
         &mut self,
         module: &'a MirModule<vinglish_hir::symbol::SsaValueId>,

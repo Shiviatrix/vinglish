@@ -1,6 +1,7 @@
 use vinglish_lexer::{Span, Token};
 use thiserror::Error;
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Error)]
 pub enum ParseError {
     #[error("expected {expected}, found {found} at {span}")]
@@ -20,6 +21,7 @@ pub enum ParseError {
 }
 
 impl ParseError {
+    /// TODO: Describe implementation.
     pub fn expected(expected: impl Into<String>, found: &Token, span: Span) -> Self {
         Self::Expected {
             expected: expected.into(),
@@ -28,6 +30,7 @@ impl ParseError {
         }
     }
 
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             Self::Expected { span, .. } => *span,

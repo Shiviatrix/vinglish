@@ -1,5 +1,6 @@
 use vinglish_lexer::Span;
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Identifiers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11,6 +12,7 @@ pub struct Ident {
 }
 
 impl Ident {
+    /// TODO: Describe implementation.
     pub fn new(name: impl Into<String>, span: Span) -> Self {
         Self {
             name: name.into(),
@@ -25,6 +27,7 @@ impl std::fmt::Display for Ident {
     }
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Visibility
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,6 +40,7 @@ pub enum Visibility {
     Internal,
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Type expressions (as written in source)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,6 +66,7 @@ pub enum TypeExpr {
     Reference { mutable: bool, inner: Box<TypeExpr> },
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Patterns (for `match`)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +83,7 @@ pub enum Pattern {
     Wildcard(Span),
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Literals
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,6 +97,7 @@ pub enum Literal {
     Unit,
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Expressions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,6 +169,7 @@ pub enum Expr {
 }
 
 impl Expr {
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             Expr::Lit { span, .. }
@@ -181,6 +189,7 @@ impl Expr {
     }
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum BinOp {
     Add,
@@ -201,6 +210,7 @@ pub enum BinOp {
     Exceeds,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum UnOp {
     Neg,
@@ -209,6 +219,7 @@ pub enum UnOp {
     Borrow(bool), // true if mutable
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Statements
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,6 +255,7 @@ pub enum Stmt {
 }
 
 impl Stmt {
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             Stmt::Let(s) => s.span,
@@ -262,6 +274,7 @@ impl Stmt {
     }
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LetStmt {
     pub name: Ident,
@@ -271,12 +284,14 @@ pub struct LetStmt {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReturnStmt {
     pub value: Option<Expr>,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct IfStmt {
     pub condition: Expr,
@@ -285,6 +300,7 @@ pub struct IfStmt {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WhenStmt {
     pub condition: Expr,
@@ -293,6 +309,7 @@ pub struct WhenStmt {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RepeatStmt {
     ForEvery {
@@ -314,6 +331,7 @@ pub enum RepeatStmt {
 }
 
 impl RepeatStmt {
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             RepeatStmt::ForEvery { span, .. }
@@ -323,6 +341,7 @@ impl RepeatStmt {
     }
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MatchStmt {
     pub subject: Expr,
@@ -331,6 +350,7 @@ pub struct MatchStmt {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MatchCase {
     pub pattern: Pattern,
@@ -338,6 +358,7 @@ pub struct MatchCase {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AssignStmt {
     pub target: Expr,
@@ -346,6 +367,7 @@ pub struct AssignStmt {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssignOp {
     Assign,
@@ -355,30 +377,35 @@ pub enum AssignOp {
     DivAssign,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpawnStmt {
     pub actor: Ident,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SendStmt {
     pub message: Expr,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReceiveStmt {
     pub binding: Option<Ident>,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionStmt {
     pub body: Block,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Blocks
 // ─────────────────────────────────────────────────────────────────────────────
@@ -390,6 +417,7 @@ pub struct Block {
 }
 
 impl Block {
+    /// TODO: Describe implementation.
     pub fn empty(span: Span) -> Self {
         Self {
             stmts: vec![],
@@ -398,6 +426,7 @@ impl Block {
     }
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Top-level items
 // ─────────────────────────────────────────────────────────────────────────────
@@ -409,6 +438,7 @@ pub struct Param {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDef {
     pub visibility: Visibility,
@@ -423,6 +453,7 @@ pub struct FunctionDef {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypeDef {
     pub visibility: Visibility,
@@ -433,24 +464,28 @@ pub struct TypeDef {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackageDecl {
     pub name: Ident,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModuleDecl {
     pub name: Ident,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct UseDecl {
     pub path: Vec<Ident>,
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RouteDecl {
     pub path: String,
@@ -458,6 +493,7 @@ pub struct RouteDecl {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variant {
     pub name: Ident,
@@ -465,6 +501,7 @@ pub struct Variant {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumDef {
     pub visibility: Visibility,
@@ -474,6 +511,7 @@ pub struct EnumDef {
     pub span: Span,
 }
 
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Item {
     Function(FunctionDef),
@@ -488,6 +526,7 @@ pub enum Item {
 }
 
 impl Item {
+    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             Item::Function(f) => f.span,
@@ -502,6 +541,7 @@ impl Item {
     }
 }
 
+/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Module (root of the AST)
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2,11 +2,13 @@ use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirFunction, MirModule, Terminator};
 use std::collections::{HashMap, HashSet};
 
+/// TODO: Describe implementation.
 #[derive(Debug)]
 pub struct SSAValidationError {
     pub message: String,
 }
 
+/// TODO: Describe implementation.
 pub struct SSAValidator;
 
 impl Default for SSAValidator {
@@ -16,10 +18,12 @@ impl Default for SSAValidator {
 }
 
 impl SSAValidator {
+    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
+    /// TODO: Describe implementation.
     pub fn validate(
         &self,
         module: &MirModule<vinglish_hir::symbol::SsaValueId>,
