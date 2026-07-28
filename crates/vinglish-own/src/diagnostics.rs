@@ -82,11 +82,7 @@ pub fn borrow_after_move(symbol_table: &SymbolTable, var: SsaValueId, span: Span
 }
 
 pub fn move_from_collection(span: Span) -> Diagnostic {
-    Diagnostic::error(
-        "E004",
-        "Cannot move out of a collection".to_string(),
-        span,
-    )
-    .with_note("This value is move-only (not a Copy type) and cannot be extracted by value.")
-    .with_note("help: consider borrowing it with `borrow list[idx]`")
+    Diagnostic::error("E004", "Cannot move out of a collection".to_string(), span)
+        .with_note("This value is move-only (not a Copy type) and cannot be extracted by value.")
+        .with_note("help: consider borrowing it with `borrow list[idx]`")
 }

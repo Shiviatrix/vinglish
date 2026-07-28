@@ -1,5 +1,0 @@
-use std.io
-function main()
-begin
-    print("test")
-end

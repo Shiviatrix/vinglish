@@ -2,43 +2,40 @@
 /target/
 **/*.rs.bk
 
-# Englist
-/a.out
-/*.c
-/net
-/net.c
-/*.dSYM/
+# Vinglish Modules & Configs
 /.ving_modules/
-/eng.toml
+/ving.toml
+
+# Root-level Vinglish execution artifacts
+/*.c
 /src/
+/a.out
+*.out
+out_*
+*.dSYM/
+
+# C Runtime Build Artifacts
 /rt/*.o
 /rt/*.d
 
-# Build Artifacts
+# Testing & Scratch Files
+test_*_c
+test_c_bin
+test_*.txt
+scratch/
+.vinglish_interfaces.tmp
+
+# Logs & Errors
+*.log
+*.err
+
+# OS Generated
+.DS_Store
+
+# Documentation Builds
 docs/_build/
 docs/_site/
 *.pdf
 
-
-# Build Artifacts
-*.out
-out_*
-bench_out/
-*.dSYM/
-
-# Logs
-*.log
-
-
-# Modules
-/.eng_modules/
-/.ving_modules/
-
-# OS
-.DS_Store
-
-# Temp and Scratch Files
-.vinglish_interfaces.tmp
-
-# Independent nested projects (NOT submodules — fully separate repos)
+# Sub-projects
 /VinglishZero/

@@ -116,18 +116,26 @@ fn convert_to_ssa_types(
             Instruction::ListNew(dest, cap) => {
                 Instruction::ListNew(convert_var(dest), convert_operand(cap))
             }
-            Instruction::ListGet(dest, list, idx) => {
-                Instruction::ListGet(convert_var(dest), convert_operand(list), convert_operand(idx))
-            }
-            Instruction::ListBorrowGet(dest, list, idx) => {
-                Instruction::ListBorrowGet(convert_var(dest), convert_operand(list), convert_operand(idx))
-            }
-            Instruction::ListBorrowMutGet(dest, list, idx) => {
-                Instruction::ListBorrowMutGet(convert_var(dest), convert_operand(list), convert_operand(idx))
-            }
-            Instruction::ListSet(list, idx, val) => {
-                Instruction::ListSet(convert_operand(list), convert_operand(idx), convert_operand(val))
-            }
+            Instruction::ListGet(dest, list, idx) => Instruction::ListGet(
+                convert_var(dest),
+                convert_operand(list),
+                convert_operand(idx),
+            ),
+            Instruction::ListBorrowGet(dest, list, idx) => Instruction::ListBorrowGet(
+                convert_var(dest),
+                convert_operand(list),
+                convert_operand(idx),
+            ),
+            Instruction::ListBorrowMutGet(dest, list, idx) => Instruction::ListBorrowMutGet(
+                convert_var(dest),
+                convert_operand(list),
+                convert_operand(idx),
+            ),
+            Instruction::ListSet(list, idx, val) => Instruction::ListSet(
+                convert_operand(list),
+                convert_operand(idx),
+                convert_operand(val),
+            ),
             Instruction::ListLen(dest, list) => {
                 Instruction::ListLen(convert_var(dest), convert_operand(list))
             }

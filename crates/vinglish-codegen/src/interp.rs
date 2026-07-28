@@ -28,7 +28,7 @@ pub enum Value {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ReferenceLoc {
     Local(SsaValueId),
-    ListElement(u64, usize), // addr, index
+    ListElement(u64, usize),   // addr, index
     StructField(u64, FieldId), // addr, field_id
 }
 
@@ -450,12 +450,16 @@ impl<'a> Interpreter<'a> {
                 let mut obj = self.eval_operand(obj_op, locals)?;
                 while let Value::Reference(loc) = &obj {
                     match loc {
-                        ReferenceLoc::Local(var) => obj = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            obj = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             obj = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
                 if let Value::Struct(struct_id) = obj {
@@ -480,12 +484,16 @@ impl<'a> Interpreter<'a> {
                     .ok_or_else(|| InterpError::new("Variable not found"))?;
                 while let Value::Reference(loc) = &obj_val {
                     match loc {
-                        ReferenceLoc::Local(var) => obj_val = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            obj_val = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             obj_val = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
                 if let Value::Struct(struct_id) = obj_val {
@@ -566,7 +574,9 @@ impl<'a> Interpreter<'a> {
                 let val = self.eval_operand(op, locals)?;
                 if let Value::Reference(loc) = val {
                     let deref_val = match loc {
-                        ReferenceLoc::Local(var) => locals.get(&var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            locals.get(&var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             if let Some(vec) = store.get(&addr) {
@@ -575,7 +585,9 @@ impl<'a> Interpreter<'a> {
                                 Value::Unit
                             }
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     };
                     locals.insert(*dest, deref_val);
                 } else {
@@ -599,13 +611,17 @@ impl<'a> Interpreter<'a> {
                                 if idx < vec.len() {
                                     vec[idx] = val;
                                 } else {
-                                    return Err(InterpError::new("List index out of bounds in StoreDeref"));
+                                    return Err(InterpError::new(
+                                        "List index out of bounds in StoreDeref",
+                                    ));
                                 }
                             } else {
                                 return Err(InterpError::new("List not found in store"));
                             }
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 } else {
                     return Err(InterpError::new(format!(
@@ -645,7 +661,7 @@ impl<'a> Interpreter<'a> {
             Instruction::<SsaValueId>::ListGet(dest, list_op, idx_op) => {
                 let list_val = self.eval_operand(list_op, locals)?;
                 let idx_val = self.eval_operand(idx_op, locals)?;
-                
+
                 let idx = match idx_val {
                     Value::Int(i) => i as usize,
                     _ => return Err(InterpError::new("List index must be an integer")),
@@ -654,12 +670,16 @@ impl<'a> Interpreter<'a> {
                 let mut actual_list = list_val;
                 while let Value::Reference(loc) = &actual_list {
                     match loc {
-                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            actual_list = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
 
@@ -683,7 +703,7 @@ impl<'a> Interpreter<'a> {
             | Instruction::<SsaValueId>::ListBorrowMutGet(dest, list_op, idx_op) => {
                 let list_val = self.eval_operand(list_op, locals)?;
                 let idx_val = self.eval_operand(idx_op, locals)?;
-                
+
                 let idx = match idx_val {
                     Value::Int(i) => i as usize,
                     _ => return Err(InterpError::new("List index must be an integer")),
@@ -697,7 +717,9 @@ impl<'a> Interpreter<'a> {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(a).unwrap()[*i].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field not supported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field not supported"));
+                        }
                     }
                 }
 
@@ -705,7 +727,10 @@ impl<'a> Interpreter<'a> {
                     let store = get_list_store().lock().unwrap();
                     if let Some(vec) = store.get(&addr) {
                         if idx < vec.len() {
-                            locals.insert(*dest, Value::Reference(ReferenceLoc::ListElement(addr, idx)));
+                            locals.insert(
+                                *dest,
+                                Value::Reference(ReferenceLoc::ListElement(addr, idx)),
+                            );
                         } else {
                             return Err(InterpError::new(format!("Index {} out of bounds", idx)));
                         }
@@ -724,16 +749,20 @@ impl<'a> Interpreter<'a> {
                     _ => return Err(InterpError::new("List index must be an integer")),
                 };
                 let val = self.eval_operand(val_op, locals)?;
-                
+
                 let mut actual_list = list_val;
                 while let Value::Reference(loc) = &actual_list {
                     match loc {
-                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            actual_list = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
 
@@ -757,15 +786,19 @@ impl<'a> Interpreter<'a> {
                 let mut actual_list = list_val;
                 while let Value::Reference(loc) = &actual_list {
                     match loc {
-                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            actual_list = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
-                
+
                 if let Value::List(addr) = actual_list {
                     let store = get_list_store().lock().unwrap();
                     if let Some(vec) = store.get(&addr) {
@@ -784,12 +817,16 @@ impl<'a> Interpreter<'a> {
                 let mut actual_list = list_val;
                 while let Value::Reference(loc) = &actual_list {
                     match loc {
-                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            actual_list = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
 
@@ -810,12 +847,16 @@ impl<'a> Interpreter<'a> {
                 let mut actual_list = list_val;
                 while let Value::Reference(loc) = &actual_list {
                     match loc {
-                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::Local(var) => {
+                            actual_list = locals.get(var).cloned().unwrap_or(Value::Unit)
+                        }
                         ReferenceLoc::ListElement(addr, idx) => {
                             let store = get_list_store().lock().unwrap();
                             actual_list = store.get(addr).unwrap()[*idx].clone();
                         }
-                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                        ReferenceLoc::StructField(_, _) => {
+                            return Err(InterpError::new("Struct field deref unsupported"));
+                        }
                     }
                 }
 

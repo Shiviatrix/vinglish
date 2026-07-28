@@ -274,19 +274,48 @@ fn instruction_to_c<V: CValueId>(
             format!("v_{} = *(int64_t*)(uintptr_t){}", d.raw(), operand(v, pool))
         }
         Instruction::StoreDeref(ptr, val) => {
-            format!("*(int64_t*)(uintptr_t){} = {}", operand(ptr, pool), operand(val, pool))
+            format!(
+                "*(int64_t*)(uintptr_t){} = {}",
+                operand(ptr, pool),
+                operand(val, pool)
+            )
         }
-        Instruction::ListNew(d, cap) => format!("v_{} = rt_list_new({})", d.raw(), operand(cap, pool)),
+        Instruction::ListNew(d, cap) => {
+            format!("v_{} = rt_list_new({})", d.raw(), operand(cap, pool))
+        }
         Instruction::ListGet(d, list, idx) => {
-            format!("v_{} = rt_list_get({}, {})", d.raw(), operand(list, pool), operand(idx, pool))
+            format!(
+                "v_{} = rt_list_get({}, {})",
+                d.raw(),
+                operand(list, pool),
+                operand(idx, pool)
+            )
         }
         Instruction::ListBorrowGet(d, list, idx) | Instruction::ListBorrowMutGet(d, list, idx) => {
-            format!("v_{} = rt_list_borrow_get({}, {})", d.raw(), operand(list, pool), operand(idx, pool))
+            format!(
+                "v_{} = rt_list_borrow_get({}, {})",
+                d.raw(),
+                operand(list, pool),
+                operand(idx, pool)
+            )
         }
-        Instruction::ListSet(list, idx, val) => format!("rt_list_set({}, {}, {})", operand(list, pool), operand(idx, pool), operand(val, pool)),
-        Instruction::ListLen(d, list) => format!("v_{} = rt_list_len({})", d.raw(), operand(list, pool)),
-        Instruction::ListPush(list, val) => format!("rt_list_push({}, {})", operand(list, pool), operand(val, pool)),
-        Instruction::ListPop(d, list) => format!("v_{} = rt_list_pop({})", d.raw(), operand(list, pool)),
+        Instruction::ListSet(list, idx, val) => format!(
+            "rt_list_set({}, {}, {})",
+            operand(list, pool),
+            operand(idx, pool),
+            operand(val, pool)
+        ),
+        Instruction::ListLen(d, list) => {
+            format!("v_{} = rt_list_len({})", d.raw(), operand(list, pool))
+        }
+        Instruction::ListPush(list, val) => format!(
+            "rt_list_push({}, {})",
+            operand(list, pool),
+            operand(val, pool)
+        ),
+        Instruction::ListPop(d, list) => {
+            format!("v_{} = rt_list_pop({})", d.raw(), operand(list, pool))
+        }
         Instruction::Drop(..) => "(void)0".into(),
     }
 }
@@ -328,7 +357,13 @@ fn literal(v: &Literal, pool: &StringPool) -> String {
     match v {
         Literal::Int(v) => v.to_string(),
         Literal::Float(v) => format!("{v}"),
-        Literal::Bool(v) => if *v { "(bool)true".into() } else { "(bool)false".into() },
+        Literal::Bool(v) => {
+            if *v {
+                "(bool)true".into()
+            } else {
+                "(bool)false".into()
+            }
+        }
         Literal::Text(text) => format!("string_literal_{}", pool.entries[text]),
         Literal::Unit => "0".into(),
     }

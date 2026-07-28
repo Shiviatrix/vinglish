@@ -99,16 +99,16 @@ pub enum Instruction<V: Clone + Copy + fmt::Display> {
     StoreDeref(Operand<V>, Operand<V>),
     Drop(V),
     Phi(V, Vec<(Operand<V>, BlockId)>),
-    
+
     // List Instructions
-    ListNew(V, Operand<V>), // dest, capacity
-    ListGet(V, Operand<V>, Operand<V>), // dest, list, index
-    ListBorrowGet(V, Operand<V>, Operand<V>), // dest, list, index
+    ListNew(V, Operand<V>),                      // dest, capacity
+    ListGet(V, Operand<V>, Operand<V>),          // dest, list, index
+    ListBorrowGet(V, Operand<V>, Operand<V>),    // dest, list, index
     ListBorrowMutGet(V, Operand<V>, Operand<V>), // dest, list, index
     ListSet(Operand<V>, Operand<V>, Operand<V>), // list, index, value
-    ListLen(V, Operand<V>), // dest, list
-    ListPush(Operand<V>, Operand<V>), // list, value
-    ListPop(V, Operand<V>), // dest, list
+    ListLen(V, Operand<V>),                      // dest, list
+    ListPush(Operand<V>, Operand<V>),            // list, value
+    ListPop(V, Operand<V>),                      // dest, list
 }
 
 impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
@@ -185,8 +185,12 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
             }
             Instruction::ListNew(dest, cap) => write!(f, "{} = ListNew(capacity: {})", dest, cap),
             Instruction::ListGet(dest, list, idx) => write!(f, "{} = {}[{}]", dest, list, idx),
-            Instruction::ListBorrowGet(dest, list, idx) => write!(f, "{} = &{}[{}]", dest, list, idx),
-            Instruction::ListBorrowMutGet(dest, list, idx) => write!(f, "{} = &mut {}[{}]", dest, list, idx),
+            Instruction::ListBorrowGet(dest, list, idx) => {
+                write!(f, "{} = &{}[{}]", dest, list, idx)
+            }
+            Instruction::ListBorrowMutGet(dest, list, idx) => {
+                write!(f, "{} = &mut {}[{}]", dest, list, idx)
+            }
             Instruction::ListSet(list, idx, val) => write!(f, "{}[{}] = {}", list, idx, val),
             Instruction::ListLen(dest, list) => write!(f, "{} = len({})", dest, list),
             Instruction::ListPush(list, val) => write!(f, "push({}, {})", list, val),

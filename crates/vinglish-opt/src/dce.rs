@@ -106,27 +106,45 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                             Instruction::<V>::ListGet(_, list, idx)
                             | Instruction::<V>::ListBorrowGet(_, list, idx)
                             | Instruction::<V>::ListBorrowMutGet(_, list, idx) => {
-                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = idx { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = list {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = idx {
+                                    used_vars.insert(*id);
+                                }
                             }
                             Instruction::<V>::ListSet(list, idx, val) => {
-                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = idx { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = list {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = idx {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = val {
+                                    used_vars.insert(*id);
+                                }
                             }
                             Instruction::<V>::ListLen(_, Operand::<V>::Var(id)) => {
                                 used_vars.insert(*id);
                             }
                             Instruction::<V>::ListPush(list, val) => {
-                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = list {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = val {
+                                    used_vars.insert(*id);
+                                }
                             }
                             Instruction::<V>::ListPop(_, Operand::<V>::Var(id)) => {
                                 used_vars.insert(*id);
                             }
                             Instruction::<V>::StoreDeref(ptr, val) => {
-                                if let Operand::<V>::Var(id) = ptr { used_vars.insert(*id); }
-                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = ptr {
+                                    used_vars.insert(*id);
+                                }
+                                if let Operand::<V>::Var(id) = val {
+                                    used_vars.insert(*id);
+                                }
                             }
                             _ => {}
                         }

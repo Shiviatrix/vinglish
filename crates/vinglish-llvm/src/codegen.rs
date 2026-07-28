@@ -438,7 +438,10 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             Instruction::StoreDeref(ptr_op, val_op) => {
                 let ptr_val = self.resolve_operand(ptr_op)?;
                 if !ptr_val.is_pointer_value() {
-                    return Err(format!("Cannot store deref non-pointer value {:?}", ptr_val));
+                    return Err(format!(
+                        "Cannot store deref non-pointer value {:?}",
+                        ptr_val
+                    ));
                 }
                 let ptr = ptr_val.into_pointer_value();
 

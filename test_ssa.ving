@@ -1,4 +1,0 @@
-function main()
-begin
-    let x be true or false
-end

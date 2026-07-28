@@ -338,28 +338,34 @@ impl<'a> MirLowerer<'a> {
             }
             HirExpr::List { elements, ty, span } => {
                 let temp = self.new_temp(*ty, *span);
-                
+
                 // 1. Allocate list
-                let cap_op = Operand::Constant(vinglish_parser::ast::Literal::Int(elements.len() as i64));
+                let cap_op =
+                    Operand::Constant(vinglish_parser::ast::Literal::Int(elements.len() as i64));
                 self.push_instr(Instruction::ListNew(temp, cap_op));
-                
+
                 let list_op = Operand::Var(temp);
-                
+
                 // 2. Push elements
                 for el in elements {
                     let el_op = self.lower_expr(el);
                     self.push_instr(Instruction::ListPush(list_op.clone(), el_op));
                 }
-                
+
                 Operand::Var(temp)
             }
-            HirExpr::Index { object, index, ty, span } => {
+            HirExpr::Index {
+                object,
+                index,
+                ty,
+                span,
+            } => {
                 let obj_op = self.lower_expr(object);
                 let idx_op = self.lower_expr(index);
                 let temp = self.new_temp(*ty, *span);
-                
+
                 self.push_instr(Instruction::ListGet(temp, obj_op, idx_op));
-                
+
                 Operand::Var(temp)
             }
             HirExpr::MacroCall { name, args, ty, .. } => {
@@ -562,10 +568,7 @@ impl<'a> MirLowerer<'a> {
                         self.field_access(object.ty(), *field_id),
                         final_val,
                     ));
-                } else if let HirExpr::Index {
-                    object, index, ..
-                } = target
-                {
+                } else if let HirExpr::Index { object, index, .. } = target {
                     let obj_op = self.lower_expr(object);
                     let idx_op = self.lower_expr(index);
                     self.push_instr(Instruction::ListSet(obj_op, idx_op, final_val));

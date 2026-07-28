@@ -166,7 +166,7 @@ impl OwnershipAnalysisPass {
                                 }
                             }
                         }
-                        Instruction::<SsaValueId>::ListNew(dest, _) 
+                        Instruction::<SsaValueId>::ListNew(dest, _)
                         | Instruction::<SsaValueId>::ListLen(dest, _) => {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
@@ -182,7 +182,7 @@ impl OwnershipAnalysisPass {
                                 // List assumes ownership of the set value
                                 // But since we don't have list element tracking, we mark it moved to some dummy state,
                                 // or simply mark as moved without destination.
-                                graph.set_state(*src, OwnershipState::Moved(*src)); 
+                                graph.set_state(*src, OwnershipState::Moved(*src));
                             }
                         }
                         Instruction::<SsaValueId>::StoreDeref(_, val) => {
@@ -190,7 +190,7 @@ impl OwnershipAnalysisPass {
                                 // List assumes ownership of the set value
                                 // But since we don't have list element tracking, we mark it moved to some dummy state,
                                 // or simply mark as moved without destination.
-                                graph.set_state(*src, OwnershipState::Moved(*src)); 
+                                graph.set_state(*src, OwnershipState::Moved(*src));
                             }
                         }
                         Instruction::<SsaValueId>::ListPush(list, val) => {
