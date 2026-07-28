@@ -71,11 +71,11 @@ Prints a diff and exits non-zero if the file would change.
 ## Set the Standard Library Path
 
 ```sh
-export ENGLIST_ROOT=/path/to/vinglish
+export VINGLISH_ROOT=/path/to/vinglish
 vng build src/main.ving
 ```
 
-The `ENGLIST_ROOT` environment variable points to the repository root. This is required for resolving `use std.*` imports.
+The `VINGLISH_ROOT` environment variable points to the repository root. This is required for resolving `use std.*` imports.
 
 ---
 

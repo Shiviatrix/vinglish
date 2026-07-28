@@ -30,7 +30,7 @@ use vinglish_types::{
     name = "ving",
     version = env!("CARGO_PKG_VERSION"),
     about = "The Vinglish intent-aware systems programming language",
-    long_about = "eng — compile, run, check, and format Vinglish source files.\n\nVinglish is a statically compiled language whose primary abstraction is intent.\nWrite what you mean. Let the compiler determine how to execute it correctly."
+    long_about = "vng — compile, run, check, and format Vinglish source files.\n\nVinglish is a statically compiled language whose primary abstraction is intent.\nWrite what you mean. Let the compiler determine how to execute it correctly."
 )]
 struct Cli {
     /// Export the stable semantic interchange document for a source file.
@@ -166,7 +166,7 @@ async fn main() {
         }
         Some(Commands::Version) => {
             println!(
-                "eng {} — Vinglish Compiler (Stage 0)\nBuilt with: rustc {}",
+                "vng {} — Vinglish Compiler (Stage 0)\nBuilt with: rustc {}",
                 env!("CARGO_PKG_VERSION"),
                 rustc_version()
             );
@@ -185,13 +185,13 @@ fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
         PkgCommands::Init => {
             println!("Initializing new Vinglish package...");
             fs::write(
-                "eng.toml",
+                "ving.toml",
                 "[package]\nname = \"my_pkg\"\nversion = \"0.1.0\"\n",
             )
             .map_err(|e| e.to_string())?;
             fs::create_dir_all("src").map_err(|e| e.to_string())?;
             fs::write(
-                "src/main.eng",
+                "src/main.ving",
                 "function main() returns number\nbegin\n    return 0\nend\n",
             )
             .map_err(|e| e.to_string())?;
@@ -207,7 +207,7 @@ fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
                 // In a real implementation this would git clone or download
             }
             // Create a dummy module file to satisfy the compiler dependency
-            let dummy_path = target_dir.join(format!("{}.eng", package));
+            let dummy_path = target_dir.join(format!("{}.ving", package));
             fs::write(&dummy_path, format!("package {}\nmodule {}\n\npublic function hello() returns number\nbegin\n    return 0\nend\n", package, package)).map_err(|e| e.to_string())?;
             println!("Successfully added `{}`", package);
             Ok(())
@@ -230,7 +230,7 @@ struct CompileResult {
 fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBuf, String> {
     let mut path = PathBuf::new();
     if path_parts.first().map(|s| s.as_str()) == Some("std") {
-        if let Ok(root) = std::env::var("ENGLIST_ROOT") {
+        if let Ok(root) = std::env::var("VINGLISH_ROOT") {
             path.push(root);
         }
         path.push("std");
@@ -565,7 +565,7 @@ fn cmd_build(
 
     // Collect runtime paths
     let mut runtime_paths = Vec::new();
-    let rt_dir = if let Ok(root) = std::env::var("ENGLIST_ROOT") {
+    let rt_dir = if let Ok(root) = std::env::var("VINGLISH_ROOT") {
         PathBuf::from(root).join("rt")
     } else {
         std::env::current_dir().unwrap_or_default().join("rt")

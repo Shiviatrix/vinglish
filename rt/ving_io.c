@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char* eng_read_line() {
+char* ving_read_line() {
     char* line = NULL;
     size_t len = 0;
     ssize_t read = getline(&line, &len, stdin);
@@ -17,12 +17,12 @@ char* eng_read_line() {
     return line;
 }
 
-int eng_str_starts_with(char* str, char* prefix) {
+int ving_str_starts_with(char* str, char* prefix) {
     if (!str || !prefix) return 0;
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-char* eng_str_substring(char* str, int start) {
+char* ving_str_substring(char* str, int start) {
     if (!str) return NULL;
     int len = strlen(str);
     if (start >= len) {
@@ -33,7 +33,7 @@ char* eng_str_substring(char* str, int start) {
     return strdup(str + start);
 }
 
-int eng_str_index_of(char* str, char* delimiter) {
+int ving_str_index_of(char* str, char* delimiter) {
     if (!str || !delimiter) return -1;
     char* pos = strstr(str, delimiter);
     if (pos) {
@@ -42,7 +42,7 @@ int eng_str_index_of(char* str, char* delimiter) {
     return -1;
 }
 
-char* eng_str_substring_len(char* str, int start, int length) {
+char* ving_str_substring_len(char* str, int start, int length) {
     if (!str) return NULL;
     int len = strlen(str);
     if (start >= len) {
@@ -56,7 +56,7 @@ char* eng_str_substring_len(char* str, int start, int length) {
     return result;
 }
 
-char* eng_str_unescape_newlines(char* str) {
+char* ving_str_unescape_newlines(char* str) {
     if (!str) return NULL;
     int len = strlen(str);
     char* result = malloc(len + 1);

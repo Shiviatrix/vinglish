@@ -15,13 +15,13 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-ENGLIST_ROOT="$HOME/.vinglish"
+VINGLISH_ROOT="$HOME/.vinglish"
 
 # Create a temporary directory for cloning if we aren't already in the repo
 WORK_DIR=$(pwd)
 CLONED=false
 
-if [ ! -f "Cargo.toml" ] || ! grep -q "eng-cli" "Cargo.toml"; then
+if [ ! -f "Cargo.toml" ] || ! grep -q "vinglish-cli" "Cargo.toml"; then
     echo "Downloading Vinglish source code..."
     WORK_DIR=$(mktemp -d)
     git clone --quiet https://github.com/Shiviatrix/vinglish.git "$WORK_DIR"
@@ -35,19 +35,19 @@ cargo build --release
 
 # 2. Create the global directory
 echo "[2/4] Setting up global Vinglish directory (~/.vinglish)..."
-mkdir -p "$ENGLIST_ROOT"
+mkdir -p "$VINGLISH_ROOT"
 
 # 3. Copy standard library and runtime
 echo "[3/4] Copying standard library and runtime..."
 # Remove old ones if they exist to ensure clean update
-rm -rf "$ENGLIST_ROOT/std" "$ENGLIST_ROOT/rt"
-cp -r std "$ENGLIST_ROOT/"
-cp -r rt "$ENGLIST_ROOT/"
+rm -rf "$VINGLISH_ROOT/std" "$VINGLISH_ROOT/rt"
+cp -r std "$VINGLISH_ROOT/"
+cp -r rt "$VINGLISH_ROOT/"
 
 # 4. Copy the binary to cargo's bin directory
 echo "[4/4] Installing binary to ~/.cargo/bin..."
 mkdir -p "$HOME/.cargo/bin"
-cp target/release/eng "$HOME/.cargo/bin/eng"
+cp target/release/vng "$HOME/.cargo/bin/vng"
 
 # Cleanup if we cloned it
 if [ "$CLONED" = true ]; then
@@ -58,10 +58,10 @@ fi
 echo "========================================="
 echo "Installation Successful! 🎉"
 echo ""
-echo "To use Vinglish from any directory, you MUST set the ENGLIST_ROOT environment variable."
+echo "To use Vinglish from any directory, you MUST set the VINGLISH_ROOT environment variable."
 echo "Add the following line to your shell profile (e.g., ~/.bashrc, ~/.zshrc, or ~/.profile):"
 echo ""
-echo "    export ENGLIST_ROOT=\"$HOME/.vinglish\""
+echo "    export VINGLISH_ROOT=\"$HOME/.vinglish\""
 echo ""
 echo "After adding it, restart your terminal or run: source ~/.zshrc"
 echo "========================================="

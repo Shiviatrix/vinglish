@@ -8,14 +8,14 @@ find . -type f \( -name "*.rs" -o -name "*.md" -o -name "*.toml" -o -name "*.htm
   -not -path "*/target/*" -not -path "*/.git/*" \
   -exec sed -i '' -e 's/vinglish/vinglish/g' -e 's/Vinglish/Vinglish/g' {} +
 
-# 2. Bulk replace eng_ -> ving_ and ENG_ -> VING_
+# 2. Bulk replace ving_ -> ving_ and VING_ -> VING_
 find . -type f \( -name "*.rs" -o -name "*.c" -o -name "*.h" \) \
   -not -path "*/target/*" -not -path "*/.git/*" \
-  -exec sed -i '' -e 's/eng_/ving_/g' -e 's/ENG_/VING_/g' {} +
+  -exec sed -i '' -e 's/ving_/ving_/g' -e 's/VING_/VING_/g' {} +
 
-# 3. Rename .eng files to .ving
-find . -name "*.eng" -type f -not -path "*/target/*" -not -path "*/.git/*" | while read f; do
-  mv "$f" "${f%.eng}.ving"
+# 3. Rename .ving files to .ving
+find . -name "*.ving" -type f -not -path "*/target/*" -not -path "*/.git/*" | while read f; do
+  mv "$f" "${f%.ving}.ving"
 done
 
 # 4. Rename crates
@@ -33,10 +33,10 @@ sed -i '' -e 's/"crates\/eng-/"crates\/vinglish-/g' Cargo.toml
 # 6. Change eng-cli binary to vng
 sed -i '' -e 's/name = "eng"/name = "vng"/g' crates/vinglish-cli/Cargo.toml
 
-# 7. Update eng_modules to ving_modules
+# 7. Update ving_modules to ving_modules
 find . -type f -name "*.rs" -not -path "*/target/*" -not -path "*/.git/*" \
-  -exec sed -i '' -e 's/eng_modules/ving_modules/g' {} +
-sed -i '' -e 's/eng_modules/ving_modules/g' .gitignore
+  -exec sed -i '' -e 's/ving_modules/ving_modules/g' {} +
+sed -i '' -e 's/ving_modules/ving_modules/g' .gitignore
 
 # 8. Rename studio directory
 

@@ -45,7 +45,7 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "eng-lsp initialized!")
+            .log_message(MessageType::INFO, "vinglish-lsp initialized!")
             .await;
     }
 

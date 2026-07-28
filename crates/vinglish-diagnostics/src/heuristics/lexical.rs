@@ -1,14 +1,14 @@
 use crate::diagnostic::{Diagnostic, Suggestion};
 use strsim::jaro_winkler;
 
-const ENGLIST_KEYWORDS: &[&str] = &[
+const VINGLISH_KEYWORDS: &[&str] = &[
     "function", "let", "be", "mutable", "return", "if", "else", "begin", "end", "number", "string",
     "boolean", "true", "false", "and", "or", "not", "is", "below", "above",
 ];
 
 /// TODO: Describe implementation.
 pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> bool {
-    let mut scored: Vec<(&str, f64)> = ENGLIST_KEYWORDS
+    let mut scored: Vec<(&str, f64)> = VINGLISH_KEYWORDS
         .iter()
         .map(|s| (*s, jaro_winkler(bad_token_text, s)))
         .collect();

@@ -1,45 +1,45 @@
 package std
 module ui
 
-public foreign function eng_ui_create_window(title: string, width: number, height: number) returns number
-public foreign function eng_ui_window_is_open(id: number) returns number
-public foreign function eng_ui_space_pressed(id: number) returns number
-public foreign function eng_ui_create_buffer(width: number, height: number) returns number
-public foreign function eng_ui_set_pixel(buf_id: number, x: number, y: number, color: number) returns number
-public foreign function eng_ui_fill_buffer(buf_id: number, color: number) returns number
-public foreign function eng_ui_window_update(win_id: number, buf_id: number) returns number
+public foreign function ving_ui_create_window(title: string, width: number, height: number) returns number
+public foreign function ving_ui_window_is_open(id: number) returns number
+public foreign function ving_ui_space_pressed(id: number) returns number
+public foreign function ving_ui_create_buffer(width: number, height: number) returns number
+public foreign function ving_ui_set_pixel(buf_id: number, x: number, y: number, color: number) returns number
+public foreign function ving_ui_fill_buffer(buf_id: number, color: number) returns number
+public foreign function ving_ui_window_update(win_id: number, buf_id: number) returns number
 
 public function create_window(title: string, width: number, height: number) returns number
 begin
-    return eng_ui_create_window(title, width, height)
+    return ving_ui_create_window(title, width, height)
 end
 
 public function is_window_open(id: number) returns number
 begin
-    return eng_ui_window_is_open(id)
+    return ving_ui_window_is_open(id)
 end
 
 public function is_space_pressed(id: number) returns number
 begin
-    return eng_ui_space_pressed(id)
+    return ving_ui_space_pressed(id)
 end
 
 public function create_buffer(width: number, height: number) returns number
 begin
-    return eng_ui_create_buffer(width, height)
+    return ving_ui_create_buffer(width, height)
 end
 
 public function set_pixel(buf_id: number, x: number, y: number, color: number)
 begin
-    eng_ui_set_pixel(buf_id, x, y, color)
+    ving_ui_set_pixel(buf_id, x, y, color)
 end
 
 public function fill_buffer(buf_id: number, color: number)
 begin
-    eng_ui_fill_buffer(buf_id, color)
+    ving_ui_fill_buffer(buf_id, color)
 end
 
 public function update_window(win_id: number, buf_id: number)
 begin
-    eng_ui_window_update(win_id, buf_id)
+    ving_ui_window_update(win_id, buf_id)
 end

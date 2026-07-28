@@ -1,10 +1,10 @@
 package std
 module net
 
-public foreign function eng_net_tcp_connect(text host, number port) returns number
-public foreign function eng_net_tcp_send(number sock, text data) returns number
-public foreign function eng_net_tcp_recv(number sock, number max_bytes) returns text
-public foreign function eng_net_tcp_close(number sock)
+public foreign function ving_net_tcp_connect(text host, number port) returns number
+public foreign function ving_net_tcp_send(number sock, text data) returns number
+public foreign function ving_net_tcp_recv(number sock, number max_bytes) returns text
+public foreign function ving_net_tcp_close(number sock)
 
 public type TcpSocket
 begin
@@ -13,7 +13,7 @@ end
 
 public function tcp_connect(text host, number port) returns Result of TcpSocket
 begin
-    let fd be eng_net_tcp_connect(host, port)
+    let fd be ving_net_tcp_connect(host, port)
     if fd is below 0 then begin
         return Err("Connection failed")
     end
@@ -30,7 +30,7 @@ end
 
 public function tcp_send(borrow TcpSocket sock, text data) returns Result of number
 begin
-    let res be eng_net_tcp_send(sock.fd, data)
+    let res be ving_net_tcp_send(sock.fd, data)
     if res is below 0 then begin
         return Err("Send failed")
     end
@@ -39,11 +39,11 @@ end
 
 public function tcp_receive(borrow TcpSocket sock, number max_bytes) returns Result of text
 begin
-    let res be eng_net_tcp_recv(sock.fd, max_bytes)
+    let res be ving_net_tcp_recv(sock.fd, max_bytes)
     return Ok(res)
 end
 
 public function tcp_close(borrow TcpSocket sock)
 begin
-    eng_net_tcp_close(sock.fd)
+    ving_net_tcp_close(sock.fd)
 end

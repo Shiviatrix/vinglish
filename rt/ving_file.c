@@ -3,7 +3,7 @@
 #include <string.h>
 #include <dirent.h>
 
-char* eng_file_read(char* path) {
+char* ving_file_read(char* path) {
     if (!path) return NULL;
     FILE* f = fopen(path, "rb");
     if (!f) {
@@ -24,7 +24,7 @@ char* eng_file_read(char* path) {
     return string;
 }
 
-void eng_file_write(char* path, char* content) {
+void ving_file_write(char* path, char* content) {
     if (!path || !content) return;
     FILE* f = fopen(path, "wb");
     if (!f) return;
@@ -33,7 +33,7 @@ void eng_file_write(char* path, char* content) {
     fclose(f);
 }
 
-char* eng_dir_list(char* path) {
+char* ving_dir_list(char* path) {
     if (!path) return NULL;
     DIR *d;
     struct dirent *dir;

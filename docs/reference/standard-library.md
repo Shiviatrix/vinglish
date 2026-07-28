@@ -14,18 +14,18 @@ Provide built-in functionality for I/O, strings, math, files, networking, thread
 
 | Module | Path | C Runtime | Description |
 |---|---|---|---|
-| `std.io` | `std/io.ving` | `rt/eng_io.c` | Line reading, string operations |
-| `std.string` | `std/string.ving` | `rt/eng_string.c` | Heap-allocated String type with create/concat/length/free |
+| `std.io` | `std/io.ving` | `rt/ving_io.c` | Line reading, string operations |
+| `std.string` | `std/string.ving` | `rt/ving_string.c` | Heap-allocated String type with create/concat/length/free |
 | `std.math` | `std/math.ving` | (libm) | Constants (PI, E), trig functions, abs, min, max |
-| `std.file` | `std/file.ving` | `rt/eng_file.c` | File read/write |
-| `std.net` | `std/net.ving` | `rt/eng_net.c` | TCP connect, send, receive, close |
-| `std.thread` | `std/thread.ving` | `rt/eng_thread.c` | Thread type, sleep |
-| `std.subprocess` | `std/subprocess.ving` | `rt/eng_subprocess.c` | Process spawning, output capture |
-| `std.term` | `std/term.ving` | `rt/eng_term.c` | Raw mode, key reading, cursor control, colors |
-| `std.ui` | `std/ui.ving` | `rt/eng_ui.c` (+ `rt_rust`) | Window creation, pixel drawing, event polling |
-| `std.runtime` | `std/runtime.ving` | `rt/eng_runtime.c` | Low-level alloc/free |
+| `std.file` | `std/file.ving` | `rt/ving_file.c` | File read/write |
+| `std.net` | `std/net.ving` | `rt/ving_net.c` | TCP connect, send, receive, close |
+| `std.thread` | `std/thread.ving` | `rt/ving_thread.c` | Thread type, sleep |
+| `std.subprocess` | `std/subprocess.ving` | `rt/ving_subprocess.c` | Process spawning, output capture |
+| `std.term` | `std/term.ving` | `rt/ving_term.c` | Raw mode, key reading, cursor control, colors |
+| `std.ui` | `std/ui.ving` | `rt/ving_ui.c` (+ `rt_rust`) | Window creation, pixel drawing, event polling |
+| `std.runtime` | `std/runtime.ving` | `rt/ving_runtime.c` | Low-level alloc/free |
 | `std.collections.vector` | `std/collections/vector.ving` | — | Generic vector (uses `std.runtime`) |
-| `std.collections.map` | `std/collections/map.ving` | `rt/eng_map.c` | String-keyed map |
+| `std.collections.map` | `std/collections/map.ving` | `rt/ving_map.c` | String-keyed map |
 
 ---
 
@@ -41,7 +41,7 @@ Public functions:
 - `substring_len(str, start, len) returns string`
 - `unescape_newlines(str) returns string`
 
-All delegate to `eng_*` foreign functions implemented in `rt/eng_io.c`.
+All delegate to `ving_*` foreign functions implemented in `rt/ving_io.c`.
 
 ### std.string
 
@@ -63,15 +63,15 @@ Vinglish functions: `abs(x)`, `min(a, b)`, `max(a, b)`.
 
 ### std.file
 
-Public foreign functions: `eng_file_read(path) returns string`, `eng_file_write(path, content)`.
+Public foreign functions: `ving_file_read(path) returns string`, `ving_file_write(path, content)`.
 
 ### std.net
 
-Public foreign functions: `eng_net_tcp_connect(host, port)`, `eng_net_tcp_send(sock, data)`, `eng_net_tcp_recv(sock)`, `eng_net_tcp_close(sock)`.
+Public foreign functions: `ving_net_tcp_connect(host, port)`, `ving_net_tcp_send(sock, data)`, `ving_net_tcp_recv(sock)`, `ving_net_tcp_close(sock)`.
 
 ### std.runtime
 
-Public foreign functions: `eng_alloc(size) returns address<number>`, `eng_free(ptr)`.
+Public foreign functions: `ving_alloc(size) returns address<number>`, `ving_free(ptr)`.
 
 ---
 
@@ -84,7 +84,7 @@ use std.math
 use std.collections.vector
 ```
 
-The `$ENGLIST_ROOT` environment variable must point to the repository root for `std` resolution. Otherwise, `std/` is resolved relative to the current working directory.
+The `$VINGLISH_ROOT` environment variable must point to the repository root for `std` resolution. Otherwise, `std/` is resolved relative to the current working directory.
 
 ---
 

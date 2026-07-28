@@ -57,7 +57,7 @@ Provide the primary user interface to the Vinglish compiler.
 
 | Variable | Description |
 |---|---|
-| `ENGLIST_ROOT` | Root directory for `std/` resolution |
+| `VINGLISH_ROOT` | Root directory for `std/` resolution |
 | `CC` | C compiler to use (default: `cc`) |
 
 ---
@@ -75,12 +75,12 @@ Provide the primary user interface to the Vinglish compiler.
 ## Package Management
 
 `vng pkg init` creates:
-- `eng.toml` with `[package]` section
-- `src/main.eng` with a stub main function
+- `ving.toml` with `[package]` section
+- `src/main.ving` with a stub main function
 
 `vng pkg add <name> [url]` creates:
 - `.ving_modules/<name>/` directory
-- A stub module file `.ving_modules/<name>/<name>.eng`
+- A stub module file `.ving_modules/<name>/<name>.ving`
 
 No registry or version resolution exists.
 

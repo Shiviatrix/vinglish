@@ -15,7 +15,7 @@ Describe the complete path from source text to native binary, as implemented in 
 ### 1. Module Loading
 
 `load_module_graph()` recursively resolves `use` declarations. For each referenced module:
-1. If the path starts with `std`, resolve relative to `$ENGLIST_ROOT/std/`.
+1. If the path starts with `std`, resolve relative to `$VINGLISH_ROOT/std/`.
 2. Otherwise, check `.ving_modules/<package>/` first.
 3. Fall back to a path relative to the current file.
 4. The file extension `.ving` is appended automatically.

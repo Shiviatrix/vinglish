@@ -2,7 +2,7 @@
 name        = "vinglish-cli"
 version.workspace    = true
 edition.workspace    = true
-description = "eng — the Vinglish compiler driver"
+description = "vng — the Vinglish compiler driver"
 
 [[bin]]
 name = "vng"

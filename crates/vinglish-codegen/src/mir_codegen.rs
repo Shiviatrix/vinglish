@@ -45,7 +45,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
 ) -> Result<String, MirCEmitError> {
     let pool = StringPool::collect(module);
     let mut out = String::from(
-        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\n#define print(x) _Generic((x), const char*: printf(\"%s\", x), char*: printf(\"%s\", x), double: printf(\"%g\", x), bool: printf(\"%s\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\", (long)(x)))\n#define println(x) _Generic((x), const char*: printf(\"%s\\n\", x), char*: printf(\"%s\\n\", x), double: printf(\"%g\\n\", x), bool: printf(\"%s\\n\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\\n\", (long)(x)))\n#define abs llabs\nextern const char* eng_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
+        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\n#define print(x) _Generic((x), const char*: printf(\"%s\", x), char*: printf(\"%s\", x), double: printf(\"%g\", x), bool: printf(\"%s\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\", (long)(x)))\n#define println(x) _Generic((x), const char*: printf(\"%s\\n\", x), char*: printf(\"%s\\n\", x), double: printf(\"%g\\n\", x), bool: printf(\"%s\\n\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\\n\", (long)(x)))\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
     );
     for (text, index) in &pool.entries {
         writeln!(
@@ -201,7 +201,7 @@ fn instruction_to_c<V: CValueId>(
             };
             if is_string && *op == vinglish_parser::ast::BinOp::Add {
                 format!(
-                    "v_{} = (long)(uintptr_t)eng_str_concat({}, {})",
+                    "v_{} = (long)(uintptr_t)ving_str_concat({}, {})",
                     d.raw(),
                     operand(l, pool),
                     operand(r, pool)

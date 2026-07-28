@@ -12,7 +12,7 @@ use syn::{parse_macro_input, FnArg, ItemFn, Pat, ReturnType, Type};
 pub fn vinglish_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
     let original_name = &input.sig.ident;
-    let export_name = format_ident!("eng_{}", original_name);
+    let export_name = format_ident!("ving_{}", original_name);
 
     let mut c_args = Vec::new();
     let mut rust_args = Vec::new();
