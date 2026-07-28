@@ -1,7 +1,7 @@
 [package]
 name = "vinglish-analysis"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
 vinglish-hir = { path = "../vinglish-hir" }

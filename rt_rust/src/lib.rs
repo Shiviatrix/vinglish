@@ -103,7 +103,7 @@ pub fn ui_fill_buffer(buf_id: i32, color: i32) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn ving_str_concat(
     a: *const std::ffi::c_char,
     b: *const std::ffi::c_char,

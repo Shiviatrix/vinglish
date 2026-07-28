@@ -122,7 +122,7 @@ pub fn vinglish_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn #export_name(#(#c_args),*) #c_ret_type {
             #rust_ret_handler
         }
