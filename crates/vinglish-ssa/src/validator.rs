@@ -1,14 +1,15 @@
+use std::collections::{HashMap, HashSet};
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirFunction, MirModule, Terminator};
-use std::collections::{HashMap, HashSet};
 
-/// TODO: Describe implementation.
+/// Represents a failure to uphold Single Static Assignment (SSA) invariants.
 #[derive(Debug)]
 pub struct SSAValidationError {
     pub message: String,
 }
 
-/// TODO: Describe implementation.
+/// Validates that a MIR module strictly adheres to SSA invariants.
+/// Specifically verifies that each variable is assigned exactly once and that Phi node predecessors match the control flow graph.
 pub struct SSAValidator;
 
 impl Default for SSAValidator {
@@ -69,6 +70,12 @@ impl SSAValidator {
                     | Instruction::<SsaValueId>::Borrow(dest, _)
                     | Instruction::<SsaValueId>::BorrowMut(dest, _)
                     | Instruction::<SsaValueId>::Deref(dest, _, _)
+                    | Instruction::<SsaValueId>::ListNew(dest, _)
+                    | Instruction::<SsaValueId>::ListGet(dest, _, _)
+                    | Instruction::<SsaValueId>::ListBorrowGet(dest, _, _)
+                    | Instruction::<SsaValueId>::ListBorrowMutGet(dest, _, _)
+                    | Instruction::<SsaValueId>::ListLen(dest, _)
+                    | Instruction::<SsaValueId>::ListPop(dest, _)
                     | Instruction::<SsaValueId>::Phi(dest, _) => {
                         if !assigned_vars.insert(*dest) {
                             errors.push(SSAValidationError {
@@ -80,6 +87,9 @@ impl SSAValidator {
                         }
                     }
                     Instruction::<SsaValueId>::StoreField(_, _, _)
+                    | Instruction::<SsaValueId>::ListSet(_, _, _)
+                    | Instruction::<SsaValueId>::ListPush(_, _)
+                    | Instruction::<SsaValueId>::StoreDeref(_, _)
                     | Instruction::<SsaValueId>::Drop(_) => {}
                 }
             }
@@ -90,7 +100,8 @@ impl SSAValidator {
         // Wait, proper validation checks dominance! But checking definition is simpler first)
 
         // 3. Phi predecessors must match actual CFG predecessors
-        let mut preds: HashMap<vinglish_mir::BlockId, HashSet<vinglish_mir::BlockId>> = HashMap::new();
+        let mut preds: HashMap<vinglish_mir::BlockId, HashSet<vinglish_mir::BlockId>> =
+            HashMap::new();
         for block in &func.blocks {
             match &block.terminator {
                 Terminator::<SsaValueId>::Jump(target) => {

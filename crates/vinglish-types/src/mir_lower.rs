@@ -1,7 +1,10 @@
 use vinglish_hir::layout::{CAbi, LayoutResolver};
 use vinglish_hir::symbol::{SymbolId, SymbolKind, SymbolTable, TypeId, VariableId, VariableSymbol};
 use vinglish_hir::{Expr as HirExpr, Item as HirItem, Module as HirModule, Stmt as HirStmt};
-use vinglish_mir::{AllocationLayout, BasicBlock, BlockId, CallTarget, FieldAccess, Instruction, MirFunction, MirModule, Operand, Terminator};
+use vinglish_mir::{
+    AllocationLayout, BasicBlock, BlockId, CallTarget, FieldAccess, Instruction, MirFunction,
+    MirModule, Operand, Terminator,
+};
 
 /// TODO: Describe implementation.
 pub struct MirLowerer<'a> {
@@ -77,16 +80,30 @@ impl<'a> MirLowerer<'a> {
     fn allocation_layout(&self, type_id: TypeId) -> AllocationLayout {
         let resolved = LayoutResolver::new(self.symbol_table, CAbi::LP64).layout_type(type_id);
         match resolved {
-            Ok(layout) => AllocationLayout { layout: type_id, size: layout.size, align: layout.align },
+            Ok(layout) => AllocationLayout {
+                layout: type_id,
+                size: layout.size,
+                align: layout.align,
+            },
             // Primitive/result runtime values currently use one word until they
             // receive named record definitions in the type table.
-            Err(_) => AllocationLayout { layout: type_id, size: 8, align: 8 },
+            Err(_) => AllocationLayout {
+                layout: type_id,
+                size: 8,
+                align: 8,
+            },
         }
     }
 
     fn field_access(&self, layout: TypeId, field_id: vinglish_hir::symbol::FieldId) -> FieldAccess {
-        let byte_offset = LayoutResolver::new(self.symbol_table, CAbi::LP64).field_offset(layout, field_id).unwrap_or((field_id.0 as u32) * 8);
-        FieldAccess { field_id, byte_offset, layout }
+        let byte_offset = LayoutResolver::new(self.symbol_table, CAbi::LP64)
+            .field_offset(layout, field_id)
+            .unwrap_or((field_id.0 as u32) * 8);
+        FieldAccess {
+            field_id,
+            byte_offset,
+            layout,
+        }
     }
 
     /// TODO: Describe implementation.
@@ -150,20 +167,46 @@ impl<'a> MirLowerer<'a> {
                     vinglish_hir::symbol::FunctionId(SymbolId(0))
                 };
 
-                if let Some(fs) = self.symbol_table.get_func(func_id) {
-                    if let Some((enum_id, variant_index)) = fs.is_variant_constructor {
-                        let temp = self.new_temp(*ty, expr.span());
-                        self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(enum_id)));
-                        self.push_instr(Instruction::StoreField(temp, self.field_access(enum_id, vinglish_hir::symbol::FieldId(0)), Operand::Constant(vinglish_parser::ast::Literal::Int(variant_index as i64))));
-                        if !lowered_args.is_empty() {
-                            self.push_instr(Instruction::StoreField(temp, self.field_access(enum_id, vinglish_hir::symbol::FieldId(variant_index)), lowered_args[0].clone()));
-                        }
-                        return Operand::Var(temp);
+                if let Some(fs) = self.symbol_table.get_func(func_id)
+                    && let Some((enum_id, variant_index)) = fs.is_variant_constructor
+                {
+                    let temp = self.new_temp(*ty, expr.span());
+                    self.push_instr(Instruction::HeapAllocate(
+                        temp,
+                        self.allocation_layout(enum_id),
+                    ));
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(enum_id, vinglish_hir::symbol::FieldId(0)),
+                        Operand::Constant(vinglish_parser::ast::Literal::Int(variant_index as i64)),
+                    ));
+                    if !lowered_args.is_empty() {
+                        self.push_instr(Instruction::StoreField(
+                            temp,
+                            self.field_access(
+                                enum_id,
+                                vinglish_hir::symbol::FieldId(variant_index),
+                            ),
+                            lowered_args[0].clone(),
+                        ));
                     }
+                    return Operand::Var(temp);
                 }
 
                 let temp = self.new_temp(*ty, expr.span());
-                let target = self.symbol_table.get_func(func_id).map(|symbol| if symbol.is_foreign { CallTarget::Foreign { c_symbol: symbol.name.clone() } } else { CallTarget::Direct(func_id) }).unwrap_or(CallTarget::Direct(func_id));
+                let target = self
+                    .symbol_table
+                    .get_func(func_id)
+                    .map(|symbol| {
+                        if symbol.is_foreign {
+                            CallTarget::Foreign {
+                                c_symbol: symbol.name.clone(),
+                            }
+                        } else {
+                            CallTarget::Direct(func_id)
+                        }
+                    })
+                    .unwrap_or(CallTarget::Direct(func_id));
                 self.push_instr(Instruction::Call(temp, target, lowered_args));
                 Operand::Var(temp)
             }
@@ -217,8 +260,24 @@ impl<'a> MirLowerer<'a> {
             HirExpr::UnOp {
                 op, operand, ty, ..
             } => {
-                let op_val = self.lower_expr(operand);
                 let temp = self.new_temp(*ty, expr.span());
+
+                // Special case for `borrow list[idx]` to avoid move-then-borrow semantics
+                if let HirExpr::Index { object, index, .. } = &**operand {
+                    if *op == vinglish_parser::ast::UnOp::Borrow(false) {
+                        let obj_op = self.lower_expr(object);
+                        let idx_op = self.lower_expr(index);
+                        self.push_instr(Instruction::ListBorrowGet(temp, obj_op, idx_op));
+                        return Operand::Var(temp);
+                    } else if *op == vinglish_parser::ast::UnOp::Borrow(true) {
+                        let obj_op = self.lower_expr(object);
+                        let idx_op = self.lower_expr(index);
+                        self.push_instr(Instruction::ListBorrowMutGet(temp, obj_op, idx_op));
+                        return Operand::Var(temp);
+                    }
+                }
+
+                let op_val = self.lower_expr(operand);
                 match op {
                     vinglish_parser::ast::UnOp::Borrow(false) => {
                         self.push_instr(Instruction::Borrow(temp, op_val));
@@ -252,7 +311,11 @@ impl<'a> MirLowerer<'a> {
                     for (i, fexpr) in fields.iter().enumerate() {
                         if let Some(field_sym) = ts.fields.get(i) {
                             let val = self.lower_expr(fexpr);
-                            self.push_instr(Instruction::StoreField(temp, self.field_access(*id, field_sym.id), val));
+                            self.push_instr(Instruction::StoreField(
+                                temp,
+                                self.field_access(*id, field_sym.id),
+                                val,
+                            ));
                         }
                     }
                 }
@@ -266,7 +329,37 @@ impl<'a> MirLowerer<'a> {
             } => {
                 let obj_op = self.lower_expr(object);
                 let temp = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::LoadField(temp, obj_op, self.field_access(object.ty(), *field_id)));
+                self.push_instr(Instruction::LoadField(
+                    temp,
+                    obj_op,
+                    self.field_access(object.ty(), *field_id),
+                ));
+                Operand::Var(temp)
+            }
+            HirExpr::List { elements, ty, span } => {
+                let temp = self.new_temp(*ty, *span);
+                
+                // 1. Allocate list
+                let cap_op = Operand::Constant(vinglish_parser::ast::Literal::Int(elements.len() as i64));
+                self.push_instr(Instruction::ListNew(temp, cap_op));
+                
+                let list_op = Operand::Var(temp);
+                
+                // 2. Push elements
+                for el in elements {
+                    let el_op = self.lower_expr(el);
+                    self.push_instr(Instruction::ListPush(list_op.clone(), el_op));
+                }
+                
+                Operand::Var(temp)
+            }
+            HirExpr::Index { object, index, ty, span } => {
+                let obj_op = self.lower_expr(object);
+                let idx_op = self.lower_expr(index);
+                let temp = self.new_temp(*ty, *span);
+                
+                self.push_instr(Instruction::ListGet(temp, obj_op, idx_op));
+                
                 Operand::Var(temp)
             }
             HirExpr::MacroCall { name, args, ty, .. } => {
@@ -274,23 +367,71 @@ impl<'a> MirLowerer<'a> {
                 for arg in args {
                     lowered_args.push(self.lower_expr(arg));
                 }
-                
+
                 let temp = self.new_temp(*ty, expr.span());
                 if name == "Ok" {
                     // Result struct layout: { tag: number, payload: T }
-                    let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
-                    self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)))));
+                    let int_ty_id = self
+                        .symbol_table
+                        .intern_type(vinglish_hir::types::Type::Int);
+                    self.push_instr(Instruction::HeapAllocate(
+                        temp,
+                        self.allocation_layout(vinglish_hir::symbol::TypeId(
+                            vinglish_hir::symbol::SymbolId(0),
+                        )),
+                    ));
                     let tag_temp = self.new_temp(int_ty_id, expr.span());
-                    self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(1)))); // tag 1 = Ok
-                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(0)), Operand::Var(tag_temp)));
-                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(1)), lowered_args[0].clone()));
+                    self.push_instr(Instruction::Assign(
+                        tag_temp,
+                        Operand::Constant(vinglish_parser::ast::Literal::Int(1)),
+                    )); // tag 1 = Ok
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(
+                            vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)),
+                            vinglish_hir::symbol::FieldId(0),
+                        ),
+                        Operand::Var(tag_temp),
+                    ));
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(
+                            vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)),
+                            vinglish_hir::symbol::FieldId(1),
+                        ),
+                        lowered_args[0].clone(),
+                    ));
                 } else if name == "Err" {
-                    let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
-                    self.push_instr(Instruction::HeapAllocate(temp, self.allocation_layout(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)))));
+                    let int_ty_id = self
+                        .symbol_table
+                        .intern_type(vinglish_hir::types::Type::Int);
+                    self.push_instr(Instruction::HeapAllocate(
+                        temp,
+                        self.allocation_layout(vinglish_hir::symbol::TypeId(
+                            vinglish_hir::symbol::SymbolId(0),
+                        )),
+                    ));
                     let tag_temp = self.new_temp(int_ty_id, expr.span());
-                    self.push_instr(Instruction::Assign(tag_temp, Operand::Constant(vinglish_parser::ast::Literal::Int(0)))); // tag 0 = Err
-                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(0)), Operand::Var(tag_temp)));
-                    self.push_instr(Instruction::StoreField(temp, self.field_access(vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)), vinglish_hir::symbol::FieldId(1)), lowered_args[0].clone()));
+                    self.push_instr(Instruction::Assign(
+                        tag_temp,
+                        Operand::Constant(vinglish_parser::ast::Literal::Int(0)),
+                    )); // tag 0 = Err
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(
+                            vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)),
+                            vinglish_hir::symbol::FieldId(0),
+                        ),
+                        Operand::Var(tag_temp),
+                    ));
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(
+                            vinglish_hir::symbol::TypeId(vinglish_hir::symbol::SymbolId(0)),
+                            vinglish_hir::symbol::FieldId(1),
+                        ),
+                        lowered_args[0].clone(),
+                    ));
                 } else {
                     self.push_instr(Instruction::CallIntrinsic(temp, name.clone(), lowered_args));
                 }
@@ -298,31 +439,47 @@ impl<'a> MirLowerer<'a> {
             }
             HirExpr::PostfixTry { inner, ty, .. } => {
                 let inner_val = self.lower_expr(inner);
-                let int_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Int);
+                let int_ty_id = self
+                    .symbol_table
+                    .intern_type(vinglish_hir::types::Type::Int);
                 let tag_temp = self.new_temp(int_ty_id, expr.span());
-                self.push_instr(Instruction::LoadField(tag_temp, inner_val.clone(), self.field_access(*ty, vinglish_hir::symbol::FieldId(0))));
-                
-                let bool_ty_id = self.symbol_table.intern_type(vinglish_hir::types::Type::Bool);
+                self.push_instr(Instruction::LoadField(
+                    tag_temp,
+                    inner_val.clone(),
+                    self.field_access(*ty, vinglish_hir::symbol::FieldId(0)),
+                ));
+
+                let bool_ty_id = self
+                    .symbol_table
+                    .intern_type(vinglish_hir::types::Type::Bool);
                 let is_ok = self.new_temp(bool_ty_id, expr.span());
                 // Assume Ok variant index is 1 because we added "tag" as field 0
-                self.push_instr(Instruction::BinaryOp(is_ok, vinglish_parser::ast::BinOp::Eq, Operand::Var(tag_temp), Operand::Constant(vinglish_parser::ast::Literal::Int(1))));
-                
+                self.push_instr(Instruction::BinaryOp(
+                    is_ok,
+                    vinglish_parser::ast::BinOp::Eq,
+                    Operand::Var(tag_temp),
+                    Operand::Constant(vinglish_parser::ast::Literal::Int(1)),
+                ));
+
                 let ok_block = self.new_block();
                 let err_block = self.new_block();
-                
+
                 self.end_block(Terminator::Branch(Operand::Var(is_ok), ok_block, err_block));
-                
+
                 // Err block: return the result value directly!
                 self.switch_to_block(err_block);
                 self.end_block(Terminator::Return(Some(inner_val.clone())));
-                
+
                 // Ok block: load field 1 (Ok payload)
                 self.switch_to_block(ok_block);
                 let ok_val = self.new_temp(*ty, expr.span());
-                self.push_instr(Instruction::LoadField(ok_val, inner_val, self.field_access(*ty, vinglish_hir::symbol::FieldId(1))));
+                self.push_instr(Instruction::LoadField(
+                    ok_val,
+                    inner_val,
+                    self.field_access(*ty, vinglish_hir::symbol::FieldId(1)),
+                ));
                 Operand::Var(ok_val)
             }
-            _ => Operand::Constant(vinglish_parser::ast::Literal::Unit),
         }
     }
 
@@ -333,32 +490,58 @@ impl<'a> MirLowerer<'a> {
                 let init_val = self.lower_expr(init);
                 self.push_instr(Instruction::Assign(*id, init_val));
             }
-            HirStmt::Assign { target, op, value, span, .. } => {
+            HirStmt::Assign {
+                target,
+                op,
+                value,
+                span,
+                ..
+            } => {
                 let val = self.lower_expr(value);
                 let final_val = match op {
                     vinglish_parser::ast::AssignOp::Assign => val,
                     vinglish_parser::ast::AssignOp::AddAssign => {
                         let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
-                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Add, l, val));
+                        self.push_instr(Instruction::BinaryOp(
+                            temp,
+                            vinglish_parser::ast::BinOp::Add,
+                            l,
+                            val,
+                        ));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::SubAssign => {
                         let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
-                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Sub, l, val));
+                        self.push_instr(Instruction::BinaryOp(
+                            temp,
+                            vinglish_parser::ast::BinOp::Sub,
+                            l,
+                            val,
+                        ));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::MulAssign => {
                         let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
-                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Mul, l, val));
+                        self.push_instr(Instruction::BinaryOp(
+                            temp,
+                            vinglish_parser::ast::BinOp::Mul,
+                            l,
+                            val,
+                        ));
                         Operand::Var(temp)
                     }
                     vinglish_parser::ast::AssignOp::DivAssign => {
                         let temp = self.new_temp(target.ty(), *span);
                         let l = self.lower_expr(target);
-                        self.push_instr(Instruction::BinaryOp(temp, vinglish_parser::ast::BinOp::Div, l, val));
+                        self.push_instr(Instruction::BinaryOp(
+                            temp,
+                            vinglish_parser::ast::BinOp::Div,
+                            l,
+                            val,
+                        ));
                         Operand::Var(temp)
                     }
                 };
@@ -379,6 +562,21 @@ impl<'a> MirLowerer<'a> {
                         self.field_access(object.ty(), *field_id),
                         final_val,
                     ));
+                } else if let HirExpr::Index {
+                    object, index, ..
+                } = target
+                {
+                    let obj_op = self.lower_expr(object);
+                    let idx_op = self.lower_expr(index);
+                    self.push_instr(Instruction::ListSet(obj_op, idx_op, final_val));
+                } else if let HirExpr::UnOp {
+                    op: vinglish_parser::ast::UnOp::Deref,
+                    operand,
+                    ..
+                } = target
+                {
+                    let ptr_op = self.lower_expr(operand);
+                    self.push_instr(Instruction::StoreDeref(ptr_op, final_val));
                 }
             }
             HirStmt::Expr(e) => {

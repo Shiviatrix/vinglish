@@ -1,7 +1,7 @@
-use vinglish_hir::symbol::SsaValueId;
-use vinglish_mir::{Instruction, MirFunction, MirModule, Operand};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use vinglish_hir::symbol::SsaValueId;
+use vinglish_mir::{Instruction, MirFunction, MirModule, Operand};
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -199,10 +199,7 @@ impl AliasAnalysisPass {
             while let Some(&mapped) = alias_replacements.get(&alias) {
                 alias = mapped;
             }
-            final_graph
-                .alias_to_values
-                .entry(alias)
-                .or_insert_with(HashSet::new);
+            final_graph.alias_to_values.entry(alias).or_default();
             final_graph.assign_alias(value, alias);
         }
 

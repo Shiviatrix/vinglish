@@ -1,0 +1,10 @@
+function main() begin
+    let a be 10
+    let b be 20
+    print(a < b)
+    print(a > b)
+    print(a <= 10)
+    print(b >= 20)
+    print(a == 10)
+    print(b != 20)
+end

@@ -1,8 +1,8 @@
 use crate::alias::{AliasGraph, AliasId};
-use vinglish_hir::symbol::SsaValueId;
-use vinglish_mir::{Instruction, MirFunction, MirModule, Operand, Terminator};
 use std::collections::HashSet;
 use std::fmt;
+use vinglish_hir::symbol::SsaValueId;
+use vinglish_mir::{Instruction, MirFunction, MirModule, Operand, Terminator};
 
 /// TODO: Describe implementation.
 pub struct EscapeAnalysis {
@@ -72,17 +72,14 @@ impl EscapeAnalysisPass {
             for func in &module.functions {
                 for block in &func.blocks {
                     for instr in &block.instrs {
-                        if let Instruction::StoreField(obj, _, val) = instr {
-                            if let Operand::Var(val_src) = val {
-                                if let (Some(obj_alias), Some(val_alias)) =
-                                    (alias_graph.get_alias(*obj), alias_graph.get_alias(*val_src))
+                        if let Instruction::StoreField(obj, _, Operand::Var(val_src)) = instr {
+                            if let (Some(obj_alias), Some(val_alias)) =
+                                (alias_graph.get_alias(*obj), alias_graph.get_alias(*val_src))
+                            {
+                                if analysis.is_escaped(obj_alias) && !analysis.is_escaped(val_alias)
                                 {
-                                    if analysis.is_escaped(obj_alias)
-                                        && !analysis.is_escaped(val_alias)
-                                    {
-                                        analysis.escaped_aliases.insert(val_alias);
-                                        changed = true;
-                                    }
+                                    analysis.escaped_aliases.insert(val_alias);
+                                    changed = true;
                                 }
                             }
                         }

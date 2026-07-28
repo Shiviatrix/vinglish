@@ -43,11 +43,13 @@ impl SSAConversionPass {
     }
 }
 
-fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<vinglish_hir::symbol::SsaValueId> {
+fn convert_to_ssa_types(
+    module: MirModule<VariableId>,
+) -> MirModule<vinglish_hir::symbol::SsaValueId> {
     use vinglish_hir::symbol::SsaValueId;
     use vinglish_mir::{BasicBlock, Instruction, MirFunction, Operand, Terminator};
 
-    let convert_var = |v: VariableId| SsaValueId(v.0 .0);
+    let convert_var = |v: VariableId| SsaValueId(v.0.0);
 
     let convert_operand = |op: Operand<VariableId>| -> Operand<SsaValueId> {
         match op {
@@ -93,8 +95,11 @@ fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<vinglish_hir
             Instruction::BorrowMut(dest, op) => {
                 Instruction::BorrowMut(convert_var(dest), convert_operand(op))
             }
-            Instruction::Deref(dest, op, ty) => {
-                Instruction::Deref(convert_var(dest), convert_operand(op), ty)
+            Instruction::Deref(dest, src, ty) => {
+                Instruction::Deref(convert_var(dest), convert_operand(src), ty.clone())
+            }
+            Instruction::StoreDeref(ptr, val) => {
+                Instruction::StoreDeref(convert_operand(ptr), convert_operand(val))
             }
             Instruction::Drop(dest) => Instruction::Drop(convert_var(dest)),
             Instruction::Phi(dest, args) => Instruction::Phi(
@@ -105,9 +110,33 @@ fn convert_to_ssa_types(module: MirModule<VariableId>) -> MirModule<vinglish_hir
             ),
             Instruction::CallIntrinsic(dest, name, args) => Instruction::CallIntrinsic(
                 convert_var(dest),
-                name,
+                name.clone(),
                 args.into_iter().map(convert_operand).collect(),
             ),
+            Instruction::ListNew(dest, cap) => {
+                Instruction::ListNew(convert_var(dest), convert_operand(cap))
+            }
+            Instruction::ListGet(dest, list, idx) => {
+                Instruction::ListGet(convert_var(dest), convert_operand(list), convert_operand(idx))
+            }
+            Instruction::ListBorrowGet(dest, list, idx) => {
+                Instruction::ListBorrowGet(convert_var(dest), convert_operand(list), convert_operand(idx))
+            }
+            Instruction::ListBorrowMutGet(dest, list, idx) => {
+                Instruction::ListBorrowMutGet(convert_var(dest), convert_operand(list), convert_operand(idx))
+            }
+            Instruction::ListSet(list, idx, val) => {
+                Instruction::ListSet(convert_operand(list), convert_operand(idx), convert_operand(val))
+            }
+            Instruction::ListLen(dest, list) => {
+                Instruction::ListLen(convert_var(dest), convert_operand(list))
+            }
+            Instruction::ListPush(list, val) => {
+                Instruction::ListPush(convert_operand(list), convert_operand(val))
+            }
+            Instruction::ListPop(dest, list) => {
+                Instruction::ListPop(convert_var(dest), convert_operand(list))
+            }
         }
     };
 

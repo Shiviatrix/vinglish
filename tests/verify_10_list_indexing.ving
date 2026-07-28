@@ -1,0 +1,5 @@
+function main() begin
+    let l be [100, 200, 300]
+    print(l[0])
+    print(l[2])
+end

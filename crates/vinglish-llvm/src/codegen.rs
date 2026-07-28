@@ -283,7 +283,14 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             }
 
             Instruction::Call(dest, target, args) => {
-                let func_id = match target { vinglish_mir::CallTarget::Direct(id) => *id, vinglish_mir::CallTarget::Foreign { c_symbol } => return Err(format!("foreign MIR call `{c_symbol}` is not implemented by the LLVM backend")) };
+                let func_id = match target {
+                    vinglish_mir::CallTarget::Direct(id) => *id,
+                    vinglish_mir::CallTarget::Foreign { c_symbol } => {
+                        return Err(format!(
+                            "foreign MIR call `{c_symbol}` is not implemented by the LLVM backend"
+                        ))
+                    }
+                };
                 let result = self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
                 if let Some(val) = result {
                     self.ssa_values.insert(*dest, val);
@@ -428,6 +435,19 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 self.ssa_values.insert(*dest, loaded);
             }
 
+            Instruction::StoreDeref(ptr_op, val_op) => {
+                let ptr_val = self.resolve_operand(ptr_op)?;
+                if !ptr_val.is_pointer_value() {
+                    return Err(format!("Cannot store deref non-pointer value {:?}", ptr_val));
+                }
+                let ptr = ptr_val.into_pointer_value();
+
+                let store_val = self.resolve_operand(val_op)?;
+                self.builder
+                    .build_store(ptr, store_val)
+                    .map_err(|e| e.to_string())?;
+            }
+
             Instruction::Drop(var) => {
                 // For heap allocations, call free. For stack, no-op.
                 // In a more complete system, we'd track which are heap vs stack.
@@ -465,6 +485,16 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 }
 
                 self.ssa_values.insert(*dest, phi.as_basic_value());
+            }
+            Instruction::ListNew(_, _)
+            | Instruction::ListGet(_, _, _)
+            | Instruction::ListBorrowGet(_, _, _)
+            | Instruction::ListBorrowMutGet(_, _, _)
+            | Instruction::ListSet(_, _, _)
+            | Instruction::ListLen(_, _)
+            | Instruction::ListPush(_, _)
+            | Instruction::ListPop(_, _) => {
+                todo!("List support in LLVM backend")
             }
         }
         Ok(())

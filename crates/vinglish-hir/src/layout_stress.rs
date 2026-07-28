@@ -21,7 +21,9 @@ mod layout_stress {
         LayoutResolver::new(symbols, CAbi::LP64)
     }
 
-    fn pub_vis() -> Visibility { Visibility::Public }
+    fn pub_vis() -> Visibility {
+        Visibility::Public
+    }
 
     /// Register a named type with `n` consecutive integer fields and return its TypeId.
     fn register_n_int_fields(symbols: &mut SymbolTable, name: &str, n: usize) -> TypeId {
@@ -149,7 +151,13 @@ mod layout_stress {
             let tid = register_n_int_fields(&mut symbols, &name, n);
             let r = resolver(&symbols);
             let layout = r.layout_type(tid).unwrap();
-            assert_eq!(layout.size, (n as u32) * 8, "n={}: expected size {}", n, n * 8);
+            assert_eq!(
+                layout.size,
+                (n as u32) * 8,
+                "n={}: expected size {}",
+                n,
+                n * 8
+            );
         }
     }
 
@@ -230,6 +238,9 @@ mod layout_stress {
         let tid = symbols.define_type("Msg".into(), sym);
         let r = resolver(&symbols);
         let layout = r.layout_type(tid).unwrap();
-        assert_eq!(layout.fields[0].size, 8, "const char* must be 8 bytes (pointer)");
+        assert_eq!(
+            layout.fields[0].size, 8,
+            "const char* must be 8 bytes (pointer)"
+        );
     }
 }

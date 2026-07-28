@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use vinglish_hir::symbol::TypeSymbol;
 use vinglish_hir::types::{Type, TypeVar};
-use std::collections::HashMap;
 
 /// A type scheme: ∀ vars. ty (for let-polymorphism).
 #[derive(Debug, Clone)]

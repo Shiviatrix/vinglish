@@ -1,5 +1,5 @@
-use vinglish_lexer::{Span, Token};
 use thiserror::Error;
+use vinglish_lexer::{Span, Token};
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, Error)]

@@ -1,0 +1,5 @@
+function main() begin
+    let l1 be [1, 2, 3]
+    let l2 be l1
+    print(l1[0]) // use after move
+end

@@ -1,7 +1,7 @@
-use vinglish_hir::symbol::{SymbolKind, SymbolTable, TypeId};
-use vinglish_hir::types::Type;
 use inkwell::context::Context;
 use inkwell::types::{BasicMetadataTypeEnum, BasicTypeEnum, StructType};
+use vinglish_hir::symbol::{SymbolKind, SymbolTable, TypeId};
+use vinglish_hir::types::Type;
 
 /// TODO: Describe implementation.
 pub struct TypeLowering<'ctx> {

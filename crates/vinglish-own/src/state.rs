@@ -1,5 +1,5 @@
-use vinglish_hir::symbol::SsaValueId;
 use std::fmt;
+use vinglish_hir::symbol::SsaValueId;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

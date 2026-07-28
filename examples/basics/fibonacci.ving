@@ -1,13 +1,13 @@
--- Fibonacci sequence in Englist
--- Demonstrates: recursion, type annotations, if/otherwise
--- Run with: eng run examples/fibonacci.eng
-
 use std.io
+
 function fibonacci(number n)
 returns number
 begin
     if n is below 2
+    then
+    begin
         return n
+    end
     return fibonacci(n - 1) + fibonacci(n - 2)
 end
 

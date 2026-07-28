@@ -1,18 +1,24 @@
 use crate::{OptimizationPass, PassStats};
-use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
+use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 
 /// TODO: Describe implementation.
 pub struct ConstantPropagationPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for ConstantPropagationPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V>
+    for ConstantPropagationPass
+{
     fn name(&self) -> &'static str {
         "Constant Propagation"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
+    fn run(
+        &mut self,
+        module: &mut MirModule<V>,
+        _symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -32,10 +38,20 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                         | Instruction::<V>::StackAllocate(dest, _)
                         | Instruction::<V>::BinaryOp(dest, _, _, _)
                         | Instruction::<V>::UnaryOp(dest, _, _)
+                        | Instruction::<V>::ListNew(dest, _)
+                        | Instruction::<V>::ListGet(dest, _, _)
+                        | Instruction::<V>::ListBorrowGet(dest, _, _)
+                        | Instruction::<V>::ListBorrowMutGet(dest, _, _)
+                        | Instruction::<V>::ListLen(dest, _)
+                        | Instruction::<V>::ListPop(dest, _)
                         | Instruction::<V>::Phi(dest, _) => {
                             *assign_counts.entry(*dest).or_insert(0) += 1;
                         }
-                        Instruction::<V>::StoreField(_, _, _) | Instruction::<V>::Drop(_) => {} // doesn't assign to a var
+                        Instruction::<V>::StoreField(_, _, _)
+                        | Instruction::<V>::ListSet(_, _, _)
+                        | Instruction::<V>::ListPush(_, _)
+                        | Instruction::<V>::StoreDeref(_, _)
+                        | Instruction::<V>::Drop(_) => {} // doesn't assign to a var
                     }
                 }
             }
@@ -44,21 +60,21 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
             let mut constant_vars = HashMap::new();
             for block in &func.blocks {
                 for instr in &block.instrs {
-                    if let Instruction::<V>::Assign(dest, Operand::<V>::Constant(lit)) = instr {
-                        if assign_counts.get(dest) == Some(&1) {
-                            constant_vars.insert(*dest, lit.clone());
-                        }
+                    if let Instruction::<V>::Assign(dest, Operand::<V>::Constant(lit)) = instr
+                        && assign_counts.get(dest) == Some(&1)
+                    {
+                        constant_vars.insert(*dest, lit.clone());
                     }
                 }
             }
 
             // Step 3: Replace uses
             let mut replace_operand = |op: &mut Operand<V>| {
-                if let Operand::<V>::Var(id) = op {
-                    if let Some(lit) = constant_vars.get(id) {
-                        *op = Operand::<V>::Constant(lit.clone());
-                        stats.folded_constants += 1;
-                    }
+                if let Operand::<V>::Var(id) = op
+                    && let Some(lit) = constant_vars.get(id)
+                {
+                    *op = Operand::<V>::Constant(lit.clone());
+                    stats.folded_constants += 1;
                 }
             };
 
@@ -68,7 +84,8 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                         Instruction::<V>::Assign(_, op) => replace_operand(op),
                         Instruction::<V>::LoadField(_, obj, _) => replace_operand(obj),
                         Instruction::<V>::StoreField(_, _, val) => replace_operand(val),
-                        Instruction::<V>::Call(_, _, args) | Instruction::<V>::CallIntrinsic(_, _, args) => {
+                        Instruction::<V>::Call(_, _, args)
+                        | Instruction::<V>::CallIntrinsic(_, _, args) => {
                             for arg in args {
                                 replace_operand(arg);
                             }
@@ -88,6 +105,28 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                                 replace_operand(op);
                             }
                         }
+                        Instruction::<V>::ListNew(_, cap) => replace_operand(cap),
+                        Instruction::<V>::ListGet(_, list, idx)
+                        | Instruction::<V>::ListBorrowGet(_, list, idx)
+                        | Instruction::<V>::ListBorrowMutGet(_, list, idx) => {
+                            replace_operand(list);
+                            replace_operand(idx);
+                        }
+                        Instruction::<V>::ListSet(list, idx, val) => {
+                            replace_operand(list);
+                            replace_operand(idx);
+                            replace_operand(val);
+                        }
+                        Instruction::<V>::ListLen(_, list) => replace_operand(list),
+                        Instruction::<V>::ListPush(list, val) => {
+                            replace_operand(list);
+                            replace_operand(val);
+                        }
+                        Instruction::<V>::StoreDeref(ptr, val) => {
+                            replace_operand(ptr);
+                            replace_operand(val);
+                        }
+                        Instruction::<V>::ListPop(_, list) => replace_operand(list),
                     }
                 }
 

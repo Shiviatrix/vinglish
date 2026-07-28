@@ -1,0 +1,22 @@
+use std.io
+
+use std.net
+
+use std.string
+
+function main()
+returns Result of number
+begin
+    let sock be tcp_connect("127.0.0.1", 8080)?
+    let request be fmt!("GET / HTTP/1.1
+Host: localhost
+Connection: close
+
+")
+    tcp_send(borrow sock, request)?
+    let response be tcp_receive(borrow sock, 512)?
+    print("Received response:")
+    print(response)
+    tcp_close(borrow sock)
+    return Ok(0)
+end

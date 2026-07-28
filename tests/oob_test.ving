@@ -1,0 +1,4 @@
+function main() begin
+    let l1 be [1, 2, 3]
+    print(l1[5])
+end

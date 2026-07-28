@@ -1,6 +1,6 @@
+use std::collections::{HashMap, HashSet};
 use vinglish_hir::symbol::VariableId;
 use vinglish_mir::{BlockId, MirFunction, Terminator};
-use std::collections::{HashMap, HashSet};
 
 /// TODO: Describe implementation.
 pub struct DominatorTree {
@@ -76,11 +76,11 @@ impl DominatorTree {
                     }
                 }
 
-                if let Some(new_idom_node) = new_idom {
-                    if idom.get(&node) != Some(&new_idom_node) {
-                        idom.insert(node, new_idom_node);
-                        changed = true;
-                    }
+                if let Some(new_idom_node) = new_idom
+                    && idom.get(&node) != Some(&new_idom_node)
+                {
+                    idom.insert(node, new_idom_node);
+                    changed = true;
                 }
             }
         }
@@ -102,20 +102,20 @@ impl DominatorTree {
         }
 
         for block in &func.blocks {
-            if let Some(node_preds) = preds.get(&block.id) {
-                if node_preds.len() >= 2 {
-                    for &p in node_preds {
-                        let mut runner = p;
-                        while runner != *idom.get(&block.id).unwrap() {
-                            dominance_frontiers
-                                .entry(runner)
-                                .or_default()
-                                .insert(block.id);
-                            if let Some(&next) = idom.get(&runner) {
-                                runner = next;
-                            } else {
-                                break;
-                            }
+            if let Some(node_preds) = preds.get(&block.id)
+                && node_preds.len() >= 2
+            {
+                for &p in node_preds {
+                    let mut runner = p;
+                    while runner != *idom.get(&block.id).unwrap() {
+                        dominance_frontiers
+                            .entry(runner)
+                            .or_default()
+                            .insert(block.id);
+                        if let Some(&next) = idom.get(&runner) {
+                            runner = next;
+                        } else {
+                            break;
                         }
                     }
                 }

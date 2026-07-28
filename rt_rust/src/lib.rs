@@ -1,8 +1,9 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
+pub mod builtins;
 
-use minifb::{Window, WindowOptions, Key};
-use std::sync::Mutex;
+use minifb::{Key, Window, WindowOptions};
 use std::collections::HashMap;
+use std::sync::Mutex;
 use vinglish_macro::vinglish_export;
 
 struct WindowWrapper(Window);
@@ -28,13 +29,16 @@ fn next_id() -> i32 {
 
 #[vinglish_export]
 pub fn ui_create_window(title: String, width: i32, height: i32) -> i32 {
-    let options = WindowOptions { resize: true, ..Default::default() };
+    let options = WindowOptions {
+        resize: true,
+        ..Default::default()
+    };
     match Window::new(&title, width as usize, height as usize, options) {
         Ok(window) => {
             let id = next_id();
             WINDOWS.lock().unwrap().insert(id, WindowWrapper(window));
             id
-        },
+        }
         Err(_) => -1,
     }
 }
@@ -63,7 +67,10 @@ pub fn ui_space_pressed(id: i32) -> i32 {
 pub fn ui_create_buffer(width: i32, height: i32) -> i32 {
     let buf = vec![0; (width * height) as usize];
     let id = next_id();
-    BUFFERS.lock().unwrap().insert(id, BufferWrapper(buf, width as usize, height as usize));
+    BUFFERS
+        .lock()
+        .unwrap()
+        .insert(id, BufferWrapper(buf, width as usize, height as usize));
     id
 }
 
@@ -81,7 +88,7 @@ pub fn ui_set_pixel(buf_id: i32, x: i32, y: i32, color: i32) {
 pub fn ui_window_update(win_id: i32, buf_id: i32) {
     let mut buffers = BUFFERS.lock().unwrap();
     let mut windows = WINDOWS.lock().unwrap();
-    
+
     if let (Some(win), Some(buf)) = (windows.get_mut(&win_id), buffers.get_mut(&buf_id)) {
         let _ = win.0.update_with_buffer(&buf.0, buf.1, buf.2);
     }
@@ -93,5 +100,22 @@ pub fn ui_fill_buffer(buf_id: i32, color: i32) {
         for pixel in wrapper.0.iter_mut() {
             *pixel = color as u32;
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn eng_str_concat(
+    a: *const std::ffi::c_char,
+    b: *const std::ffi::c_char,
+) -> *const std::ffi::c_char {
+    if a.is_null() || b.is_null() {
+        return std::ptr::null();
+    }
+    unsafe {
+        let a_str = std::ffi::CStr::from_ptr(a).to_string_lossy();
+        let b_str = std::ffi::CStr::from_ptr(b).to_string_lossy();
+        let combined = format!("{}{}", a_str, b_str);
+        // Leak the CString so Vinglish C runtime can use it without dropping
+        std::ffi::CString::new(combined).unwrap().into_raw()
     }
 }

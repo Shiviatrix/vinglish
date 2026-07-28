@@ -1,7 +1,4 @@
 type Box
-begin
-    val: number
-end
 
 function take_box(Box b)
 begin

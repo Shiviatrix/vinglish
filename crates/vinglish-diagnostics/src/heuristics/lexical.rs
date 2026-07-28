@@ -2,8 +2,8 @@ use crate::diagnostic::{Diagnostic, Suggestion};
 use strsim::jaro_winkler;
 
 const ENGLIST_KEYWORDS: &[&str] = &[
-    "function", "let", "be", "mutable", "return", "if", "else", "begin", "end",
-    "number", "string", "boolean", "true", "false", "and", "or", "not", "is", "below", "above"
+    "function", "let", "be", "mutable", "return", "if", "else", "begin", "end", "number", "string",
+    "boolean", "true", "false", "and", "or", "not", "is", "below", "above",
 ];
 
 /// TODO: Describe implementation.
@@ -12,7 +12,7 @@ pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> b
         .iter()
         .map(|s| (*s, jaro_winkler(bad_token_text, s)))
         .collect();
-    
+
     scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut found = false;
@@ -28,10 +28,13 @@ pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> b
             found = true;
         }
     }
-    
+
     if found {
-        diag.message = format!("Unknown token '{}' closely matches a keyword.", bad_token_text);
+        diag.message = format!(
+            "Unknown token '{}' closely matches a keyword.",
+            bad_token_text
+        );
     }
-    
+
     found
 }

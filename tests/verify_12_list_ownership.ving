@@ -1,0 +1,9 @@
+function main() begin
+    let l1 be [1, 2, 3]
+    let l2 be l1
+    print(l2[0])
+    // l1 is moved. In Vinglish compiler this should be statically rejected, or runtime error if not implemented in borrow checker.
+    // Assuming borrow checker rejects it statically. We test runtime moving via borrow instead.
+    let l3 be borrow l2
+    print((deref l3)[0])
+end

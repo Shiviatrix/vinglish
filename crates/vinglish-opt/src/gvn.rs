@@ -1,8 +1,8 @@
-use vinglish_hir::symbol::HasSymbolId;
 use crate::{OptimizationPass, PassStats};
+use std::collections::HashMap;
+use vinglish_hir::symbol::HasSymbolId;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
-use std::collections::HashMap;
 
 /// TODO: Describe implementation.
 pub struct GlobalValueNumberingPass;
@@ -12,7 +12,11 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
         "Global Value Numbering"
     }
 
-    fn run(&mut self, module: &mut MirModule<SsaValueId>, symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
+    fn run(
+        &mut self,
+        module: &mut MirModule<SsaValueId>,
+        symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -27,7 +31,6 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                 UnaryOp(vinglish_parser::ast::UnOp, Operand<SsaValueId>),
             }
 
-            
             let is_temp = |v: vinglish_hir::symbol::SsaValueId| -> bool {
                 if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
                     symbol_table.get(v.symbol_id())
@@ -46,10 +49,10 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
 
                 for mut instr in std::mem::take(&mut block.instrs) {
                     let replace_operand = |op: &mut Operand<SsaValueId>| {
-                        if let Operand::Var(v) = op {
-                            if let Some(&new_v) = replacements.get(v) {
-                                *v = new_v;
-                            }
+                        if let Operand::Var(v) = op
+                            && let Some(&new_v) = replacements.get(v)
+                        {
+                            *v = new_v;
                         }
                     };
 
@@ -86,6 +89,28 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
                                 replace_operand(op);
                             }
                         }
+                        Instruction::ListNew(_, cap) => replace_operand(cap),
+                        Instruction::ListGet(_, list, idx)
+                        | Instruction::ListBorrowGet(_, list, idx)
+                        | Instruction::ListBorrowMutGet(_, list, idx) => {
+                            replace_operand(list);
+                            replace_operand(idx);
+                        }
+                        Instruction::ListSet(list, idx, val) => {
+                            replace_operand(list);
+                            replace_operand(idx);
+                            replace_operand(val);
+                        }
+                        Instruction::ListLen(_, list) => replace_operand(list),
+                        Instruction::ListPush(list, val) => {
+                            replace_operand(list);
+                            replace_operand(val);
+                        }
+                        Instruction::StoreDeref(ptr, val) => {
+                            replace_operand(ptr);
+                            replace_operand(val);
+                        }
+                        Instruction::ListPop(_, list) => replace_operand(list),
                     }
 
                     let (dest, expr) = match &instr {
@@ -128,17 +153,17 @@ impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {
 
                 match &mut block.terminator {
                     Terminator::Return(Some(op)) => {
-                        if let Operand::Var(v) = op {
-                            if let Some(&new_v) = replacements.get(v) {
-                                *v = new_v;
-                            }
+                        if let Operand::Var(v) = op
+                            && let Some(&new_v) = replacements.get(v)
+                        {
+                            *v = new_v;
                         }
                     }
                     Terminator::Branch(cond, _, _) => {
-                        if let Operand::Var(v) = cond {
-                            if let Some(&new_v) = replacements.get(v) {
-                                *v = new_v;
-                            }
+                        if let Operand::Var(v) = cond
+                            && let Some(&new_v) = replacements.get(v)
+                        {
+                            *v = new_v;
                         }
                     }
                     _ => {}

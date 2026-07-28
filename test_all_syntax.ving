@@ -1,0 +1,82 @@
+use std.io
+
+type Point begin
+    x: number
+    y: number
+end
+
+function test_math()
+begin
+    let a = 10 + 5
+    let b = 10 - 5
+    let c = 10 * 5
+    let d = 10 / 5
+    let e = 10 % 3
+    println(to_text(a) + " " + to_text(b) + " " + to_text(c) + " " + to_text(d) + " " + to_text(e))
+end
+
+function test_compare()
+begin
+    if 5 < 10 then begin
+        println("less")
+    end
+    if 10 <= 10 then begin
+        println("lesseq")
+    end
+    if 20 > 10 then begin
+        println("greater")
+    end
+    if 10 >= 10 then begin
+        println("greatereq")
+    end
+    if 10 == 10 then begin
+        println("eq")
+    end
+    if 10 != 5 then begin
+        println("neq")
+    end
+end
+
+function test_logic()
+begin
+    if 1 == 1 and 2 == 2 then begin
+        println("and works")
+    end
+    if 1 == 2 or 2 == 2 then begin
+        println("or works")
+    end
+    if not (1 == 2) then begin
+        println("not works")
+    end
+end
+
+function test_builtins()
+begin
+    let n = to_number("123")
+    println(to_text(n))
+    println(to_text(abs(-50)))
+    println(to_text(min(10, 20)))
+    println(to_text(max(10, 20)))
+end
+
+function test_structs()
+begin
+    let p = Point { x: 5, y: 10 }
+    println(to_text(p.x))
+    p.y be 20
+    println(to_text(p.y))
+end
+
+function main()
+begin
+    println("--- MATH ---")
+    test_math()
+    println("--- COMPARE ---")
+    test_compare()
+    println("--- LOGIC ---")
+    test_logic()
+    println("--- BUILTINS ---")
+    test_builtins()
+    println("--- STRUCTS ---")
+    test_structs()
+end

@@ -1,8 +1,8 @@
 use crate::graph::OwnershipGraph;
 use crate::state::OwnershipState;
+use std::collections::HashSet;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule, Operand};
-use std::collections::HashSet;
 
 /// TODO: Describe implementation.
 pub struct OwnershipAnalysisPass;
@@ -63,21 +63,22 @@ impl OwnershipAnalysisPass {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
 
-                            if let Operand::<SsaValueId>::Var(src) = op {
-                                if is_move(*src) {
-                                    graph.set_state(*src, OwnershipState::Moved(*dest));
-                                }
+                            if let Operand::<SsaValueId>::Var(src) = op
+                                && is_move(*src)
+                            {
+                                graph.set_state(*src, OwnershipState::Moved(*dest));
                             }
                         }
-                        Instruction::<SsaValueId>::Call(dest, _, args) | Instruction::<SsaValueId>::CallIntrinsic(dest, _, args) => {
+                        Instruction::<SsaValueId>::Call(dest, _, args)
+                        | Instruction::<SsaValueId>::CallIntrinsic(dest, _, args) => {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
 
                             for arg in args {
-                                if let Operand::<SsaValueId>::Var(src) = arg {
-                                    if is_move(*src) {
-                                        graph.set_state(*src, OwnershipState::Moved(*dest));
-                                    }
+                                if let Operand::<SsaValueId>::Var(src) = arg
+                                    && is_move(*src)
+                                {
+                                    graph.set_state(*src, OwnershipState::Moved(*dest));
                                 }
                             }
                         }
@@ -85,25 +86,25 @@ impl OwnershipAnalysisPass {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
 
-                            if let Operand::<SsaValueId>::Var(src) = left {
-                                if is_move(*src) {
-                                    graph.set_state(*src, OwnershipState::Moved(*dest));
-                                }
+                            if let Operand::<SsaValueId>::Var(src) = left
+                                && is_move(*src)
+                            {
+                                graph.set_state(*src, OwnershipState::Moved(*dest));
                             }
-                            if let Operand::<SsaValueId>::Var(src) = right {
-                                if is_move(*src) {
-                                    graph.set_state(*src, OwnershipState::Moved(*dest));
-                                }
+                            if let Operand::<SsaValueId>::Var(src) = right
+                                && is_move(*src)
+                            {
+                                graph.set_state(*src, OwnershipState::Moved(*dest));
                             }
                         }
                         Instruction::<SsaValueId>::UnaryOp(dest, _, operand) => {
                             graph.set_state(*dest, OwnershipState::Owned);
                             block_vars.insert(*dest);
 
-                            if let Operand::<SsaValueId>::Var(src) = operand {
-                                if is_move(*src) {
-                                    graph.set_state(*src, OwnershipState::Moved(*dest));
-                                }
+                            if let Operand::<SsaValueId>::Var(src) = operand
+                                && is_move(*src)
+                            {
+                                graph.set_state(*src, OwnershipState::Moved(*dest));
                             }
                         }
                         Instruction::<SsaValueId>::Borrow(dest, op) => {
@@ -164,6 +165,44 @@ impl OwnershipAnalysisPass {
                                     graph.set_state(*src, OwnershipState::Moved(*dest));
                                 }
                             }
+                        }
+                        Instruction::<SsaValueId>::ListNew(dest, _) 
+                        | Instruction::<SsaValueId>::ListLen(dest, _) => {
+                            graph.set_state(*dest, OwnershipState::Owned);
+                            block_vars.insert(*dest);
+                        }
+                        Instruction::<SsaValueId>::ListGet(dest, _list, _idx)
+                        | Instruction::<SsaValueId>::ListBorrowGet(dest, _list, _idx)
+                        | Instruction::<SsaValueId>::ListBorrowMutGet(dest, _list, _idx) => {
+                            graph.set_state(*dest, OwnershipState::Owned);
+                            block_vars.insert(*dest);
+                        }
+                        Instruction::<SsaValueId>::ListSet(_list, _idx, val) => {
+                            if let Operand::<SsaValueId>::Var(src) = val {
+                                // List assumes ownership of the set value
+                                // But since we don't have list element tracking, we mark it moved to some dummy state,
+                                // or simply mark as moved without destination.
+                                graph.set_state(*src, OwnershipState::Moved(*src)); 
+                            }
+                        }
+                        Instruction::<SsaValueId>::StoreDeref(_, val) => {
+                            if let Operand::<SsaValueId>::Var(src) = val {
+                                // List assumes ownership of the set value
+                                // But since we don't have list element tracking, we mark it moved to some dummy state,
+                                // or simply mark as moved without destination.
+                                graph.set_state(*src, OwnershipState::Moved(*src)); 
+                            }
+                        }
+                        Instruction::<SsaValueId>::ListPush(list, val) => {
+                            if let Operand::<SsaValueId>::Var(src) = val {
+                                if let Operand::<SsaValueId>::Var(l_src) = list {
+                                    graph.set_state(*src, OwnershipState::Moved(*l_src));
+                                }
+                            }
+                        }
+                        Instruction::<SsaValueId>::ListPop(dest, _list) => {
+                            graph.set_state(*dest, OwnershipState::Owned);
+                            block_vars.insert(*dest);
                         }
                     }
                 }

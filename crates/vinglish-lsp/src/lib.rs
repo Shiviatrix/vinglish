@@ -1,8 +1,8 @@
-use vinglish_lexer::{tokenize, LexError};
-use vinglish_parser::parse;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
+use vinglish_lexer::{LexError, tokenize};
+use vinglish_parser::parse;
 
 fn offset_to_position(src: &str, offset: u32) -> Position {
     let mut line = 0;
@@ -18,7 +18,10 @@ fn offset_to_position(src: &str, offset: u32) -> Position {
             col += 1;
         }
     }
-    Position { line, character: col }
+    Position {
+        line,
+        character: col,
+    }
 }
 
 #[derive(Debug)]
@@ -76,7 +79,7 @@ impl LanguageServer for Backend {
 impl Backend {
     async fn on_change(&self, params: TextDocumentItem) {
         let (tokens, lex_errors) = tokenize(&params.text);
-        
+
         let mut diagnostics = Vec::new();
 
         for err in lex_errors {
@@ -89,7 +92,10 @@ impl Backend {
             diagnostics.push(Diagnostic {
                 range: Range {
                     start: pos,
-                    end: Position { line: pos.line, character: pos.character + 1 },
+                    end: Position {
+                        line: pos.line,
+                        character: pos.character + 1,
+                    },
                 },
                 severity: Some(DiagnosticSeverity::ERROR),
                 message: err.to_string(),

@@ -1,7 +1,7 @@
 use crate::dominators::DominatorTree;
+use std::collections::{HashMap, HashSet};
 use vinglish_hir::symbol::VariableId;
 use vinglish_mir::{BlockId, Instruction, MirFunction};
-use std::collections::{HashMap, HashSet};
 
 /// TODO: Describe implementation.
 pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &DominatorTree) {
@@ -21,10 +21,19 @@ pub fn insert_phi_nodes(func: &mut MirFunction<VariableId>, dom_tree: &Dominator
                 | Instruction::<VariableId>::UnaryOp(dest, _, _)
                 | Instruction::<VariableId>::Borrow(dest, _)
                 | Instruction::<VariableId>::BorrowMut(dest, _)
-                | Instruction::<VariableId>::Deref(dest, _, _) => {
+                | Instruction::<VariableId>::Deref(dest, _, _)
+                | Instruction::<VariableId>::ListNew(dest, _)
+                | Instruction::<VariableId>::ListGet(dest, _, _)
+                | Instruction::<VariableId>::ListBorrowGet(dest, _, _)
+                | Instruction::<VariableId>::ListBorrowMutGet(dest, _, _)
+                | Instruction::<VariableId>::ListLen(dest, _)
+                | Instruction::<VariableId>::ListPop(dest, _) => {
                     defs.entry(*dest).or_default().insert(block.id);
                 }
                 Instruction::<VariableId>::StoreField(_, _, _)
+                | Instruction::<VariableId>::ListSet(_, _, _)
+                | Instruction::<VariableId>::ListPush(_, _)
+                | Instruction::<VariableId>::StoreDeref(_, _)
                 | Instruction::<VariableId>::Drop(_)
                 | Instruction::<VariableId>::Phi(_, _) => {}
             }

@@ -7,23 +7,41 @@ mod healer_stress {
     use vinglish_lexer::Span;
     use vinglish_parser::ast::{Expr, Literal};
 
-    fn span() -> Span { Span::dummy() }
+    fn span() -> Span {
+        Span::dummy()
+    }
 
     fn int_expr(n: i64) -> Expr {
-        Expr::Lit { value: Literal::Int(n), span: span() }
+        Expr::Lit {
+            value: Literal::Int(n),
+            span: span(),
+        }
     }
     fn bool_expr(b: bool) -> Expr {
-        Expr::Lit { value: Literal::Bool(b), span: span() }
+        Expr::Lit {
+            value: Literal::Bool(b),
+            span: span(),
+        }
     }
     fn text_expr(s: &str) -> Expr {
-        Expr::Lit { value: Literal::Text(s.into()), span: span() }
+        Expr::Lit {
+            value: Literal::Text(s.into()),
+            span: span(),
+        }
     }
     fn float_expr(f: f64) -> Expr {
-        Expr::Lit { value: Literal::Float(f), span: span() }
+        Expr::Lit {
+            value: Literal::Float(f),
+            span: span(),
+        }
     }
 
     fn constraint(expected: Type, actual: Type) -> TypeConstraint {
-        TypeConstraint { expected, actual, span: span() }
+        TypeConstraint {
+            expected,
+            actual,
+            span: span(),
+        }
     }
 
     // ─── 1. ToText: every non-text type should be healed to text ─────────────
@@ -34,7 +52,10 @@ mod healer_stress {
         let c = constraint(Type::Text, Type::Int);
         let rule = try_heal_in_place(&Healer, &mut expr, &c, || Ok::<_, ()>(()));
         assert_eq!(rule, Some(HealingRule::ToText));
-        assert!(matches!(expr, Expr::Call { .. }), "must wrap in to_text call");
+        assert!(
+            matches!(expr, Expr::Call { .. }),
+            "must wrap in to_text call"
+        );
     }
 
     #[test]
@@ -100,7 +121,10 @@ mod healer_stress {
         // recheck always returns error
         let result = try_heal_in_place(&Healer, &mut expr, &c, || Err::<(), _>(()));
         assert_eq!(result, None);
-        assert_eq!(expr, original, "failed recheck must restore original AST node");
+        assert_eq!(
+            expr, original,
+            "failed recheck must restore original AST node"
+        );
     }
 
     #[test]
@@ -139,15 +163,25 @@ mod healer_stress {
         let before_ptr = &expr as *const Expr;
         let candidates = healer.candidates(&expr, &c);
         let after_ptr = &expr as *const Expr;
-        assert_eq!(before_ptr, after_ptr, "candidates() must not move the expression");
-        assert!(!candidates.is_empty(), "must generate at least one candidate");
+        assert_eq!(
+            before_ptr, after_ptr,
+            "candidates() must not move the expression"
+        );
+        assert!(
+            !candidates.is_empty(),
+            "must generate at least one candidate"
+        );
     }
 
     // ─── 7. Cost gate: MAX_STEPS = 2, no candidate with cost > 2 passes ──────
 
     #[test]
     fn healer_constant_max_steps_is_2() {
-        assert_eq!(Healer::MAX_STEPS, 2, "MAX_STEPS must be 2 to bound compile time");
+        assert_eq!(
+            Healer::MAX_STEPS,
+            2,
+            "MAX_STEPS must be 2 to bound compile time"
+        );
     }
 
     #[test]
@@ -198,7 +232,9 @@ mod healer_stress {
         };
         let candidates = healer.candidates(&expr, &c);
         assert!(
-            candidates.iter().any(|cand| cand.rule == HealingRule::AutoDeref),
+            candidates
+                .iter()
+                .any(|cand| cand.rule == HealingRule::AutoDeref),
             "must generate AutoDeref for &T ← T mismatch"
         );
     }
@@ -215,7 +251,13 @@ mod healer_stress {
         assert_eq!(rule, Some(HealingRule::AutoDeref));
         // Result should be a UnOp::Deref wrapping the original
         assert!(
-            matches!(&expr, Expr::UnOp { op: vinglish_parser::ast::UnOp::Deref, .. }),
+            matches!(
+                &expr,
+                Expr::UnOp {
+                    op: vinglish_parser::ast::UnOp::Deref,
+                    ..
+                }
+            ),
             "AutoDeref must wrap in UnOp::Deref"
         );
     }
@@ -225,10 +267,10 @@ mod healer_stress {
     #[test]
     fn stress_10k_heal_iterations_no_panic() {
         let pairs: Vec<(Expr, TypeConstraint)> = vec![
-            (int_expr(0),   constraint(Type::Text,  Type::Int)),
+            (int_expr(0), constraint(Type::Text, Type::Int)),
             (bool_expr(true), constraint(Type::Text, Type::Bool)),
             (float_expr(1.0), constraint(Type::Text, Type::Float)),
-            (int_expr(1),   constraint(Type::Int,   Type::Int)),   // no-op
+            (int_expr(1), constraint(Type::Int, Type::Int)), // no-op
             (text_expr("x"), constraint(Type::Text, Type::Text)), // no-op
         ];
         for i in 0..10_000 {

@@ -1,14 +1,15 @@
 use crate::{MirFunction, MirModule, Terminator};
-use vinglish_hir::symbol::SymbolTable;
 use std::collections::HashSet;
+use vinglish_hir::symbol::SymbolTable;
 
-/// TODO: Describe implementation.
+/// Represents a structural validation failure in the MIR (e.g. dangling jumps).
 #[derive(Debug)]
 pub struct MirValidationError {
     pub message: String,
 }
 
-/// TODO: Describe implementation.
+/// Validates fundamental structural invariants of the MIR.
+/// Ensures all basic blocks have unique IDs, branches point to valid blocks, and Phi nodes appear only at the beginning of blocks.
 pub struct MirValidatorPass;
 
 impl Default for MirValidatorPass {

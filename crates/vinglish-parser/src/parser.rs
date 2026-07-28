@@ -343,11 +343,11 @@ impl<'t> Parser<'t> {
                 }
             } else {
                 // Beginner: `type name`
-                if let Some(ty) = self.parse_type_expr() {
-                    if let Some(name) = self.expect_ident() {
-                        let span = name.span;
-                        params.push(Param { ty, name, span });
-                    }
+                if let Some(ty) = self.parse_type_expr()
+                    && let Some(name) = self.expect_ident()
+                {
+                    let span = name.span;
+                    params.push(Param { ty, name, span });
                 }
             }
 
@@ -1321,11 +1321,12 @@ impl<'t> Parser<'t> {
             .expect_ident()
             .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         let type_params = self.parse_type_params();
-        
+
         self.skip_newlines();
 
         // Enum definition
-        if self.eat(&Token::Be) { // "=" is token Be
+        if self.eat(&Token::Be) {
+            // "=" is token Be
             let mut variants = Vec::new();
             loop {
                 self.skip_newlines();
@@ -1377,7 +1378,8 @@ impl<'t> Parser<'t> {
                 }
 
                 let start_idx = self.current_span().start;
-                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon) {
+                if matches!(self.current(), Token::Ident(_)) && matches!(self.peek(), Token::Colon)
+                {
                     if let Some(fname) = self.expect_ident() {
                         self.eat(&Token::Colon);
                         if let Some(ty) = self.parse_type_expr() {
@@ -1389,14 +1391,14 @@ impl<'t> Parser<'t> {
                         }
                     }
                 } else {
-                    if let Some(ty) = self.parse_type_expr() {
-                        if let Some(fname) = self.expect_ident() {
-                            fields.push(Param {
-                                ty,
-                                name: fname.clone(),
-                                span: fname.span,
-                            });
-                        }
+                    if let Some(ty) = self.parse_type_expr()
+                        && let Some(fname) = self.expect_ident()
+                    {
+                        fields.push(Param {
+                            ty,
+                            name: fname.clone(),
+                            span: fname.span,
+                        });
                     }
                 }
 

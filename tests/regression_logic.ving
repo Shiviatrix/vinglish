@@ -1,0 +1,16 @@
+function test_logic()
+begin
+    if 1 == 2 or 2 == 2 then begin
+        println("or works")
+    end
+    if 1 == 1 and 2 == 2 then begin
+        println("and works")
+    end
+    if not (1 == 2) then begin
+        println("not works")
+    end
+end
+function main()
+begin
+    test_logic()
+end

@@ -1,5 +1,5 @@
-use vinglish_parser::ast::*;
 use thiserror::Error;
+use vinglish_parser::ast::*;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Error)]
@@ -65,10 +65,10 @@ impl CEmitter {
             let mut fns = fns.borrow_mut();
             fns.clear();
             for item in &module.items {
-                if let Item::Function(f) = item {
-                    if f.is_foreign {
-                        fns.insert(f.name.name.clone());
-                    }
+                if let Item::Function(f) = item
+                    && f.is_foreign
+                {
+                    fns.insert(f.name.name.clone());
                 }
             }
         });
@@ -89,7 +89,7 @@ impl CEmitter {
         self.emit("    long: printf(\"%ld\", x), \\\n");
         self.emit("    int: printf(\"%d\", x) \\\n");
         self.emit(")\n");
-        
+
         self.emit("#define println(x) _Generic((x), \\\n");
         self.emit("    const char*: printf(\"%s\\n\", x), \\\n");
         self.emit("    char*: printf(\"%s\\n\", x), \\\n");
@@ -97,13 +97,13 @@ impl CEmitter {
         self.emit("    long: printf(\"%ld\\n\", x), \\\n");
         self.emit("    int: printf(\"%d\\n\", x) \\\n");
         self.emit(")\n");
-        
+
         self.emit("#define to_text(x) _Generic((x), \\\n");
         self.emit("    double: _to_text_double(x), \\\n");
         self.emit("    long: _to_text_long(x), \\\n");
         self.emit("    int: _to_text_long(x) \\\n");
         self.emit(")\n");
-        
+
         self.emit("static inline const char* _to_text_double(double x) {\n");
         self.emit("    char* buf = malloc(32);\n");
         self.emit("    snprintf(buf, 32, \"%g\", x);\n");
@@ -119,7 +119,7 @@ impl CEmitter {
         self.emit("static inline long to_number(const char* x) {\n");
         self.emit("    return strtol(x, NULL, 10);\n");
         self.emit("}\n");
-        
+
         self.emit("#define min(a,b) (((a) < (b)) ? (a) : (b))\n");
         self.emit("#define max(a,b) (((a) > (b)) ? (a) : (b))\n");
         self.emit("#define abs(x) ((x) < 0 ? -(x) : (x))\n");
@@ -207,9 +207,27 @@ impl CEmitter {
     fn emit_fn_forward(&mut self, f: &FunctionDef) -> Result<(), CEmitError> {
         if f.is_foreign {
             let std_fns = [
-                "pow", "sin", "cos", "tan", "sqrt", "log", "log10", "exp", "ceil", "floor",
-                "round", "puts", "free", "malloc", "print", "println",
-                "to_text", "to_number", "min", "max", "abs"
+                "pow",
+                "sin",
+                "cos",
+                "tan",
+                "sqrt",
+                "log",
+                "log10",
+                "exp",
+                "ceil",
+                "floor",
+                "round",
+                "puts",
+                "free",
+                "malloc",
+                "print",
+                "println",
+                "to_text",
+                "to_number",
+                "min",
+                "max",
+                "abs",
             ];
             if std_fns.contains(&f.name.name.as_str()) {
                 return Ok(());
@@ -522,7 +540,12 @@ impl CEmitter {
                         "0".into()
                     }
                 }
-                Literal::Text(s) => format!("\"{}\"", s.replace('"', "\\\"").replace('\n', "\\n").replace('\r', "\\r")),
+                Literal::Text(s) => format!(
+                    "\"{}\"",
+                    s.replace('"', "\\\"")
+                        .replace('\n', "\\n")
+                        .replace('\r', "\\r")
+                ),
                 Literal::Unit => "0".into(),
             }),
 
@@ -543,7 +566,7 @@ impl CEmitter {
                     }
                     _ => self.emit_expr(callee)?,
                 };
-                    
+
                 if callee_str == "Ok" {
                     return Ok(if arg_strs.len() == 1 {
                         arg_strs.pop().unwrap()
@@ -551,10 +574,13 @@ impl CEmitter {
                         "0".to_string()
                     });
                 } else if callee_str == "Err" {
-                    let ret_ty = self.current_ret_ty.clone().unwrap_or_else(|| "long".to_string());
+                    let ret_ty = self
+                        .current_ret_ty
+                        .clone()
+                        .unwrap_or_else(|| "long".to_string());
                     return Ok(format!("({}){{0}}", ret_ty));
                 }
-                
+
                 Ok(format!("{}({})", callee_str, arg_strs.join(", ")))
             }
 

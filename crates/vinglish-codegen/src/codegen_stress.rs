@@ -9,8 +9,12 @@ mod codegen_stress {
     };
     use vinglish_parser::ast::{BinOp, Literal};
 
-    fn var(n: u32) -> VariableId { VariableId(SymbolId(n)) }
-    fn fid(n: u32) -> FunctionId { FunctionId(SymbolId(n)) }
+    fn var(n: u32) -> VariableId {
+        VariableId(SymbolId(n))
+    }
+    fn fid(n: u32) -> FunctionId {
+        FunctionId(SymbolId(n))
+    }
 
     // ─── 1. Minimal module: one function, one block, one instruction ──────────
 
@@ -34,7 +38,8 @@ mod codegen_stress {
         let c = emit_mir_c(&module, &SymbolTable::new()).expect("emit must succeed");
         let bytes = vinglish_decompile::extract_mir_payload(&c).expect("roundtrip must succeed");
         // Re-deserialize and verify MIR equality
-        let restored: MirModule<VariableId> = bincode::deserialize(&bytes).expect("bincode must deserialize");
+        let restored: MirModule<VariableId> =
+            bincode::deserialize(&bytes).expect("bincode must deserialize");
         assert_eq!(restored.functions.len(), 1);
         assert_eq!(restored.functions[0].name, "main");
     }
@@ -44,9 +49,19 @@ mod codegen_stress {
     #[test]
     fn all_binary_ops_roundtrip() {
         let ops = [
-            BinOp::Add, BinOp::Sub, BinOp::Mul, BinOp::Div, BinOp::Mod,
-            BinOp::Eq, BinOp::NotEq, BinOp::Lt, BinOp::Gt, BinOp::LtEq, BinOp::GtEq,
-            BinOp::And, BinOp::Or,
+            BinOp::Add,
+            BinOp::Sub,
+            BinOp::Mul,
+            BinOp::Div,
+            BinOp::Mod,
+            BinOp::Eq,
+            BinOp::NotEq,
+            BinOp::Lt,
+            BinOp::Gt,
+            BinOp::LtEq,
+            BinOp::GtEq,
+            BinOp::And,
+            BinOp::Or,
         ];
         let (lhs, rhs, dst) = (var(1), var(2), var(3));
         for op in ops {
@@ -59,7 +74,12 @@ mod codegen_stress {
                     locals: vec![lhs, rhs, dst],
                     blocks: vec![BasicBlock {
                         id: BlockId(0),
-                        instrs: vec![Instruction::BinaryOp(dst, op, Operand::Var(lhs), Operand::Var(rhs))],
+                        instrs: vec![Instruction::BinaryOp(
+                            dst,
+                            op,
+                            Operand::Var(lhs),
+                            Operand::Var(rhs),
+                        )],
                         terminator: Terminator::Return(Some(Operand::Var(dst))),
                     }],
                 }],
@@ -88,9 +108,12 @@ mod codegen_stress {
                     locals: vec![a, b],
                     blocks: vec![BasicBlock {
                         id: BlockId(0),
-                        instrs: vec![
-                            Instruction::BinaryOp(b, BinOp::Mul, Operand::Var(a), Operand::Constant(Literal::Int(2))),
-                        ],
+                        instrs: vec![Instruction::BinaryOp(
+                            b,
+                            BinOp::Mul,
+                            Operand::Var(a),
+                            Operand::Constant(Literal::Int(2)),
+                        )],
                         terminator: Terminator::Return(Some(Operand::Var(b))),
                     }],
                 },
@@ -124,7 +147,15 @@ mod codegen_stress {
     #[test]
     fn string_literal_pool_survives_roundtrip() {
         let dst = var(1);
-        let texts = ["hello", "world", "vinglish", "✦ stars ✦", "tab\there", "quote\"end", "back\\slash"];
+        let texts = [
+            "hello",
+            "world",
+            "vinglish",
+            "✦ stars ✦",
+            "tab\there",
+            "quote\"end",
+            "back\\slash",
+        ];
         for text in texts {
             let module = MirModule {
                 functions: vec![MirFunction {
@@ -135,7 +166,10 @@ mod codegen_stress {
                     locals: vec![dst],
                     blocks: vec![BasicBlock {
                         id: BlockId(0),
-                        instrs: vec![Instruction::Assign(dst, Operand::Constant(Literal::Text(text.into())))],
+                        instrs: vec![Instruction::Assign(
+                            dst,
+                            Operand::Constant(Literal::Text(text.into())),
+                        )],
                         terminator: Terminator::Return(None),
                     }],
                 }],
@@ -182,10 +216,10 @@ mod codegen_stress {
                     },
                     BasicBlock {
                         id: BlockId(3),
-                        instrs: vec![Instruction::Phi(result, vec![
-                            (Operand::Var(a), BlockId(1)),
-                            (Operand::Var(b), BlockId(2)),
-                        ])],
+                        instrs: vec![Instruction::Phi(
+                            result,
+                            vec![(Operand::Var(a), BlockId(1)), (Operand::Var(b), BlockId(2))],
+                        )],
                         terminator: Terminator::Return(Some(Operand::Var(result))),
                     },
                 ],
@@ -196,7 +230,10 @@ mod codegen_stress {
         let restored: MirModule<VariableId> = bincode::deserialize(&bytes).unwrap();
         assert_eq!(restored.functions[0].blocks.len(), 4);
         // Phi instruction must be preserved
-        assert!(matches!(restored.functions[0].blocks[3].instrs[0], Instruction::Phi(_, _)));
+        assert!(matches!(
+            restored.functions[0].blocks[3].instrs[0],
+            Instruction::Phi(_, _)
+        ));
     }
 
     // ─── 6. Scale: 1 000 functions, verifying O(1) payload overhead ──────────
@@ -213,7 +250,10 @@ mod codegen_stress {
                 locals: vec![v],
                 blocks: vec![BasicBlock {
                     id: BlockId(0),
-                    instrs: vec![Instruction::Assign(v, Operand::Constant(Literal::Int(i as i64)))],
+                    instrs: vec![Instruction::Assign(
+                        v,
+                        Operand::Constant(Literal::Int(i as i64)),
+                    )],
                     terminator: Terminator::Return(Some(Operand::Var(v))),
                 }],
             })
@@ -244,7 +284,9 @@ mod codegen_stress {
                     id: BlockId(0),
                     instrs: vec![Instruction::Call(
                         dst,
-                        CallTarget::Foreign { c_symbol: "printf".into() },
+                        CallTarget::Foreign {
+                            c_symbol: "printf".into(),
+                        },
                         vec![],
                     )],
                     terminator: Terminator::Return(Some(Operand::Var(dst))),
@@ -287,6 +329,9 @@ mod codegen_stress {
         assert!(c.contains("#include <stdio.h>"), "must include stdio.h");
         assert!(c.contains("#include <stdlib.h>"), "must include stdlib.h");
         assert!(c.contains("int main("), "must define main");
-        assert!(c.contains("/* VINGLISH_MIR_PAYLOAD:"), "must contain payload comment");
+        assert!(
+            c.contains("/* VINGLISH_MIR_PAYLOAD:"),
+            "must contain payload comment"
+        );
     }
 }

@@ -10,7 +10,7 @@
 /// - idempotency (double-encode tolerance)
 #[cfg(test)]
 mod payload_stress {
-    use crate::{extract_mir_payload, DecompileError};
+    use crate::{DecompileError, extract_mir_payload};
 
     // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -18,15 +18,19 @@ mod payload_stress {
     /// Uses a synthetic marker instead of actually running the compiler,
     /// because we want precise control over the payload bytes.
     fn build_valid_c(c_body: &str) -> String {
-        use sha2::{Sha256, Digest};
-        use flate2::write::ZlibEncoder;
-        use flate2::Compression;
         use base64::Engine;
+        use flate2::Compression;
+        use flate2::write::ZlibEncoder;
+        use sha2::{Digest, Sha256};
         use std::io::Write;
 
         let mut hasher = Sha256::new();
         hasher.update(c_body.as_bytes());
-        let hash_hex = hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect::<String>();
+        let hash_hex = hasher
+            .finalize()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>();
 
         // Payload = (c_hash, module_bytes)
         let module_bytes: Vec<u8> = b"fake_mir_module_bytes".to_vec();
@@ -112,10 +116,7 @@ mod payload_stress {
         // Sanity: the payload comment must still be intact
         assert!(tampered.contains("/* VINGLISH_MIR_PAYLOAD"));
         // ... but the body before it changed
-        assert_eq!(
-            extract_mir_payload(&tampered),
-            Err(DecompileError::Desync),
-        );
+        assert_eq!(extract_mir_payload(&tampered), Err(DecompileError::Desync),);
         let _ = payload_start;
     }
 
@@ -125,10 +126,7 @@ mod payload_stress {
         let src = build_valid_c(c_body);
         // Append a blank line between body and payload
         let tampered = src.replacen("/* VINGLISH_MIR_PAYLOAD", "\n/* VINGLISH_MIR_PAYLOAD", 1);
-        assert_eq!(
-            extract_mir_payload(&tampered),
-            Err(DecompileError::Desync),
-        );
+        assert_eq!(extract_mir_payload(&tampered), Err(DecompileError::Desync),);
     }
 
     #[test]
@@ -136,10 +134,7 @@ mod payload_stress {
         let c_body = "int main(void) { return 0; }\n";
         let src = build_valid_c(c_body);
         let tampered = src.replacen("return 0", "return 1", 1);
-        assert_eq!(
-            extract_mir_payload(&tampered),
-            Err(DecompileError::Desync),
-        );
+        assert_eq!(extract_mir_payload(&tampered), Err(DecompileError::Desync),);
     }
 
     #[test]
@@ -148,10 +143,7 @@ mod payload_stress {
         let src = build_valid_c(c_body);
         // Inject a C comment (looks benign, but changes hash)
         let tampered = src.replacen("int x = 1;", "int x = 1; /* hacked */", 1);
-        assert_eq!(
-            extract_mir_payload(&tampered),
-            Err(DecompileError::Desync),
-        );
+        assert_eq!(extract_mir_payload(&tampered), Err(DecompileError::Desync),);
     }
 
     // ─── payload corruption ───────────────────────────────────────────────────
@@ -179,7 +171,8 @@ mod payload_stress {
         let src = build_valid_c(c_body);
         // Encode random bytes as valid base64 (not zlib-compressed)
         use base64::Engine;
-        let junk_b64 = base64::engine::general_purpose::STANDARD.encode(b"this is not zlib compressed data at all");
+        let junk_b64 = base64::engine::general_purpose::STANDARD
+            .encode(b"this is not zlib compressed data at all");
         let start = src.find("/* VINGLISH_MIR_PAYLOAD: ").unwrap();
         let rest = &src[start..];
         let end = rest.find(" */").unwrap() + start;
@@ -195,8 +188,8 @@ mod payload_stress {
     #[test]
     fn valid_zlib_but_invalid_bincode_returns_error() {
         use base64::Engine;
-        use flate2::write::ZlibEncoder;
         use flate2::Compression;
+        use flate2::write::ZlibEncoder;
         use std::io::Write;
 
         let c_body = "int main(void) { return 0; }\n";
@@ -227,7 +220,12 @@ mod payload_stress {
     fn large_c_body_roundtrip_succeeds() {
         let mut c_body = String::new();
         for i in 0..500 {
-            c_body.push_str(&format!("static long fn_{}(int64_t v_{}) {{\n    return {};\n}}\n", i, i, i * 2));
+            c_body.push_str(&format!(
+                "static long fn_{}(int64_t v_{}) {{\n    return {};\n}}\n",
+                i,
+                i,
+                i * 2
+            ));
         }
         let src = build_valid_c(&c_body);
         let bytes = extract_mir_payload(&src).expect("large body must succeed");
@@ -263,7 +261,8 @@ mod payload_stress {
             result == Err(DecompileError::Base64Decode)
                 || result == Err(DecompileError::Decompress)
                 || result == Err(DecompileError::Deserialize),
-            "truncated payload must not succeed: {:?}", result
+            "truncated payload must not succeed: {:?}",
+            result
         );
     }
 }

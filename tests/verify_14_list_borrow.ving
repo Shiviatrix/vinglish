@@ -1,0 +1,16 @@
+function main() begin
+    let mutable x be [1, 2, 3]
+    
+    let y be borrow x[1]
+    print(deref y)
+    println("")
+
+    let z be borrow mutable x[2]
+    deref z = 100
+    
+    let a be x[2]
+    print(a)
+    println("")
+
+    return 0
+end

@@ -1,5 +1,5 @@
-use crate::passes::{CompilerContext, CompilerPass};
 use crate::TypeError;
+use crate::passes::{CompilerContext, CompilerPass};
 use vinglish_hir::Expr as HirExpr;
 use vinglish_hir::Item as HirItem;
 use vinglish_hir::Module as HirModule;

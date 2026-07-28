@@ -1,15 +1,10 @@
 use std::collections::HashMap;
 
+use strsim::levenshtein;
 use vinglish_lexer::Span;
 use vinglish_parser::ast::*;
-use strsim::levenshtein;
 
 use crate::passes::{CompilerContext, CompilerPass, ScopedId};
-use vinglish_hir::symbol::{
-    FieldId, FunctionId, FunctionSymbol, SymbolId, SymbolKind, SymbolTable, TypeId, VariableId,
-    VariableSymbol,
-};
-use vinglish_hir::types::{Type, TypeVar};
 use vinglish_hir::Block as HirBlock;
 use vinglish_hir::Expr as HirExpr;
 use vinglish_hir::FunctionDef as HirFunctionDef;
@@ -18,6 +13,11 @@ use vinglish_hir::Module as HirModule;
 use vinglish_hir::Param as HirParam;
 use vinglish_hir::Stmt as HirStmt;
 use vinglish_hir::TypeDef as HirTypeDef;
+use vinglish_hir::symbol::{
+    FieldId, FunctionId, FunctionSymbol, SymbolId, SymbolKind, SymbolTable, TypeId, VariableId,
+    VariableSymbol,
+};
+use vinglish_hir::types::{Type, TypeVar};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Errors
@@ -32,32 +32,52 @@ pub struct AstNodeId {
 }
 
 impl From<Span> for AstNodeId {
-    fn from(span: Span) -> Self { Self { start: span.start, end: span.end } }
+    fn from(span: Span) -> Self {
+        Self {
+            start: span.start,
+            end: span.end,
+        }
+    }
 }
 
 /// Typed failures from inference.  Only `Mismatch` participates in healing;
 /// all other diagnostics remain ordinary, non-recoverable compiler errors.
 #[derive(Debug, Clone)]
 pub enum TypeError {
-    Mismatch { expected: Type, actual: Type, node_id: AstNodeId, span: Span },
-    Message { message: String, span: Span },
+    Mismatch {
+        expected: Type,
+        actual: Type,
+        node_id: AstNodeId,
+        span: Span,
+    },
+    Message {
+        message: String,
+        span: Span,
+    },
 }
 
 impl TypeError {
     /// TODO: Describe implementation.
     pub fn new(msg: impl Into<String>, span: Span) -> Self {
-        Self::Message { message: msg.into(), span }
+        Self::Message {
+            message: msg.into(),
+            span,
+        }
     }
 
     /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
-        match self { Self::Mismatch { span, .. } | Self::Message { span, .. } => *span }
+        match self {
+            Self::Mismatch { span, .. } | Self::Message { span, .. } => *span,
+        }
     }
 
     /// TODO: Describe implementation.
     pub fn message(&self) -> String {
         match self {
-            Self::Mismatch { expected, actual, .. } => format!("type mismatch: expected `{expected}`, got `{actual}`"),
+            Self::Mismatch {
+                expected, actual, ..
+            } => format!("type mismatch: expected `{expected}`, got `{actual}`"),
             Self::Message { message, .. } => message.clone(),
         }
     }
@@ -80,17 +100,11 @@ impl UnionFind {
     }
 
     fn resolve(&self, mut ty: Type) -> Type {
-        loop {
-            match &ty {
-                Type::Var(v) => {
-                    if let Some(bound) = self.parent.get(&v.0) {
-                        let bound = bound.clone();
-                        ty = bound;
-                    } else {
-                        break;
-                    }
-                }
-                _ => break,
+        while let Type::Var(v) = &ty {
+            if let Some(bound) = self.parent.get(&v.0) {
+                ty = bound.clone();
+            } else {
+                break;
             }
         }
         ty
@@ -98,10 +112,10 @@ impl UnionFind {
 
     fn bind(&mut self, var: TypeVar, ty: Type) -> Result<(), TypeError> {
         let resolved = self.resolve(ty.clone());
-        if let Type::Var(v2) = &resolved {
-            if v2.0 == var.0 {
-                return Ok(());
-            }
+        if let Type::Var(v2) = &resolved
+            && v2.0 == var.0
+        {
+            return Ok(());
         }
         if self.occurs(var.0, &resolved) {
             return Err(TypeError::new(
@@ -334,8 +348,15 @@ impl TypeInferencePass {
     /// `TypeError::Mismatch -> healer::attempt_heal` interception point.
     pub fn run_with_healing(&mut self, ast: &mut Module, ctx: &mut CompilerContext) -> HirModule {
         let baseline = ctx.clone();
-        let initial_hir = self.run(ast, ctx).unwrap_or_else(|| HirModule { items: vec![] });
-        let Some(mismatch) = ctx.type_errors.iter().find(|error| matches!(error, TypeError::Mismatch { .. })).cloned() else {
+        let initial_hir = self
+            .run(ast, ctx)
+            .unwrap_or_else(|| HirModule { items: vec![] });
+        let Some(mismatch) = ctx
+            .type_errors
+            .iter()
+            .find(|error| matches!(error, TypeError::Mismatch { .. }))
+            .cloned()
+        else {
             return initial_hir;
         };
 
@@ -343,15 +364,23 @@ impl TypeInferencePass {
             let mut retry_ctx = baseline.clone();
             let mut retry_pass = TypeInferencePass::new();
             retry_pass.run(candidate, &mut retry_ctx);
-            if retry_ctx.type_errors.is_empty() { Ok(()) } else { Err(()) }
+            if retry_ctx.type_errors.is_empty() {
+                Ok(())
+            } else {
+                Err(())
+            }
         });
-        let Some(warning) = warning else { return initial_hir; };
+        let Some(warning) = warning else {
+            return initial_hir;
+        };
 
         // Re-run from the pre-inference context so no symbols, inference
         // variables, or diagnostics from the rejected AST survive.
         *ctx = baseline;
         *self = TypeInferencePass::new();
-        let healed_hir = self.run(ast, ctx).unwrap_or_else(|| HirModule { items: vec![] });
+        let healed_hir = self
+            .run(ast, ctx)
+            .unwrap_or_else(|| HirModule { items: vec![] });
         if ctx.type_errors.is_empty() {
             ctx.healing_warnings.push(warning);
             healed_hir
@@ -499,10 +528,12 @@ impl TypeInferencePass {
                     ts.add_field("tag".to_string(), Type::Int, Visibility::Public);
                 }
 
-                for (_index, v) in e.variants.iter().enumerate() {
-                    let ty = v.payload.as_ref().map(|ty_expr| {
-                        type_expr_to_type(ty_expr, &env)
-                    }).unwrap_or(Type::Unit);
+                for v in e.variants.iter() {
+                    let ty = v
+                        .payload
+                        .as_ref()
+                        .map(|ty_expr| type_expr_to_type(ty_expr, &env))
+                        .unwrap_or(Type::Unit);
 
                     if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
                         ts.add_field(v.name.name.clone(), ty.clone(), Visibility::Public);
@@ -510,7 +541,6 @@ impl TypeInferencePass {
 
                     let payload = v.payload.as_ref().map(|_| self.intern(ctx, ty.clone()));
 
-                    
                     hir_variants.push(vinglish_hir::Variant {
                         name: v.name.name.clone(),
                         payload,
@@ -522,20 +552,22 @@ impl TypeInferencePass {
                     } else {
                         format!("{}.{}", ctx.current_module, v.name.name)
                     };
-                    
-                    if let Some(id) = ctx.symbol_table.lookup(&variant_name) {
-                        if let Some(fs) = ctx.symbol_table.get_func_mut(vinglish_hir::symbol::FunctionId(id)) {
-                            let enum_type = Type::Named(
-                                qualified_name.clone(), 
-                                fs.generic_params.iter().map(|v| Type::Var(*v)).collect()
-                            );
-                            
-                            if let Some(ref ty_expr) = v.payload {
-                                let arg_ty = type_expr_to_type(ty_expr, &env);
-                                fs.ty = Type::Function(vec![arg_ty], Box::new(enum_type));
-                            } else {
-                                fs.ty = Type::Function(vec![], Box::new(enum_type));
-                            }
+
+                    if let Some(id) = ctx.symbol_table.lookup(&variant_name)
+                        && let Some(fs) = ctx
+                            .symbol_table
+                            .get_func_mut(vinglish_hir::symbol::FunctionId(id))
+                    {
+                        let enum_type = Type::Named(
+                            qualified_name.clone(),
+                            fs.generic_params.iter().map(|v| Type::Var(*v)).collect(),
+                        );
+
+                        if let Some(ref ty_expr) = v.payload {
+                            let arg_ty = type_expr_to_type(ty_expr, &env);
+                            fs.ty = Type::Function(vec![arg_ty], Box::new(enum_type));
+                        } else {
+                            fs.ty = Type::Function(vec![], Box::new(enum_type));
                         }
                     }
                 }
@@ -586,7 +618,9 @@ impl TypeInferencePass {
                 id: VariableId(SymbolId(0)),
                 name: "self".to_string(),
                 is_mut: false,
-                ty: self_ty.clone(), span: None, });
+                ty: self_ty.clone(),
+                span: None,
+            });
             if let Some(vs) = ctx.symbol_table.get_var_mut(self_id) {
                 vs.id = self_id;
             }
@@ -607,7 +641,9 @@ impl TypeInferencePass {
                 id: VariableId(SymbolId(0)),
                 name: param.name.name.clone(),
                 is_mut: false,
-                ty: ty.clone(), span: None, });
+                ty: ty.clone(),
+                span: None,
+            });
             if let Some(vs) = ctx.symbol_table.get_var_mut(param_id) {
                 vs.id = param_id;
             }
@@ -632,15 +668,14 @@ impl TypeInferencePass {
         let fn_ty = Type::Function(param_types.clone(), Box::new(expected_ret.clone()));
 
         // Update the function symbol's type in the symbol table so recursive calls work
-        if f.target_type.is_none() {
-            if let Some(sym_id) = ctx.symbol_table.lookup(&f.name.name) {
-                if let Some(vinglish_hir::symbol::SymbolKind::Function(_)) = ctx.symbol_table.get(sym_id)
-                {
-                    let func_id = vinglish_hir::symbol::FunctionId(sym_id);
-                    if let Some(fs) = ctx.symbol_table.get_func_mut(func_id) {
-                        fs.ty = fn_ty.clone();
-                    }
-                }
+        if f.target_type.is_none()
+            && let Some(sym_id) = ctx.symbol_table.lookup(&f.name.name)
+            && let Some(vinglish_hir::symbol::SymbolKind::Function(_)) =
+                ctx.symbol_table.get(sym_id)
+        {
+            let func_id = vinglish_hir::symbol::FunctionId(sym_id);
+            if let Some(fs) = ctx.symbol_table.get_func_mut(func_id) {
+                fs.ty = fn_ty.clone();
             }
         }
 
@@ -692,14 +727,18 @@ impl TypeInferencePass {
 
             // Add method to TypeSymbol
             let type_id_opt = ctx.lookup(&target.name);
-            if let Some(type_id) = type_id_opt {
-                if let Some(ts) = ctx.symbol_table.get_type_mut(type_id.as_type().unwrap()) {
-                    ts.add_method(f.name.name.clone(), method_id);
-                }
+            if let Some(type_id) = type_id_opt
+                && let Some(ty_id) = type_id.as_type()
+                && let Some(ts) = ctx.symbol_table.get_type_mut(ty_id)
+            {
+                ts.add_method(f.name.name.clone(), method_id);
             }
             method_id
         } else {
-            ctx.lookup(&f.name.name).unwrap().as_func().unwrap()
+            ctx.lookup(&f.name.name)
+                .expect("ICE: Function name not found in scope during type inference")
+                .as_func()
+                .expect("ICE: Name resolved to non-function during type inference")
         };
 
         if let Some(fs) = ctx.symbol_table.get_func_mut(func_id) {
@@ -775,7 +814,9 @@ impl TypeInferencePass {
                     id: VariableId(SymbolId(0)),
                     name: let_stmt.name.name.clone(),
                     is_mut: let_stmt.mutable,
-                    ty: resolved.clone(), span: None, });
+                    ty: resolved.clone(),
+                    span: None,
+                });
                 if let Some(vs) = ctx.symbol_table.get_var_mut(id) {
                     vs.id = id;
                 }
@@ -884,7 +925,13 @@ impl TypeInferencePass {
 
                     let condition = match &case.pattern {
                         vinglish_parser::ast::Pattern::Literal(lit) => {
-                            let (lit_ty, lit_hir) = self.infer_expr(ctx, &vinglish_parser::ast::Expr::Lit { value: lit.clone(), span: case.span });
+                            let (lit_ty, lit_hir) = self.infer_expr(
+                                ctx,
+                                &vinglish_parser::ast::Expr::Lit {
+                                    value: lit.clone(),
+                                    span: case.span,
+                                },
+                            );
                             self.unify(ctx, subj_ty.clone(), lit_ty, case.span);
 
                             vinglish_hir::Expr::BinOp {
@@ -895,13 +942,11 @@ impl TypeInferencePass {
                                 span: case.span,
                             }
                         }
-                        _ => {
-                            vinglish_hir::Expr::Lit {
-                                value: vinglish_parser::ast::Literal::Bool(true),
-                                ty: self.intern(ctx, Type::Bool),
-                                span: case.span,
-                            }
-                        }
+                        _ => vinglish_hir::Expr::Lit {
+                            value: vinglish_parser::ast::Literal::Bool(true),
+                            ty: self.intern(ctx, Type::Bool),
+                            span: case.span,
+                        },
                     };
 
                     let if_stmt = vinglish_hir::Stmt::If {
@@ -921,26 +966,29 @@ impl TypeInferencePass {
                     result_hir = Some(if_stmt);
                 }
 
-                (Type::Unit, result_hir.unwrap_or_else(|| {
-                    if let Some(oth) = current_otherwise {
-                        vinglish_hir::Stmt::If {
-                            condition: vinglish_hir::Expr::Lit {
-                                value: vinglish_parser::ast::Literal::Bool(true),
-                                ty: self.intern(ctx, Type::Bool),
+                (
+                    Type::Unit,
+                    result_hir.unwrap_or_else(|| {
+                        if let Some(oth) = current_otherwise {
+                            vinglish_hir::Stmt::If {
+                                condition: vinglish_hir::Expr::Lit {
+                                    value: vinglish_parser::ast::Literal::Bool(true),
+                                    ty: self.intern(ctx, Type::Bool),
+                                    span: m.span,
+                                },
+                                then_block: oth,
+                                otherwise: None,
                                 span: m.span,
-                            },
-                            then_block: oth,
-                            otherwise: None,
-                            span: m.span,
+                            }
+                        } else {
+                            vinglish_hir::Stmt::Expr(vinglish_hir::Expr::Lit {
+                                value: vinglish_parser::ast::Literal::Unit,
+                                ty: self.intern(ctx, Type::Unit),
+                                span: m.span,
+                            })
                         }
-                    } else {
-                        vinglish_hir::Stmt::Expr(vinglish_hir::Expr::Lit {
-                            value: vinglish_parser::ast::Literal::Unit,
-                            ty: self.intern(ctx, Type::Unit),
-                            span: m.span,
-                        })
-                    }
-                }))
+                    }),
+                )
             }
             Stmt::Expr(e) => {
                 let (ty, hir_expr) = self.infer_expr(ctx, e);
@@ -998,7 +1046,7 @@ impl TypeInferencePass {
                             ty = self.substitute(&fs.ty, &subst);
                         }
                     }
-                    
+
                     self.record(ctx, id.span, ty.clone());
                     (
                         ty.clone(),
@@ -1086,34 +1134,37 @@ impl TypeInferencePass {
             }
             Expr::Call { callee, args, span } => {
                 // Intercept `Ok` and `Err` as built-in constructors
-                if let Expr::Ident(id) = &**callee {
-                    if id.name == "Ok" || id.name == "Err" {
-                        let mut hir_args = Vec::new();
-                        let mut arg_tys = Vec::new();
-                        for a in args {
-                            let (aty, ha) = self.infer_expr(ctx, a);
-                            arg_tys.push(aty);
-                            hir_args.push(ha);
-                        }
-                        if arg_tys.len() == 1 {
-                            let result_ty = if id.name == "Ok" {
-                                Type::Result(Box::new(arg_tys[0].clone()), Box::new(self.fresh()))
-                            } else {
-                                Type::Result(Box::new(self.fresh()), Box::new(arg_tys[0].clone()))
-                            };
-                            self.record(ctx, *span, result_ty.clone());
-                            return (
-                                result_ty.clone(),
-                                HirExpr::MacroCall {
-                                    name: id.name.clone(),
-                                    args: hir_args,
-                                    ty: self.intern(ctx, result_ty),
-                                    span: *span,
-                                }
-                            );
+                if let Expr::Ident(id) = &**callee
+                    && (id.name == "Ok" || id.name == "Err")
+                {
+                    let mut hir_args = Vec::new();
+                    let mut arg_tys = Vec::new();
+                    for a in args {
+                        let (aty, ha) = self.infer_expr(ctx, a);
+                        arg_tys.push(aty);
+                        hir_args.push(ha);
+                    }
+                    if arg_tys.len() == 1 {
+                        let result_ty = if id.name == "Ok" {
+                            Type::Result(Box::new(arg_tys[0].clone()), Box::new(self.fresh()))
                         } else {
-                            ctx.type_errors.push(TypeError::new(format!("{} expects exactly 1 argument", id.name), *span));
-                        }
+                            Type::Result(Box::new(self.fresh()), Box::new(arg_tys[0].clone()))
+                        };
+                        self.record(ctx, *span, result_ty.clone());
+                        return (
+                            result_ty.clone(),
+                            HirExpr::MacroCall {
+                                name: id.name.clone(),
+                                args: hir_args,
+                                ty: self.intern(ctx, result_ty),
+                                span: *span,
+                            },
+                        );
+                    } else {
+                        ctx.type_errors.push(TypeError::new(
+                            format!("{} expects exactly 1 argument", id.name),
+                            *span,
+                        ));
                     }
                 }
 
@@ -1249,48 +1300,47 @@ impl TypeInferencePass {
                 field,
                 span,
             } => {
-                if let Some(path_str) = get_path_string(expr) {
-                    if let Some(scoped_id) = ctx.lookup(&path_str) {
-                        let ty = match scoped_id {
-                            ScopedId::Func(id) => {
-                                if let Some(fs) = ctx.symbol_table.get_func(id) {
-                                    fs.ty.clone()
-                                } else {
-                                    self.fresh()
-                                }
+                if let Some(path_str) = get_path_string(expr)
+                    && let Some(scoped_id) = ctx.lookup(&path_str)
+                {
+                    let ty = match scoped_id {
+                        ScopedId::Func(id) => {
+                            if let Some(fs) = ctx.symbol_table.get_func(id) {
+                                fs.ty.clone()
+                            } else {
+                                self.fresh()
                             }
-                            ScopedId::Type(id) => Type::Named(
-                                ctx.symbol_table.get_type(id).unwrap().name.clone(),
-                                vec![],
-                            ),
-                            ScopedId::Var(id) => {
-                                if let Some(vs) = ctx.symbol_table.get_var(id) {
-                                    vs.ty.clone()
-                                } else {
-                                    self.fresh()
-                                }
+                        }
+                        ScopedId::Type(id) => {
+                            Type::Named(ctx.symbol_table.get_type(id).unwrap().name.clone(), vec![])
+                        }
+                        ScopedId::Var(id) => {
+                            if let Some(vs) = ctx.symbol_table.get_var(id) {
+                                vs.ty.clone()
+                            } else {
+                                self.fresh()
                             }
-                        };
-                        self.record(ctx, *span, ty.clone());
-                        let hir_expr = match scoped_id {
-                            ScopedId::Func(id) => HirExpr::VarRef {
-                                id: VariableId(id.0),
-                                ty: self.intern(ctx, ty.clone()),
-                                span: *span,
-                            },
-                            ScopedId::Type(id) => HirExpr::VarRef {
-                                id: VariableId(id.0),
-                                ty: self.intern(ctx, ty.clone()),
-                                span: *span,
-                            },
-                            ScopedId::Var(id) => HirExpr::VarRef {
-                                id,
-                                ty: self.intern(ctx, ty.clone()),
-                                span: *span,
-                            },
-                        };
-                        return (ty, hir_expr);
-                    }
+                        }
+                    };
+                    self.record(ctx, *span, ty.clone());
+                    let hir_expr = match scoped_id {
+                        ScopedId::Func(id) => HirExpr::VarRef {
+                            id: VariableId(id.0),
+                            ty: self.intern(ctx, ty.clone()),
+                            span: *span,
+                        },
+                        ScopedId::Type(id) => HirExpr::VarRef {
+                            id: VariableId(id.0),
+                            ty: self.intern(ctx, ty.clone()),
+                            span: *span,
+                        },
+                        ScopedId::Var(id) => HirExpr::VarRef {
+                            id,
+                            ty: self.intern(ctx, ty.clone()),
+                            span: *span,
+                        },
+                    };
+                    return (ty, hir_expr);
                 }
 
                 let (obj_ty, hir_obj) = self.infer_expr(ctx, object);
@@ -1556,11 +1606,14 @@ impl TypeInferencePass {
                     let (_, ha) = self.infer_expr(ctx, a);
                     hir_args.push(ha);
                 }
-                
+
                 let ret_ty = if name.name == "fmt" {
                     Type::Text
                 } else {
-                    ctx.type_errors.push(TypeError::new(format!("Unknown macro: {}!", name.name), *span));
+                    ctx.type_errors.push(TypeError::new(
+                        format!("Unknown macro: {}!", name.name),
+                        *span,
+                    ));
                     Type::Unit
                 };
 
@@ -1572,21 +1625,34 @@ impl TypeInferencePass {
                         args: hir_args,
                         ty: self.intern(ctx, ret_ty.clone()),
                         span: *span,
-                    }
+                    },
                 )
             }
             Expr::PostfixTry { inner, span } => {
                 let (inner_ty, hir_inner) = self.infer_expr(ctx, inner);
                 let ok_ty = self.fresh();
                 let err_ty = self.fresh();
-                
-                self.unify(ctx, inner_ty.clone(), Type::Result(Box::new(ok_ty.clone()), Box::new(err_ty.clone())), *span);
+
+                self.unify(
+                    ctx,
+                    inner_ty.clone(),
+                    Type::Result(Box::new(ok_ty.clone()), Box::new(err_ty.clone())),
+                    *span,
+                );
 
                 if let Some(expected_ret) = ctx.current_return_type.clone() {
                     let expected_ok = self.fresh();
-                    self.unify(ctx, expected_ret, Type::Result(Box::new(expected_ok), Box::new(err_ty.clone())), *span);
+                    self.unify(
+                        ctx,
+                        expected_ret,
+                        Type::Result(Box::new(expected_ok), Box::new(err_ty.clone())),
+                        *span,
+                    );
                 } else {
-                    ctx.type_errors.push(TypeError::new("Cannot use `?` outside of a function returning Result", *span));
+                    ctx.type_errors.push(TypeError::new(
+                        "Cannot use `?` outside of a function returning Result",
+                        *span,
+                    ));
                 }
 
                 self.record(ctx, *span, ok_ty.clone());
@@ -1596,7 +1662,7 @@ impl TypeInferencePass {
                         inner: Box::new(hir_inner),
                         ty: self.intern(ctx, ok_ty.clone()),
                         span: *span,
-                    }
+                    },
                 )
             }
         }

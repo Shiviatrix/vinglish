@@ -192,16 +192,13 @@ impl Checker {
     fn check_expr_use(&mut self, expr: &Expr) {
         match expr {
             Expr::Ident(id) => {
-                if let Some(state) = self.state_of(&id.name) {
-                    if *state == VarState::Moved {
-                        self.errors.push(
-                            OwnershipError::new(
-                                format!("use of moved value `{}`", id.name),
-                                id.span,
-                            )
+                if let Some(state) = self.state_of(&id.name)
+                    && *state == VarState::Moved
+                {
+                    self.errors.push(
+                        OwnershipError::new(format!("use of moved value `{}`", id.name), id.span)
                             .with_note("value was moved out of scope earlier"),
-                        );
-                    }
+                    );
                 }
                 // Immutable references don't move; only move-type values do.
                 // Stage 0: we don't track Copy vs non-Copy — leave that for Stage 1.

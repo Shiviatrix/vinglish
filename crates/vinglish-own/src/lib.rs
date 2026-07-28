@@ -18,7 +18,10 @@ pub use validator::OwnershipValidator;
 pub fn analyze_ownership(
     mut module: vinglish_mir::MirModule<vinglish_hir::symbol::SsaValueId>,
     symbol_table: &vinglish_hir::symbol::SymbolTable,
-) -> Result<vinglish_mir::MirModule<vinglish_hir::symbol::SsaValueId>, Vec<vinglish_diagnostics::Diagnostic>> {
+) -> Result<
+    vinglish_mir::MirModule<vinglish_hir::symbol::SsaValueId>,
+    Vec<vinglish_diagnostics::Diagnostic>,
+> {
     let pass = analysis::OwnershipAnalysisPass::new();
     let graph = pass.run(&mut module, symbol_table);
 

@@ -6,11 +6,11 @@
 #[cfg(test)]
 mod stress_tests;
 
-use thiserror::Error;
-use sha2::{Sha256, Digest};
 use base64::Engine;
 use flate2::read::ZlibDecoder;
+use sha2::{Digest, Sha256};
 use std::io::Read;
+use thiserror::Error;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -43,40 +43,46 @@ pub fn extract_mir_payload(c_source: &str) -> Result<Vec<u8>, DecompileError> {
     let Some(start) = c_source.find(payload_marker) else {
         return Err(DecompileError::MissingPayload);
     };
-    
+
     // The C source we want to hash is everything before the payload, exactly as it was generated.
     let c_code = &c_source[..start];
-    
+
     let rest = &c_source[start + payload_marker.len()..];
     let Some(end) = rest.find(" */") else {
         return Err(DecompileError::MissingPayload);
     };
     let base64_payload = &rest[..end];
-    
+
     let mut hasher = Sha256::new();
     hasher.update(c_code.as_bytes());
-    let computed_hash = hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect::<String>();
-    
-    let compressed = base64::engine::general_purpose::STANDARD.decode(base64_payload)
+    let computed_hash = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
+
+    let compressed = base64::engine::general_purpose::STANDARD
+        .decode(base64_payload)
         .map_err(|_| DecompileError::Base64Decode)?;
-        
+
     let mut decoder = ZlibDecoder::new(&compressed[..]);
     let mut serialized = Vec::new();
-    decoder.read_to_end(&mut serialized).map_err(|_| DecompileError::Decompress)?;
-    
-    let (stored_hash, module_bytes): (String, Vec<u8>) = bincode::deserialize(&serialized)
-        .map_err(|_| DecompileError::Deserialize)?;
-        
+    decoder
+        .read_to_end(&mut serialized)
+        .map_err(|_| DecompileError::Decompress)?;
+
+    let (stored_hash, module_bytes): (String, Vec<u8>) =
+        bincode::deserialize(&serialized).map_err(|_| DecompileError::Deserialize)?;
+
     if computed_hash != stored_hash {
         return Err(DecompileError::Desync);
     }
-    
+
     Ok(module_bytes)
 }
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn detects_tampering() {

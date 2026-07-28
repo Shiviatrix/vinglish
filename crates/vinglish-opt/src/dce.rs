@@ -1,18 +1,24 @@
 use crate::{OptimizationPass, PassStats};
-use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::hash::Hash;
+use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 
 /// TODO: Describe implementation.
 pub struct DeadCodeEliminationPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for DeadCodeEliminationPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V>
+    for DeadCodeEliminationPass
+{
     fn name(&self) -> &'static str {
         "Dead Code Elimination"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
+    fn run(
+        &mut self,
+        module: &mut MirModule<V>,
+        _symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -94,6 +100,34 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                                     }
                                 }
                             }
+                            Instruction::<V>::ListNew(_, Operand::<V>::Var(id)) => {
+                                used_vars.insert(*id);
+                            }
+                            Instruction::<V>::ListGet(_, list, idx)
+                            | Instruction::<V>::ListBorrowGet(_, list, idx)
+                            | Instruction::<V>::ListBorrowMutGet(_, list, idx) => {
+                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = idx { used_vars.insert(*id); }
+                            }
+                            Instruction::<V>::ListSet(list, idx, val) => {
+                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = idx { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                            }
+                            Instruction::<V>::ListLen(_, Operand::<V>::Var(id)) => {
+                                used_vars.insert(*id);
+                            }
+                            Instruction::<V>::ListPush(list, val) => {
+                                if let Operand::<V>::Var(id) = list { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                            }
+                            Instruction::<V>::ListPop(_, Operand::<V>::Var(id)) => {
+                                used_vars.insert(*id);
+                            }
+                            Instruction::<V>::StoreDeref(ptr, val) => {
+                                if let Operand::<V>::Var(id) = ptr { used_vars.insert(*id); }
+                                if let Operand::<V>::Var(id) = val { used_vars.insert(*id); }
+                            }
                             _ => {}
                         }
                     }
@@ -123,13 +157,22 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                             | Instruction::<V>::StackAllocate(dest, _)
                             | Instruction::<V>::BinaryOp(dest, _, _, _)
                             | Instruction::<V>::UnaryOp(dest, _, _)
+                            | Instruction::<V>::ListLen(dest, _)
                             | Instruction::<V>::Phi(dest, _) => used_vars.contains(dest),
                             Instruction::<V>::StoreField(_, _, _)
                             | Instruction::<V>::Drop(_)
                             | Instruction::<V>::Call(_, _, _)
                             | Instruction::<V>::CallIntrinsic(_, _, _)
                             | Instruction::<V>::Borrow(_, _)
-                            | Instruction::<V>::BorrowMut(_, _) => true, // Side effects!
+                            | Instruction::<V>::BorrowMut(_, _)
+                            | Instruction::<V>::ListNew(_, _) // Allocates memory, side-effect
+                            | Instruction::<V>::ListGet(_, _, _) // Traps on OOB, side-effect
+                            | Instruction::<V>::ListBorrowGet(_, _, _) // Traps on OOB, side-effect
+                            | Instruction::<V>::ListBorrowMutGet(_, _, _) // Traps on OOB, side-effect
+                            | Instruction::<V>::ListSet(_, _, _) // Modifies heap
+                            | Instruction::<V>::ListPush(_, _) // Modifies heap
+                            | Instruction::<V>::StoreDeref(_, _) // Modifies heap
+                            | Instruction::<V>::ListPop(_, _) => true, // Modifies heap, Side effects!
                         }
                     });
 

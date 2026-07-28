@@ -1,0 +1,8 @@
+function main()
+begin
+    let x be 5
+    x be "hello"
+    let y be "world"
+    let z be x + y
+    foo()
+end

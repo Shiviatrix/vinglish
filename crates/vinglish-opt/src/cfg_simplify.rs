@@ -1,18 +1,24 @@
 use crate::{OptimizationPass, PassStats};
-use vinglish_mir::{BlockId, MirModule, Terminator};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::hash::Hash;
+use vinglish_mir::{BlockId, MirModule, Terminator};
 
 /// TODO: Describe implementation.
 pub struct CfgSimplifyPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for CfgSimplifyPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V>
+    for CfgSimplifyPass
+{
     fn name(&self) -> &'static str {
         "CFG Simplification"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
+    fn run(
+        &mut self,
+        module: &mut MirModule<V>,
+        _symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {
@@ -23,13 +29,12 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                 // 1. Collapse jump chains (Empty block A -> Jump B)
                 let mut jump_map = HashMap::new();
                 for block in &func.blocks {
-                    if block.instrs.is_empty() {
-                        if let Terminator::<V>::Jump(target) = block.terminator {
-                            if target != block.id {
-                                // avoid infinite loop on self-jump
-                                jump_map.insert(block.id, target);
-                            }
-                        }
+                    if block.instrs.is_empty()
+                        && let Terminator::<V>::Jump(target) = block.terminator
+                        && target != block.id
+                    {
+                        // avoid infinite loop on self-jump
+                        jump_map.insert(block.id, target);
                     }
                 }
 
@@ -94,14 +99,15 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
                 // Find a mergeable pair (A -> B where B has only predecessor A, and A ends with Jump(B))
                 let mut merge_pair = None;
                 for block in &func.blocks {
-                    if let Terminator::<V>::Jump(target) = block.terminator {
-                        if target != block.id && preds.get(&target).map_or(0, |p| p.len()) == 1 {
-                            // Target's only predecessor is `block`
-                            // We can't merge if `target` is the entry block (bb0), but entry block has no predecessors if it's bb0!
-                            // Actually bb0 has 0 predecessors, so it won't be matched since len() == 1.
-                            merge_pair = Some((block.id, target));
-                            break;
-                        }
+                    if let Terminator::<V>::Jump(target) = block.terminator
+                        && target != block.id
+                        && preds.get(&target).map_or(0, |p| p.len()) == 1
+                    {
+                        // Target's only predecessor is `block`
+                        // We can't merge if `target` is the entry block (bb0), but entry block has no predecessors if it's bb0!
+                        // Actually bb0 has 0 predecessors, so it won't be matched since len() == 1.
+                        merge_pair = Some((block.id, target));
+                        break;
                     }
                 }
 

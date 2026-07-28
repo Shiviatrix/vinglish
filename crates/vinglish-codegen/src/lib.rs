@@ -12,5 +12,5 @@ mod codegen_stress;
 
 pub use backend::Backend;
 pub use interp::{InterpError, Interpreter, Value};
-pub use lower::{emit_c, CEmitError};
-pub use mir_codegen::{emit_mir_c, MirCEmitError};
+pub use lower::{CEmitError, emit_c};
+pub use mir_codegen::{MirCEmitError, emit_mir_c};

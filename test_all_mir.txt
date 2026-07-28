@@ -1,0 +1,208 @@
+fn eng_read_line (fn_8) {
+bb0:
+    return Unit
+}
+
+fn eng_str_starts_with (fn_9) {
+bb0:
+    return Unit
+}
+
+fn eng_str_substring (fn_10) {
+bb0:
+    return Unit
+}
+
+fn eng_str_index_of (fn_11) {
+bb0:
+    return Unit
+}
+
+fn eng_str_substring_len (fn_12) {
+bb0:
+    return Unit
+}
+
+fn eng_str_unescape_newlines (fn_13) {
+bb0:
+    return Unit
+}
+
+fn read_line (fn_14) {
+bb0:
+    ssa_205 = call foreign eng_read_line()
+    return ssa_205
+}
+
+fn starts_with (fn_15) {
+bb0:
+    ssa_206 = call foreign eng_str_starts_with(ssa_41, ssa_42)
+    return ssa_206
+}
+
+fn substring (fn_16) {
+bb0:
+    ssa_207 = call foreign eng_str_substring(ssa_45, ssa_46)
+    return ssa_207
+}
+
+fn index_of (fn_17) {
+bb0:
+    ssa_208 = call foreign eng_str_index_of(ssa_49, ssa_50)
+    return ssa_208
+}
+
+fn substring_len (fn_18) {
+bb0:
+    ssa_209 = call foreign eng_str_substring_len(ssa_52, ssa_53, ssa_54)
+    return ssa_209
+}
+
+fn unescape_newlines (fn_19) {
+bb0:
+    ssa_210 = call foreign eng_str_unescape_newlines(ssa_57)
+    return ssa_210
+}
+
+fn test_math (fn_67) {
+bb0:
+    ssa_212 = Int(15)
+    ssa_214 = Int(5)
+    ssa_216 = Int(50)
+    ssa_218 = Int(2)
+    ssa_220 = Int(1)
+    ssa_221 = call foreign to_text(ssa_212)
+    ssa_222 = ssa_221 Add Text(" ")
+    ssa_223 = call foreign to_text(ssa_214)
+    ssa_224 = ssa_222 Add ssa_223
+    ssa_225 = ssa_224 Add Text(" ")
+    ssa_226 = call foreign to_text(ssa_216)
+    ssa_227 = ssa_225 Add ssa_226
+    ssa_228 = ssa_227 Add Text(" ")
+    ssa_229 = call foreign to_text(ssa_218)
+    ssa_230 = ssa_228 Add ssa_229
+    ssa_231 = ssa_230 Add Text(" ")
+    ssa_232 = call foreign to_text(ssa_220)
+    ssa_233 = ssa_231 Add ssa_232
+    ssa_234 = call foreign println(ssa_233)
+    return ssa_234
+}
+
+fn test_compare (fn_68) {
+bb0:
+    branch Bool(true) ? bb1 : bb3
+bb1:
+    ssa_252 = call foreign println(Text("less"))
+    jump bb3
+bb3:
+    branch Bool(true) ? bb4 : bb6
+bb4:
+    ssa_238 = call foreign println(Text("lesseq"))
+    jump bb6
+bb6:
+    branch Bool(true) ? bb7 : bb9
+bb7:
+    ssa_241 = call foreign println(Text("greater"))
+    jump bb9
+bb9:
+    branch Bool(true) ? bb10 : bb12
+bb10:
+    ssa_244 = call foreign println(Text("greatereq"))
+    jump bb12
+bb12:
+    branch Bool(true) ? bb13 : bb15
+bb13:
+    ssa_247 = call foreign println(Text("eq"))
+    jump bb15
+bb15:
+    branch Bool(true) ? bb16 : bb18
+bb16:
+    ssa_250 = call foreign println(Text("neq"))
+    jump bb18
+bb18:
+    return Unit
+}
+
+fn test_logic (fn_69) {
+bb0:
+    ssa_253 = Bool(true)
+    branch Bool(true) ? bb2 : bb2
+bb1:
+    jump bb2
+bb2:
+    ssa_257 = phi(bb0: ssa_253, bb1: ssa_253)
+    branch ssa_257 ? bb3 : bb5
+bb3:
+    ssa_259 = call foreign println(Text("and works"))
+    jump bb5
+bb5:
+    ssa_261 = Bool(false)
+    branch Bool(false) ? bb7 : bb7
+bb6:
+    jump bb7
+bb7:
+    ssa_266 = phi(bb5: ssa_261, bb6: ssa_253)
+    branch ssa_266 ? bb8 : bb10
+bb8:
+    ssa_267 = call foreign println(Text("or works"))
+    jump bb10
+bb10:
+    ssa_270 = Not Bool(false)
+    branch ssa_270 ? bb11 : bb13
+bb11:
+    ssa_271 = call foreign println(Text("not works"))
+    jump bb13
+bb13:
+    return Unit
+}
+
+fn test_builtins (fn_70) {
+bb0:
+    ssa_273 = call foreign to_number(Text("123"))
+    ssa_274 = ssa_273
+    ssa_275 = call foreign to_text(ssa_274)
+    ssa_276 = call foreign println(ssa_275)
+    ssa_278 = call foreign abs(Int(-50))
+    ssa_279 = call foreign to_text(ssa_278)
+    ssa_280 = call foreign println(ssa_279)
+    ssa_281 = call foreign min(Int(10), Int(20))
+    ssa_282 = call foreign to_text(ssa_281)
+    ssa_283 = call foreign println(ssa_282)
+    ssa_284 = call foreign max(Int(10), Int(20))
+    ssa_285 = call foreign to_text(ssa_284)
+    ssa_286 = call foreign println(ssa_285)
+    return ssa_286
+}
+
+fn test_structs (fn_71) {
+bb0:
+    ssa_287 = heap_allocate type_66[16:8]
+    ssa_287.field_0@0 = Int(5)
+    ssa_287.field_1@8 = Int(10)
+    ssa_288 = ssa_287
+    ssa_189 = ssa_288.field_0@0
+    ssa_289 = call foreign to_text(ssa_189)
+    ssa_290 = call foreign println(ssa_289)
+    ssa_288.field_1@8 = Int(20)
+    ssa_192 = ssa_288.field_1@8
+    ssa_291 = call foreign to_text(ssa_192)
+    ssa_292 = call foreign println(ssa_291)
+    return ssa_292
+}
+
+fn main (fn_72) {
+bb0:
+    ssa_293 = call foreign println(Text("--- MATH ---"))
+    ssa_294 = call fn_67()
+    ssa_295 = call foreign println(Text("--- COMPARE ---"))
+    ssa_296 = call fn_68()
+    ssa_297 = call foreign println(Text("--- LOGIC ---"))
+    ssa_298 = call fn_69()
+    ssa_299 = call foreign println(Text("--- BUILTINS ---"))
+    ssa_300 = call fn_70()
+    ssa_301 = call foreign println(Text("--- STRUCTS ---"))
+    ssa_302 = call fn_71()
+    return ssa_302
+}
+
+

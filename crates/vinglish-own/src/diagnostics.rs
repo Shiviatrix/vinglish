@@ -20,14 +20,14 @@ pub fn use_after_move(
 ) -> Diagnostic {
     let name = get_var_name(symbol_table, var);
     let to_name = get_var_name(symbol_table, moved_to);
-    
+
     // Attempt to strip SSA suffixes for better user messages
     // Remove trailing _NUMBER
     let mut clean_name = name.clone();
-    if let Some(pos) = name.rfind('_') {
-        if name[pos + 1..].chars().all(|c| c.is_ascii_digit()) {
-            clean_name = name[..pos].to_string();
-        }
+    if let Some(pos) = name.rfind('_')
+        && name[pos + 1..].chars().all(|c| c.is_ascii_digit())
+    {
+        clean_name = name[..pos].to_string();
     }
     let display_name = if clean_name.starts_with("_tmp") || clean_name.starts_with("tmp") {
         "temporary value".to_string()
@@ -40,7 +40,7 @@ pub fn use_after_move(
         format!("Use of moved value {}", display_name),
         use_span,
     )
-    .with_note(format!("Value was moved in a previous statement."));
+    .with_note("Value was moved in a previous statement.".to_string());
 
     if to_name.starts_with("_tmp") {
         diag = diag.with_note("Ownership was transferred to another value or function call.");
@@ -49,11 +49,18 @@ pub fn use_after_move(
     }
 
     diag.with_note("This value can no longer be used.")
-    .with_note(format!("help: consider borrowing `&{}` instead of moving it", clean_name))
+        .with_note(format!(
+            "help: consider borrowing `&{}` instead of moving it",
+            clean_name
+        ))
 }
 
 /// TODO: Describe implementation.
-pub fn double_mutable_borrow(symbol_table: &SymbolTable, var: SsaValueId, span: Span) -> Diagnostic {
+pub fn double_mutable_borrow(
+    symbol_table: &SymbolTable,
+    var: SsaValueId,
+    span: Span,
+) -> Diagnostic {
     let name = get_var_name(symbol_table, var);
     Diagnostic::error(
         "E002",
@@ -72,4 +79,14 @@ pub fn borrow_after_move(symbol_table: &SymbolTable, var: SsaValueId, span: Span
         span,
     )
     .with_note(format!("`{}` was moved and is no longer valid.", name))
+}
+
+pub fn move_from_collection(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E004",
+        "Cannot move out of a collection".to_string(),
+        span,
+    )
+    .with_note("This value is move-only (not a Copy type) and cannot be extracted by value.")
+    .with_note("help: consider borrowing it with `borrow list[idx]`")
 }

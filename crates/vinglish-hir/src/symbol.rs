@@ -1,7 +1,7 @@
 use crate::types::{Type, TypeVar};
-use vinglish_parser::ast::Visibility;
 use std::collections::HashMap;
 use std::fmt;
+use vinglish_parser::ast::Visibility;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -21,7 +21,7 @@ pub struct VariableId(pub SymbolId);
 
 impl fmt::Display for VariableId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "var_{}", self.0 .0)
+        write!(f, "var_{}", self.0.0)
     }
 }
 
@@ -91,7 +91,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_interned_type(&self, id: TypeId) -> Option<&Type> {
-        match self.symbols.get(id.0 .0 as usize) {
+        match self.symbols.get(id.0.0 as usize) {
             Some(SymbolKind::InternedType(ty)) => Some(ty),
             Some(SymbolKind::Type(_ts)) => {
                 // Should Named types return themselves?
@@ -157,7 +157,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_type(&self, id: TypeId) -> Option<&TypeSymbol> {
-        if let Some(SymbolKind::Type(ts)) = self.symbols.get(id.0 .0 as usize) {
+        if let Some(SymbolKind::Type(ts)) = self.symbols.get(id.0.0 as usize) {
             Some(ts)
         } else {
             None
@@ -166,7 +166,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_func(&self, id: FunctionId) -> Option<&FunctionSymbol> {
-        if let Some(SymbolKind::Function(fs)) = self.symbols.get(id.0 .0 as usize) {
+        if let Some(SymbolKind::Function(fs)) = self.symbols.get(id.0.0 as usize) {
             Some(fs)
         } else {
             None
@@ -175,7 +175,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_var(&self, id: VariableId) -> Option<&VariableSymbol> {
-        if let Some(SymbolKind::Variable(vs)) = self.symbols.get(id.0 .0 as usize) {
+        if let Some(SymbolKind::Variable(vs)) = self.symbols.get(id.0.0 as usize) {
             Some(vs)
         } else {
             None
@@ -184,7 +184,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_type_mut(&mut self, id: TypeId) -> Option<&mut TypeSymbol> {
-        if let Some(SymbolKind::Type(ts)) = self.symbols.get_mut(id.0 .0 as usize) {
+        if let Some(SymbolKind::Type(ts)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(ts)
         } else {
             None
@@ -193,7 +193,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_func_mut(&mut self, id: FunctionId) -> Option<&mut FunctionSymbol> {
-        if let Some(SymbolKind::Function(fs)) = self.symbols.get_mut(id.0 .0 as usize) {
+        if let Some(SymbolKind::Function(fs)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(fs)
         } else {
             None
@@ -202,7 +202,7 @@ impl SymbolTable {
 
     /// TODO: Describe implementation.
     pub fn get_var_mut(&mut self, id: VariableId) -> Option<&mut VariableSymbol> {
-        if let Some(SymbolKind::Variable(vs)) = self.symbols.get_mut(id.0 .0 as usize) {
+        if let Some(SymbolKind::Variable(vs)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(vs)
         } else {
             None
@@ -307,9 +307,13 @@ pub trait HasSymbolId {
 }
 
 impl HasSymbolId for VariableId {
-    fn symbol_id(&self) -> SymbolId { self.0 }
+    fn symbol_id(&self) -> SymbolId {
+        self.0
+    }
 }
 
 impl HasSymbolId for SsaValueId {
-    fn symbol_id(&self) -> SymbolId { SymbolId(self.0) }
+    fn symbol_id(&self) -> SymbolId {
+        SymbolId(self.0)
+    }
 }

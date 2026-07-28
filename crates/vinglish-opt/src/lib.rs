@@ -11,9 +11,9 @@ pub mod dce;
 /// TODO: Describe implementation.
 pub mod gvn;
 
-use vinglish_mir::MirModule;
 use std::fmt::Display;
 use std::hash::Hash;
+use vinglish_mir::MirModule;
 
 /// TODO: Describe implementation.
 #[derive(Default, Debug, Clone)]
@@ -35,9 +35,16 @@ impl PassStats {
 }
 
 /// TODO: Describe implementation.
-pub trait OptimizationPass<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> {
+pub trait OptimizationPass<
+    V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId,
+>
+{
     fn name(&self) -> &'static str;
-    fn run(&mut self, module: &mut MirModule<V>, symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats;
+    fn run(
+        &mut self,
+        module: &mut MirModule<V>,
+        symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats;
 }
 
 /// TODO: Describe implementation.
@@ -45,7 +52,9 @@ pub struct PassManager<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::sym
     passes: Vec<Box<dyn OptimizationPass<V>>>,
 }
 
-impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> Default for PassManager<V> {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> Default
+    for PassManager<V>
+{
     fn default() -> Self {
         Self::new()
     }
@@ -97,6 +106,5 @@ pub fn post_ssa_pipeline() -> PassManager<vinglish_hir::symbol::SsaValueId> {
     pm.add_pass(Box::new(copy_prop::CopyPropagationPass));
     pm.add_pass(Box::new(gvn::GlobalValueNumberingPass));
     pm.add_pass(Box::new(dce::DeadCodeEliminationPass));
-    pm.add_pass(Box::new(cfg_simplify::CfgSimplifyPass));
     pm
 }

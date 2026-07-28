@@ -21,119 +21,180 @@
       <a class="nav-cta" href="#get-started">Begin building →</a>
     </div>
   </header>
-  <main id="top">
+  
+    <main id="top">
+    <!-- Hero Section -->
     <section class="shell hero">
       <div class="reveal">
-        <span class="eyebrow">⚡ STATICALLY TYPED · NATIVE PERFORMANCE</span>
-        <h1>Write with clarity.<span>Compile with confidence.</span></h1>
-        <p class="hero-copy">Vinglish is a <strong>systems language engineered for readability</strong>: write with clarity, then let HIR, SSA-form MIR, and the optimiser lower your program to efficient native C.</p>
-        <div class="hero-actions"><a class="button primary" href="#get-started">Start building →</a><a class="button secondary" href="language_guide.html">Read the language guide ↗</a></div>
-        <p class="microcopy">NO VM · NO GC · PREDICTABLE NATIVE PERFORMANCE</p>
+        <span class="eyebrow">v0.1.0 OUT NOW</span>
+        <h1>Readable systems <span>programming</span></h1>
+        <p class="hero-copy">Vinglish is a statically-typed programming language that combines English-inspired readability with <strong>native performance</strong>. Fast, safe, and transparent.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#get-started">Get Started</a>
+          <a class="button secondary" href="language_guide.html">Read the Guide</a>
+        </div>
+        <p class="microcopy">Requires Rust 1.97.1 & C compiler</p>
       </div>
-      <div class="hero-art reveal">
-        <div class="sun"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      
+      <div class="hero-art reveal" style="animation-delay: 0.1s;">
+        <div class="sun">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
         <div class="code-board">
-          <div class="code-top"><span>VINGLISH REFERENCE</span><span>geometry.ving</span></div>
-          <pre><code><span class="k">type</span> <span class="t">Point</span>
-<span class="k">begin</span>
-    <span class="n">x</span>: <span class="t">number</span>
-    <span class="n">y</span>: <span class="t">number</span>
-<span class="k">end</span>
+          <header class="code-top">
+            <span>examples/hello.ving</span>
+            <span>Vinglish</span>
+          </header>
+          <pre><code><span class="k">use</span> std.io
 
-<span class="k">function</span> <span class="f">translate</span> <span class="k">on</span> <span class="t">Point</span> (<span class="t">number</span> dx, <span class="t">number</span> dy)
-<span class="k">returns</span> <span class="t">Point</span>
+<span class="k">function</span> <span class="f">main</span>()
 <span class="k">begin</span>
-    <span class="k">return</span> <span class="t">Point</span> {
-        x: self.x + dx,
-        y: self.y + dy
-    }
-<span class="k">end</span>
-
-<span class="k">let</span> here <span class="k">be</span> <span class="t">Point</span> { x: <span class="p">10</span>, y: <span class="p">20</span> }
-<span class="f">println</span>(<span class="f">fmt!</span>(<span class="s">"Point x-coordinate: {here.x}"</span>))</code></pre>
+    <span class="f">println</span>(<span class="s">"Hello from Vinglish!"</span>)
+<span class="k">end</span></code></pre>
         </div>
       </div>
     </section>
-    <section class="shell ticket-row" aria-label="Compiler pipeline"><div><b>01</b> .VING SOURCE</div><div><b>02</b> HIR SEMANTICS</div><div><b>03</b> MIR + SSA</div><div><b>04</b> NATIVE C</div></section>
-    <section class="shell features" id="features">
-      <div class="section-head reveal"><p class="section-tag">Language principles</p><h2>Readable systems programming.<br>Native performance.</h2><p>Vinglish gives systems work a direct, expressive language without hiding the controls that low-level software requires.</p></div>
+
+    <!-- Ticket Row -->
+    <section class="shell reveal">
+      <div class="ticket-row">
+        <div><b>//</b> NATIVE PERFORMANCE</div>
+        <div><b>//</b> STATICALLY TYPED</div>
+        <div><b>//</b> MIR OWNERSHIP</div>
+        <div><b>//</b> C INTEROP</div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="shell features reveal">
+      <header class="section-head">
+        <div class="section-tag">Why Vinglish?</div>
+        <h2>A language designed for clarity</h2>
+        <p>Combining the expressiveness of natural language with the strict guarantees of systems programming.</p>
+      </header>
       <div class="feature-grid">
-        <article class="feature reveal"><span class="feature-number">01</span><h3>Zero-overhead execution.</h3><p>Your readable source lowers cleanly to low-level C. The runtime stays minimal and your intent remains in control.</p></article>
-        <article class="feature reveal"><span class="feature-number">02</span><h3>Precise, readable syntax.</h3><p>Types, borrows, results, and methods remain easy to follow without hiding the controls systems software requires.</p></article>
-        <article class="feature reveal"><span class="feature-number">03</span><h3>Native Rust interoperability.</h3><p>Use Rust capabilities through foreign declarations and a macro-generated bridge, without a large layer of glue code.</p></article>
+        <article class="feature">
+          <span class="feature-number">01</span>
+          <h3>Readable Syntax</h3>
+          <p>Ditch cryptic symbols for clear keywords. Vinglish supports natural-language aliases (e.g. 'is below' for '<') and clean block structures.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-number">02</span>
+          <h3>Strict Ownership</h3>
+          <p>Memory safety guaranteed through a robust MIR-level ownership graph, preventing use-after-move and double mutable borrows natively.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-number">03</span>
+          <h3>Native Backends</h3>
+          <p>Compiles down to clean, readable C code or directly via our experimental LLVM backend, guaranteeing blazing-fast native binaries.</p>
+        </article>
       </div>
     </section>
-    <section class="shell resource-section" id="resources">
-      <div class="section-head reveal"><p class="section-tag">Project resources</p><h2>One project. Every path explained.</h2><p>Move from first program to compiler internals through the language guide, standard library, semantic contract, and source repository.</p></div>
-      <div class="resource-grid">
-        <a class="resource-card reveal" href="language_guide.html"><span>01 / LANGUAGE</span><h3>Language guide</h3><p>Syntax, types, extension methods, ownership, `Result of T`, generics, and formatting.</p><strong>OPEN →</strong></a>
-        <a class="resource-card reveal" href="standard_library.html"><span>02 / STANDARD LIBRARY</span><h3>Native modules</h3><p>Vectors, I/O, networking, files, threads, native UI, and the runtime boundary.</p><strong>OPEN →</strong></a>
-        <a class="resource-card reveal" href="architecture.html"><span>03 / COMPILER</span><h3>Architecture</h3><p>Module resolution, HIR, MIR in SSA form, GVN, DCE, and C code generation.</p><strong>OPEN →</strong></a>
-        <a class="resource-card reveal" href="https://github.com/Shiviatrix/vinglish" target="_blank" rel="noreferrer"><span>04 / SOURCE</span><h3>GitHub repository</h3><p>Explore examples, compiler crates, native runtime code, benchmarks, and current development.</p><strong>VISIT ↗</strong></a>
-      </div>
-    </section>
-    
-            <section class="doc-section" id="records"><p class="section-tag">02 / Types & methods</p><h2>Data has shape. Behavior has a home.</h2><p>Use <code>type</code> for records, <code>name: type</code> for fields, and braces for construction. Use <code>on</code> to give a type its own behaviour.</p><pre><code><span class="k">type</span> <span class="t">Point</span>
-<span class="k">begin</span>
-    x: <span class="t">number</span>
-    y: <span class="t">number</span>
-<span class="k">end</span>
 
-<span class="k">function</span> <span class="f">translate</span> <span class="k">on</span> <span class="t">Point</span> (<span class="t">number</span> dx, <span class="t">number</span> dy) <span class="k">returns</span> <span class="t">Point</span>
-<span class="k">begin</span>
-    <span class="k">return</span> <span class="t">Point</span> { x: self.x + dx, y: self.y + dy }
-<span class="k">end</span></code></pre></section>
-            <section class="doc-section" id="generics"><p class="section-tag">03 / Generics</p><h2>Reusable and explicit.</h2><p>A <code>Vector of T</code> is written <code>Vector&lt;T&gt;</code> in source. Generic calls remain explicit and statically checked, without a dynamic dispatch layer.</p><pre><code><span class="k">use</span> std.collections.vector
-
-<span class="k">let</span> values <span class="k">be</span> <span class="f">vector_new</span>&lt;<span class="t">number</span>&gt;()
-<span class="f">push</span>(<span class="k">borrow mutable</span> values, <span class="p">42</span>)
-<span class="f">println</span>(<span class="f">get</span>(<span class="k">borrow</span> values, <span class="p">0</span>))
-<span class="f">vector_free</span>(<span class="k">borrow mutable</span> values)</code></pre></section>
-            <section class="doc-section" id="errors"><p class="section-tag">04 / Error handling</p><h2>Failure is explicit in the type.</h2><p><code>Result of T</code> makes recoverable failure visible. Return <code>Ok(value)</code> or <code>Err(message)</code>; use <code>?</code> to pass the error through an operation that can also fail.</p><pre><code><span class="k">function</span> <span class="f">connect</span>() <span class="k">returns</span> <span class="t">Result of number</span>
-<span class="k">begin</span>
-    <span class="k">let</span> socket <span class="k">be</span> <span class="f">tcp_connect</span>(<span class="s">"127.0.0.1"</span>, <span class="p">8080</span>)<span class="p">?</span>
-    <span class="f">tcp_close</span>(<span class="k">borrow</span> socket)
-    <span class="k">return</span> <span class="f">Ok</span>(<span class="p">0</span>)
-<span class="k">end</span></code></pre><div class="result-callout"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4m0 4h.01"/><path d="M10.3 3.6 2.7 17a2 2 0 0 0 1.73 3h15.14a2 2 0 0 0 1.73-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/></svg><p><strong>Explicit by design:</strong> an error cannot disappear by accident when the caller has to produce another <code>Result of T</code>.</p></div></section>
-            <section class="doc-section" id="pipeline"><p class="section-tag">05 / Compiler pipeline</p><h2>Validated source. Optimized native output.</h2><p>The compiler resolves a program into HIR, lowers it to SSA-form MIR, then applies constant propagation, GVN, DCE, and control-flow simplification before code generation.</p><div class="doc-card-grid"><div class="doc-card"><span>HIR</span><p>Names, types, imports, ownership, and semantic validity.</p></div><div class="doc-card"><span>MIR + SSA</span><p>Clear control flow and single-assignment data flow.</p></div><div class="doc-card"><span>GVN + DCE</span><p>Remove redundant calculations and code without observable effect.</p></div><div class="doc-card"><span>C backend</span><p>Transparent C output plus a minimal runtime.</p></div></div></section>
-          </article>
-        </div>
-      </div>
-    </section>
-    <section class="playground" id="playground">
+    <!-- Playground -->
+    <section class="playground reveal">
       <div class="shell">
-        <div class="section-head reveal"><p class="section-tag">Interactive example</p><h2>Skyline Runner</h2><p>Play the browser preview with <strong>Space</strong>, <strong>Up</strong>, or a tap to jump. The panel beside it shows the native Vinglish program that uses `std.ui` and Rust-backed input.</p></div>
+        <header class="section-head">
+          <div class="section-tag">Interactive Preview</div>
+          <h2>Playground: Skyline Runner</h2>
+          <p>See Vinglish in action. This game was written entirely in Vinglish and compiled using the native UI standard library. (Works locally or embedded if supported!)</p>
+        </header>
         <div class="playground-grid">
-          <div class="game-shell reveal">
-            <div class="game-hud"><span>SKYLINE RUNNER</span><span id="runnerScore">SCORE 0</span><span id="runnerStatus">READY</span></div>
-            <canvas class="runner-canvas" id="runnerCanvas" width="680" height="360" aria-label="Skyline Runner game">Your browser does not support the game canvas.</canvas>
-            <div class="game-controls"><button class="game-button" id="runnerStart" type="button">Start runner</button><button class="game-button" id="runnerJump" type="button">Jump</button><p class="game-note">SPACE / ↑ / TAP TO JUMP · AVOID THE TOWERS</p></div>
+          <!-- Game Canvas -->
+          <div class="game-shell">
+            <div class="game-hud">
+              <span id="runnerScore">SCORE 0</span>
+              <span id="runnerStatus">READY</span>
+            </div>
+            <canvas id="runnerCanvas" class="runner-canvas" width="640" height="360"></canvas>
+            <div class="game-controls">
+              <button id="runnerStart" class="game-button">Start runner</button>
+              <button id="runnerJump" class="game-button">Jump</button>
+            </div>
+            <p class="game-note">Press Space or Up Arrow to jump</p>
           </div>
-          <div class="reveal">
-            <div class="source-panel"><header><span>NATIVE EXAMPLE</span><span>skyline_runner.ving</span></header><pre><code><span class="k">use</span> std.ui
-
-<span class="k">function</span> <span class="f">main</span>() <span class="k">returns</span> <span class="t">number</span>
+          <!-- Source Code -->
+          <div class="source-panel">
+            <header>
+              <span>skyline_runner.ving</span>
+              <span>std.ui</span>
+            </header>
+            <pre><code><span class="cm">-- Main game loop snippet</span>
+<span class="k">repeat while</span> <span class="f">is_window_open</span>(window) == <span class="n">1</span>
 <span class="k">begin</span>
-    <span class="k">let</span> window <span class="k">be</span> <span class="f">create_window</span>(<span class="s">"Skyline Runner"</span>, <span class="p">640</span>, <span class="p">360</span>)
-    <span class="k">let</span> player_y <span class="k">be</span> <span class="p">250</span>
-    <span class="k">let</span> velocity <span class="k">be</span> <span class="p">0</span>
-
-    <span class="k">repeat while</span> <span class="f">is_window_open</span>(window) == <span class="p">1</span>
-    <span class="k">begin</span>
-        <span class="k">if</span> <span class="f">is_space_pressed</span>(window) == <span class="p">1</span> <span class="k">then begin</span>
-            velocity <span class="k">be</span> -<span class="p">12</span>
-        <span class="k">end</span>
-        player_y <span class="k">be</span> player_y + velocity
-        <span class="cm">-- draw, advance, and update</span>
+    <span class="k">if</span> <span class="f">is_space_pressed</span>(window) == <span class="n">1</span> <span class="k">then begin</span>
+        velocity <span class="k">be</span> -<span class="n">12</span>
     <span class="k">end</span>
-<span class="k">end</span></code></pre></div>
-            <div class="source-actions"><a href="examples/skyline_runner.ving">VIEW FULL SOURCE →</a><a href="docs/playground.md">READ PLAYGROUND NOTES →</a></div>
+
+    velocity <span class="k">be</span> velocity + <span class="n">1</span>
+    player_y <span class="k">be</span> player_y + velocity
+
+    <span class="cm">-- Draw UI buffer</span>
+    <span class="f">fill_buffer</span>(buffer, <span class="n">15856383</span>)
+    <span class="f">draw_square</span>(buffer, <span class="n">70</span>, player_y, <span class="n">28</span>, <span class="n">13382451</span>)
+    <span class="f">update_window</span>(window, buffer)
+<span class="k">end</span></code></pre>
+            <div class="source-actions">
+              <a href="language_guide.html">Learn syntax →</a>
+            </div>
           </div>
         </div>
       </div>
     </section>
-    <section class="cta" id="get-started"><div class="shell"><div class="cta-box reveal"><p class="section-tag">Start with a .ving file</p><h2>Build with clear intent.</h2><p>Read the guide, inspect the pipeline, and take your first idea all the way to a native binary.</p><div class="install"><span>vng build hello.ving --output hello</span><button class="copy-button" type="button" data-copy="vng build hello.ving --output hello">Copy command</button></div></div></div></section>
+
+    <!-- Resources -->
+    <section class="shell resource-section reveal" style="margin-top: 120px;">
+      <header class="section-head">
+        <div class="section-tag">Documentation</div>
+        <h2>Explore the ecosystem</h2>
+        <p>Comprehensive guides and internals documentation to master the language.</p>
+      </header>
+      <div class="resource-grid">
+        <a href="language_guide.html" class="resource-card">
+          <span>TUTORIAL</span>
+          <h3>Language Guide</h3>
+          <p>Learn the basics of Vinglish, from simple variables to complex ownership patterns.</p>
+          <strong>→</strong>
+        </a>
+        <a href="standard_library.html" class="resource-card">
+          <span>REFERENCE</span>
+          <h3>Standard Library</h3>
+          <p>Explore built-in modules for IO, Networking, Maps, and the UI Toolkit.</p>
+          <strong>→</strong>
+        </a>
+        <a href="architecture.html" class="resource-card">
+          <span>EXPLANATION</span>
+          <h3>Architecture</h3>
+          <p>Dive deep into the compiler design, MIR, SSA, and the execution pipeline.</p>
+          <strong>→</strong>
+        </a>
+        <a href="docs/reference/optimizations.md" class="resource-card">
+          <span>INTERNALS</span>
+          <h3>Optimizations</h3>
+          <p>Read about our CFG simplification, constant folding, and DCE passes.</p>
+          <strong>→</strong>
+        </a>
+      </div>
+    </section>
+
+    <div class="motif-line">STATICALLY TYPED · ENGLISH SYNTAX · C COMPILATION</div>
+
+    <!-- CTA -->
+    <section id="get-started" class="cta reveal">
+      <div class="shell">
+        <div class="cta-box">
+          <h2>Ready to build?</h2>
+          <p>Install the Vinglish compiler locally via Cargo to start building native binaries in seconds.</p>
+          <div class="install">
+            <code>cargo run --bin vng -- run test.ving</code>
+            <button class="copy-button" data-copy="cargo run --bin vng -- run test.ving">Copy command</button>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
+
   <footer><div class="shell footer-inner"><span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span><nav class="footer-links" aria-label="Footer navigation"><a href="language_guide.html">Guide</a><a href="architecture.html">Architecture</a><a href="standard_library.html">Library</a></nav></div></footer>
   <script>
     const menuButton = document.querySelector(".menu-button");

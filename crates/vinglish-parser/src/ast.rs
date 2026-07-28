@@ -162,10 +162,7 @@ pub enum Expr {
         span: Span,
     },
     /// Postfix Try `?`
-    PostfixTry {
-        inner: Box<Expr>,
-        span: Span,
-    },
+    PostfixTry { inner: Box<Expr>, span: Span },
 }
 
 impl Expr {

@@ -1,0 +1,6 @@
+function main()
+begin
+    if 1 == 2 or 2 == 2 then begin
+        println("or works")
+    end
+end

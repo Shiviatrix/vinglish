@@ -1,9 +1,9 @@
 /// TODO: Describe implementation.
 pub mod validator;
 
+use std::fmt;
 use vinglish_hir::symbol::{FieldId, FunctionId, TypeId};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
-use std::fmt;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, serde::Serialize, serde::Deserialize)]
@@ -96,8 +96,19 @@ pub enum Instruction<V: Clone + Copy + fmt::Display> {
     Borrow(V, Operand<V>),
     BorrowMut(V, Operand<V>),
     Deref(V, Operand<V>, TypeId),
+    StoreDeref(Operand<V>, Operand<V>),
     Drop(V),
     Phi(V, Vec<(Operand<V>, BlockId)>),
+    
+    // List Instructions
+    ListNew(V, Operand<V>), // dest, capacity
+    ListGet(V, Operand<V>, Operand<V>), // dest, list, index
+    ListBorrowGet(V, Operand<V>, Operand<V>), // dest, list, index
+    ListBorrowMutGet(V, Operand<V>, Operand<V>), // dest, list, index
+    ListSet(Operand<V>, Operand<V>, Operand<V>), // list, index, value
+    ListLen(V, Operand<V>), // dest, list
+    ListPush(Operand<V>, Operand<V>), // list, value
+    ListPop(V, Operand<V>), // dest, list
 }
 
 impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
@@ -105,10 +116,18 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
         match self {
             Instruction::Assign(dest, op) => write!(f, "{} = {}", dest, op),
             Instruction::LoadField(dest, obj, field) => {
-                write!(f, "{} = {}.field_{}@{}", dest, obj, field.field_id.0, field.byte_offset)
+                write!(
+                    f,
+                    "{} = {}.field_{}@{}",
+                    dest, obj, field.field_id.0, field.byte_offset
+                )
             }
             Instruction::StoreField(obj, field, val) => {
-                write!(f, "{}.field_{}@{} = {}", obj, field.field_id.0, field.byte_offset, val)
+                write!(
+                    f,
+                    "{}.field_{}@{} = {}",
+                    obj, field.field_id.0, field.byte_offset, val
+                )
             }
             Instruction::Call(dest, func, args) => {
                 let args_str = args
@@ -116,7 +135,14 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                     .map(|a| a.to_string())
                     .collect::<Vec<_>>()
                     .join(", ");
-                match func { CallTarget::Direct(id) => write!(f, "{} = call fn_{}({})", dest, id.0 .0, args_str), CallTarget::Foreign { c_symbol } => write!(f, "{} = call foreign {}({})", dest, c_symbol, args_str) }
+                match func {
+                    CallTarget::Direct(id) => {
+                        write!(f, "{} = call fn_{}({})", dest, id.0.0, args_str)
+                    }
+                    CallTarget::Foreign { c_symbol } => {
+                        write!(f, "{} = call foreign {}({})", dest, c_symbol, args_str)
+                    }
+                }
             }
             Instruction::CallIntrinsic(dest, name, args) => {
                 let args_str = args
@@ -127,10 +153,18 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                 write!(f, "{} = call_intrinsic {}({})", dest, name, args_str)
             }
             Instruction::HeapAllocate(dest, layout) => {
-                write!(f, "{} = heap_allocate type_{}[{}:{}]", dest, layout.layout.0 .0, layout.size, layout.align)
+                write!(
+                    f,
+                    "{} = heap_allocate type_{}[{}:{}]",
+                    dest, layout.layout.0.0, layout.size, layout.align
+                )
             }
             Instruction::StackAllocate(dest, layout) => {
-                write!(f, "{} = stack_allocate type_{}[{}:{}]", dest, layout.layout.0 .0, layout.size, layout.align)
+                write!(
+                    f,
+                    "{} = stack_allocate type_{}[{}:{}]",
+                    dest, layout.layout.0.0, layout.size, layout.align
+                )
             }
             Instruction::BinaryOp(dest, op, left, right) => {
                 write!(f, "{} = {} {:?} {}", dest, left, op, right)
@@ -138,7 +172,8 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
             Instruction::UnaryOp(dest, op, operand) => write!(f, "{} = {:?} {}", dest, op, operand),
             Instruction::Borrow(dest, src) => write!(f, "{} = &{}", dest, src),
             Instruction::BorrowMut(dest, src) => write!(f, "{} = &mut {}", dest, src),
-            Instruction::Deref(dest, src, _) => write!(f, "{} = *{}", dest, src),
+            Instruction::Deref(d, ptr, _) => write!(f, "{} = *{}", d, ptr),
+            Instruction::StoreDeref(ptr, val) => write!(f, "*{} = {}", ptr, val),
             Instruction::Drop(var) => write!(f, "drop({})", var),
             Instruction::Phi(dest, args) => {
                 let args_str = args
@@ -148,6 +183,14 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
                     .join(", ");
                 write!(f, "{} = phi({})", dest, args_str)
             }
+            Instruction::ListNew(dest, cap) => write!(f, "{} = ListNew(capacity: {})", dest, cap),
+            Instruction::ListGet(dest, list, idx) => write!(f, "{} = {}[{}]", dest, list, idx),
+            Instruction::ListBorrowGet(dest, list, idx) => write!(f, "{} = &{}[{}]", dest, list, idx),
+            Instruction::ListBorrowMutGet(dest, list, idx) => write!(f, "{} = &mut {}[{}]", dest, list, idx),
+            Instruction::ListSet(list, idx, val) => write!(f, "{}[{}] = {}", list, idx, val),
+            Instruction::ListLen(dest, list) => write!(f, "{} = len({})", dest, list),
+            Instruction::ListPush(list, val) => write!(f, "push({}, {})", list, val),
+            Instruction::ListPop(dest, list) => write!(f, "{} = pop({})", dest, list),
         }
     }
 }
@@ -186,7 +229,7 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for BasicBlock<V> {
 
 impl<V: Clone + Copy + fmt::Display> fmt::Display for MirFunction<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "fn {} (fn_{}) {{", self.name, self.id.0 .0)?;
+        writeln!(f, "fn {} (fn_{}) {{", self.name, self.id.0.0)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }

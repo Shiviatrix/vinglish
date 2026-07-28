@@ -9,9 +9,9 @@ pub mod types;
 
 use std::path::Path;
 
+use inkwell::context::Context;
 use vinglish_hir::symbol::{SsaValueId, SymbolTable};
 use vinglish_mir::MirModule;
-use inkwell::context::Context;
 
 /// Compile a MIR module to LLVM IR text.
 pub fn compile_to_llvm_ir(

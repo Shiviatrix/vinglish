@@ -1,0 +1,15 @@
+use std.io
+
+use std.collections.map
+
+function main()
+returns number
+begin
+    let m be map_new()
+    insert(borrow m, "test", 42)
+    insert(borrow m, "another", 99)
+    print_num(get(borrow m, "test"))
+    print_num(get(borrow m, "another"))
+    map_free(borrow m)
+    return 0
+end

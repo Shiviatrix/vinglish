@@ -1,14 +1,10 @@
 use crate::diagnostic::Diagnostic;
-use crate::heuristics::{polyglot, lexical};
+use crate::heuristics::{lexical, polyglot};
 
 /// The main entry point for the Heuristic Intent Engine.
 /// Takes a raw diagnostic, the offending token, and the surrounding context,
 /// and attempts to mutate the diagnostic into an intent-aware error.
-pub fn resolve_intent(
-    diag: &mut Diagnostic,
-    bad_token_text: &str,
-    context: &str,
-) {
+pub fn resolve_intent(diag: &mut Diagnostic, bad_token_text: &str, context: &str) {
     // Node 1: Polyglot Interference (C, Python, Java muscle memory)
     if polyglot::check_polyglot_interference(bad_token_text, context, diag) {
         return;

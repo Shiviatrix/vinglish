@@ -1,8 +1,8 @@
 use crate::alias::{AliasGraph, AliasId};
-use vinglish_hir::symbol::SsaValueId;
-use vinglish_mir::{BlockId, MirFunction, MirModule, Operand};
 use std::collections::HashMap;
 use std::fmt;
+use vinglish_hir::symbol::SsaValueId;
+use vinglish_mir::{BlockId, MirFunction, MirModule, Operand};
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone)]

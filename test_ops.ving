@@ -1,0 +1,11 @@
+use std.io
+
+function main()
+begin
+    if 5 < 10 then begin
+        println("5 is < 10")
+    end
+    if 20 > 10 then begin
+        println("20 is > 10")
+    end
+end

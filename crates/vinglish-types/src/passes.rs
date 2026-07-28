@@ -1,12 +1,12 @@
-use crate::{healer::HealingWarning, TypeError};
+use crate::{TypeError, healer::HealingWarning};
+use std::collections::HashMap;
+use vinglish_hir::Module as HirModule;
 use vinglish_hir::symbol::{
     FunctionId, FunctionSymbol, SymbolId, SymbolKind, SymbolTable, TypeId, TypeSymbol, VariableId,
 };
 use vinglish_hir::types::Type;
-use vinglish_hir::Module as HirModule;
 use vinglish_parser::ast::Visibility;
 use vinglish_parser::ast::{Item as AstItem, Module as AstModule};
-use std::collections::HashMap;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy)]
@@ -83,16 +83,48 @@ impl CompilerContext {
         // Register builtins if not already present
         let tv0 = vinglish_hir::types::TypeVar(0);
         let builtins = vec![
-            ("print", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)), vec![tv0]),
-            ("println", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)), vec![tv0]),
-            ("to_text", Type::Function(vec![Type::Var(tv0)], Box::new(Type::Text)), vec![tv0]),
-            ("to_number", Type::Function(vec![Type::Text], Box::new(Type::Int)), vec![]),
-            ("abs", Type::Function(vec![Type::Int], Box::new(Type::Int)), vec![]),
-            ("sqrt", Type::Function(vec![Type::Float], Box::new(Type::Float)), vec![]),
-            ("min", Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)), vec![]),
-            ("max", Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)), vec![]),
+            (
+                "print",
+                Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)),
+                vec![tv0],
+            ),
+            (
+                "println",
+                Type::Function(vec![Type::Var(tv0)], Box::new(Type::Unit)),
+                vec![tv0],
+            ),
+            (
+                "to_text",
+                Type::Function(vec![Type::Var(tv0)], Box::new(Type::Text)),
+                vec![tv0],
+            ),
+            (
+                "to_number",
+                Type::Function(vec![Type::Text], Box::new(Type::Int)),
+                vec![],
+            ),
+            (
+                "abs",
+                Type::Function(vec![Type::Int], Box::new(Type::Int)),
+                vec![],
+            ),
+            (
+                "sqrt",
+                Type::Function(vec![Type::Float], Box::new(Type::Float)),
+                vec![],
+            ),
+            (
+                "min",
+                Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)),
+                vec![],
+            ),
+            (
+                "max",
+                Type::Function(vec![Type::Int, Type::Int], Box::new(Type::Int)),
+                vec![],
+            ),
         ];
-        
+
         for (name, ty, gen_params) in builtins {
             let id = if let Some(sym_id) = symbol_table.lookup(name) {
                 FunctionId(sym_id)
@@ -241,17 +273,17 @@ impl CompilerPass for NameResolutionPass {
                         e.visibility,
                     );
                     ts.generic_params = generic_params.clone();
-                    
+
                     let id = ctx.symbol_table.define_type(qualified_name.clone(), ts);
                     if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
                         ts.id = id;
                     }
-                    
+
                     ctx.define(e.name.name.clone(), ScopedId::Type(id));
                     if !ctx.current_module.is_empty() {
                         ctx.define(qualified_name.clone(), ScopedId::Type(id));
                     }
-                    
+
                     // We also need to define constructor functions for each variant
                     // E.g., `Ok` is a generic function `T -> Result<T, E>`.
                     for (index, variant) in e.variants.iter().enumerate() {

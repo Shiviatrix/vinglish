@@ -1,0 +1,4 @@
+function main() begin
+    let l be []
+    print("empty list ok")
+end

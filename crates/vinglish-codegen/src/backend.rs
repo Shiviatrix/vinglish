@@ -1,5 +1,5 @@
-use vinglish_parser::ast::Module;
 use std::path::Path;
+use vinglish_parser::ast::Module;
 
 /// Trait for Vinglish compilation backends.
 pub trait Backend {

@@ -1,7 +1,7 @@
 use crate::dominators::DominatorTree;
+use std::collections::HashMap;
 use vinglish_hir::symbol::{SymbolId, VariableId};
 use vinglish_mir::{BlockId, Instruction, MirFunction, Operand, Terminator};
-use std::collections::HashMap;
 
 /// TODO: Describe implementation.
 pub struct Renamer {
@@ -45,8 +45,8 @@ pub fn rename_variables(
 ) {
     let mut max_id = 0;
     for &var in &func.locals {
-        if var.0 .0 > max_id {
-            max_id = var.0 .0;
+        if var.0.0 > max_id {
+            max_id = var.0.0;
         }
     }
     let mut renamer = Renamer::new(symbol_table.num_symbols() as u32);
@@ -126,7 +126,7 @@ fn rename_block(
             // Propagate type to new SSA variable
             let mut ty = vinglish_hir::types::Type::Unit;
             if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
-                symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0 .0))
+                symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0.0))
             {
                 ty = vs.ty.clone();
             }
@@ -134,7 +134,7 @@ fn rename_block(
                 new_dest.0,
                 vinglish_hir::symbol::VariableSymbol {
                     id: new_dest,
-                    name: format!("{}_{}", new_dest.0 .0, orig.0 .0), // give it some name
+                    name: format!("{}_{}", new_dest.0.0, orig.0.0), // give it some name
                     is_mut: false,
                     ty,
                     span: None,
@@ -162,7 +162,8 @@ fn rename_block(
                 *obj = renamer.current_name(*obj);
                 rename_op(val, renamer);
             }
-            Instruction::<VariableId>::Call(_, _, args) | Instruction::<VariableId>::CallIntrinsic(_, _, args) => {
+            Instruction::<VariableId>::Call(_, _, args)
+            | Instruction::<VariableId>::CallIntrinsic(_, _, args) => {
                 for arg in args {
                     rename_op(arg, renamer);
                 }
@@ -176,6 +177,28 @@ fn rename_block(
             | Instruction::<VariableId>::BorrowMut(_, op)
             | Instruction::<VariableId>::Deref(_, op, _) => rename_op(op, renamer),
             Instruction::<VariableId>::Drop(var) => *var = renamer.current_name(*var),
+            Instruction::<VariableId>::ListNew(_, cap) => rename_op(cap, renamer),
+            Instruction::<VariableId>::ListGet(_, list, idx)
+            | Instruction::<VariableId>::ListBorrowGet(_, list, idx)
+            | Instruction::<VariableId>::ListBorrowMutGet(_, list, idx) => {
+                rename_op(list, renamer);
+                rename_op(idx, renamer);
+            }
+            Instruction::<VariableId>::ListSet(list, idx, val) => {
+                rename_op(list, renamer);
+                rename_op(idx, renamer);
+                rename_op(val, renamer);
+            }
+            Instruction::<VariableId>::StoreDeref(ptr, val) => {
+                rename_op(ptr, renamer);
+                rename_op(val, renamer);
+            }
+            Instruction::<VariableId>::ListLen(_, list) => rename_op(list, renamer),
+            Instruction::<VariableId>::ListPush(list, val) => {
+                rename_op(list, renamer);
+                rename_op(val, renamer);
+            }
+            Instruction::<VariableId>::ListPop(_, list) => rename_op(list, renamer),
             Instruction::<VariableId>::HeapAllocate(_, _)
             | Instruction::<VariableId>::StackAllocate(_, _)
             | Instruction::<VariableId>::Phi(_, _) => {}
@@ -191,6 +214,13 @@ fn rename_block(
         | Instruction::<VariableId>::StackAllocate(dest, _)
         | Instruction::<VariableId>::Borrow(dest, _)
         | Instruction::<VariableId>::BorrowMut(dest, _)
+        | Instruction::<VariableId>::ListNew(dest, _)
+        | Instruction::<VariableId>::ListGet(dest, _, _)
+        | Instruction::<VariableId>::ListBorrowGet(dest, _, _)
+        | Instruction::<VariableId>::ListBorrowMutGet(dest, _, _)
+        | Instruction::<VariableId>::ListLen(dest, _)
+        | Instruction::<VariableId>::ListPop(dest, _)
+        | Instruction::<VariableId>::LoadField(dest, _, _)
         | Instruction::<VariableId>::Deref(dest, _, _) = instr
         {
             let orig = *dest;
@@ -198,10 +228,10 @@ fn rename_block(
 
             // Propagate type to new SSA variable
             let mut ty = vinglish_hir::types::Type::Unit;
-            let mut vs_name = format!("var{}", orig.0 .0);
+            let mut vs_name = format!("var{}", orig.0.0);
             let mut span = None;
             if let Some(vinglish_hir::symbol::SymbolKind::Variable(vs)) =
-                symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0 .0))
+                symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0.0))
             {
                 ty = vs.ty.clone();
                 vs_name = vs.name.clone();
@@ -211,7 +241,7 @@ fn rename_block(
                 new_id.0,
                 vinglish_hir::symbol::VariableSymbol {
                     id: new_id,
-                    name: format!("{}_{}", vs_name, new_id.0 .0),
+                    name: format!("{}_{}", vs_name, new_id.0.0),
                     is_mut: false,
                     ty,
                     span,

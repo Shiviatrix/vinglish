@@ -6,9 +6,9 @@
 
 use serde::{Deserialize, Serialize};
 use vinglish_hir::{
+    Block, Expr, FunctionDef, Item, Module as HirModule, Stmt,
     symbol::{SymbolKind, SymbolTable, TypeId, VariableId},
     types::Type,
-    Block, Expr, FunctionDef, Item, Module as HirModule, Stmt,
 };
 use vinglish_lexer::Span;
 use vinglish_parser::ast::{AssignOp, BinOp, Literal, UnOp};
@@ -358,10 +358,10 @@ impl<'a> ExportBuilder<'a> {
             .iter()
             .filter_map(|statement| self.statement(statement))
             .collect();
-        if let Some(expression) = &block.expr {
-            if let Some(statement) = self.expression_statement(expression) {
-                statements.push(statement);
-            }
+        if let Some(expression) = &block.expr
+            && let Some(statement) = self.expression_statement(expression)
+        {
+            statements.push(statement);
         }
         statements
     }

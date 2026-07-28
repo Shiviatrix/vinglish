@@ -1,9 +1,9 @@
 /// TODO: Describe implementation.
+pub mod layout;
+/// TODO: Describe implementation.
 pub mod symbol;
 /// TODO: Describe implementation.
 pub mod types;
-/// TODO: Describe implementation.
-pub mod layout;
 
 #[cfg(test)]
 mod layout_stress;

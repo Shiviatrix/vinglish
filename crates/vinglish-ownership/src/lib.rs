@@ -1,3 +1,3 @@
 /// TODO: Describe implementation.
 pub mod checker;
-pub use checker::{check_module, OwnershipError};
+pub use checker::{OwnershipError, check_module};

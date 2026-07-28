@@ -1,0 +1,14 @@
+function add(a: number, b: number) returns number begin
+    return a + b
+end
+
+function greet(name: text) begin
+    print("hello ")
+    print(name)
+end
+
+function main() begin
+    let sum be add(10, 20)
+    print(sum)
+    greet("world")
+end

@@ -1,0 +1,10 @@
+function main() begin
+    let mutable x be 10
+    let p be borrow x
+    let p_mut be borrow mutable x
+
+    print(deref p)
+
+    deref p_mut = 20
+    print(x)
+end

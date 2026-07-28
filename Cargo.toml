@@ -15,6 +15,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
+rust-version = "1.96.1"
 version = "0.1.0"
 edition = "2024"
 authors = ["The Vinglish Team"]
@@ -22,7 +23,7 @@ license = "MIT"
 description = "The Vinglish intent-aware systems programming language"
 
 [workspace.dependencies]
-thiserror       = "1.0"
+thiserror       = "2.0"
 clap            = { version = "4", features = ["derive"] }
 indexmap        = "2"
 strsim          = "0.11"

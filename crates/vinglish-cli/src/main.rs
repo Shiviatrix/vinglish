@@ -5,22 +5,22 @@ use std::time::{Duration, Instant};
 
 use clap::{Parser, Subcommand};
 
-use vinglish_codegen::{emit_mir_c, Interpreter};
-use vinglish_diagnostics::{render, Diagnostic};
+use vinglish_codegen::{Interpreter, emit_mir_c};
+use vinglish_diagnostics::{Diagnostic, render};
 use vinglish_fmt::format_module;
-use vinglish_hir::symbol::{SymbolTable, VariableId};
 use vinglish_hir::Module as HirModule;
-use vinglish_ir_export::{to_json, ExportBuilder};
+use vinglish_hir::symbol::{SymbolTable, VariableId};
+use vinglish_ir_export::{ExportBuilder, to_json};
 use vinglish_lexer::tokenize;
-use vinglish_mir::validator::MirValidatorPass;
 use vinglish_mir::MirModule;
+use vinglish_mir::validator::MirValidatorPass;
 use vinglish_ownership::check_module;
 use vinglish_parser::parse;
 use vinglish_types::{
+    CompilerContext, MirLowerer,
     passes::{CompilerPass, NameResolutionPass},
     type_pass::TypeInferencePass,
     validator::HirValidatorPass,
-    CompilerContext, MirLowerer,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,9 +184,17 @@ fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
     match command {
         PkgCommands::Init => {
             println!("Initializing new Vinglish package...");
-            fs::write("eng.toml", "[package]\nname = \"my_pkg\"\nversion = \"0.1.0\"\n").map_err(|e| e.to_string())?;
+            fs::write(
+                "eng.toml",
+                "[package]\nname = \"my_pkg\"\nversion = \"0.1.0\"\n",
+            )
+            .map_err(|e| e.to_string())?;
             fs::create_dir_all("src").map_err(|e| e.to_string())?;
-            fs::write("src/main.eng", "function main() returns number\nbegin\n    return 0\nend\n").map_err(|e| e.to_string())?;
+            fs::write(
+                "src/main.eng",
+                "function main() returns number\nbegin\n    return 0\nend\n",
+            )
+            .map_err(|e| e.to_string())?;
             println!("Created package `my_pkg`");
             Ok(())
         }
@@ -248,7 +256,7 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
                 }
             }
         }
-        
+
         // Fallback to local paths
         if let Some(parent) = current_file.parent() {
             path.push(parent);
@@ -289,22 +297,22 @@ fn load_module_graph(
                 vinglish_parser::error::ParseError::Expected { found: f, .. } => f.clone(),
                 _ => String::new(),
             };
-            
+
             let span = e.span();
             let message = e.to_string();
-            
+
             if found.is_empty() && span.start < span.end && (span.end as usize) <= src.len() {
                 found = src[(span.start as usize)..(span.end as usize)].to_string();
             }
-            
+
             let mut diag = vinglish_diagnostics::Diagnostic::error("P0001", &message, span);
             diag.enrich(&src);
-            
+
             let source_line = diag.source_line.clone();
             if let Some(line) = source_line {
                 vinglish_diagnostics::intent::resolve_intent(&mut diag, &found, &line);
             }
-            
+
             let rendered = vinglish_diagnostics::render(&[diag], &file_path.display().to_string());
             eprint!("{}", rendered);
         }
@@ -409,7 +417,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 
         let mut has_errors = false;
         for e in &ctx.type_errors {
-            let mut diag = Diagnostic::error("T0001", &e.message(), e.span());
+            let mut diag = Diagnostic::error("T0001", e.message(), e.span());
             diag.enrich(src);
             let rendered = render(&[diag], &path.display().to_string());
             eprint!("{}", rendered);
@@ -418,7 +426,10 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         for warning in &ctx.healing_warnings {
             let mut diag = Diagnostic::warning(
                 "T1001",
-                format!("Automatically healed type mismatch using {:?}", warning.rule),
+                format!(
+                    "Automatically healed type mismatch using {:?}",
+                    warning.rule
+                ),
                 warning.span,
             );
             diag.enrich(src);
@@ -562,7 +573,7 @@ fn cmd_build(
 
     if let Ok(entries) = fs::read_dir(&rt_dir) {
         for entry in entries.flatten() {
-            if entry.path().extension().map_or(false, |ext| ext == "c") {
+            if entry.path().extension().is_some_and(|ext| ext == "c") {
                 runtime_paths.push(entry.path());
             }
         }
@@ -705,53 +716,60 @@ fn cmd_build(
 
         let cc = std::env::var("CC").unwrap_or_else(|_| "cc".into());
         let mut cmd = Command::new(&cc);
-        cmd.arg("-O2").arg("-Wno-int-conversion").arg("-o").arg(output).arg(&c_file);
+        cmd.arg("-O2")
+            .arg("-Wno-int-conversion")
+            .arg("-o")
+            .arg(output)
+            .arg(&c_file);
 
         for rt_path in &runtime_paths {
             cmd.arg(rt_path);
         }
-        
-        let rt_rust_toml = std::env::current_dir().unwrap_or_default().join("rt_rust").join("Cargo.toml");
+
+        let rt_rust_toml = std::env::current_dir()
+            .unwrap_or_default()
+            .join("rt_rust")
+            .join("Cargo.toml");
         if rt_rust_toml.exists() {
             eprintln!("  Compiling Rust FFI bridge...");
             let rt_rust_dir = rt_rust_toml.parent().unwrap();
-            
+
             // Clean up old interfaces file before building
             let workspace_root = rt_rust_dir.parent().unwrap();
             let interfaces_file = workspace_root.join(".vinglish_interfaces.tmp");
             let _ = std::fs::remove_file(&interfaces_file);
-            
+
             let cargo_status = Command::new("cargo")
                 .arg("build")
                 .arg("--release")
                 .current_dir(rt_rust_dir)
                 .status()
                 .map_err(|e| format!("cannot invoke cargo: {}", e))?;
-                
+
             if !cargo_status.success() {
                 return Err(format!("cargo build exited with status {}", cargo_status));
             }
-            
+
             // Generate the rust_ffi.ving interface file
             if interfaces_file.exists() {
                 if let Ok(interfaces) = std::fs::read_to_string(&interfaces_file) {
                     let rust_ffi_dir = workspace_root.join(".ving_modules").join("rust_ffi");
                     let _ = std::fs::create_dir_all(&rust_ffi_dir);
-                    
+
                     let mut content = String::from("package rust_ffi\nmodule rust_ffi\n\n");
                     content.push_str(&interfaces);
-                    
+
                     let _ = std::fs::write(rust_ffi_dir.join("rust_ffi.ving"), content);
                 }
                 let _ = std::fs::remove_file(&interfaces_file);
             }
-            
+
             // Since rt_rust is in a workspace, the target directory is at the workspace root
             let workspace_root = rt_rust_dir.parent().unwrap();
             let target_dir = workspace_root.join("target").join("release");
             cmd.arg(format!("-L{}", target_dir.display()));
             cmd.arg("-lvinglish_rt");
-            
+
             // Add macOS specific frameworks required by minifb/winit
             #[cfg(target_os = "macos")]
             {
@@ -796,7 +814,7 @@ fn cmd_check(file: &Path) -> bool {
             return false;
         }
     };
-    
+
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
 
@@ -811,7 +829,10 @@ fn cmd_check(file: &Path) -> bool {
     let mut pre_pm = vinglish_opt::pre_ssa_pipeline();
     if let Err(errors) = pre_pm.run_all(&mut mir_module, &symbol_table) {
         for e in &errors {
-            eprintln!("MIR validation error after pre-SSA optimization: {}", e.message);
+            eprintln!(
+                "MIR validation error after pre-SSA optimization: {}",
+                e.message
+            );
         }
         return false;
     }
@@ -830,7 +851,10 @@ fn cmd_check(file: &Path) -> bool {
     let mut post_pm = vinglish_opt::post_ssa_pipeline();
     if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
         for e in &errors {
-            eprintln!("MIR validation error after post-SSA optimization: {}", e.message);
+            eprintln!(
+                "MIR validation error after post-SSA optimization: {}",
+                e.message
+            );
         }
         return false;
     }
@@ -926,10 +950,7 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
         .collect();
     files.sort();
     if files.is_empty() {
-        return Err(format!(
-            "no benchmarks found in '{}'",
-            directory.display()
-        ));
+        return Err(format!("no benchmarks found in '{}'", directory.display()));
     }
 
     let temp_dir = std::env::temp_dir().join(format!("vinglish-bench-{}", std::process::id()));
@@ -944,11 +965,11 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
             .unwrap_or("benchmark")
             .to_string();
         let ext = file.extension().and_then(|e| e.to_str()).unwrap_or("");
-        
+
         let display_name = format!("{}.{}", name, ext);
-        
+
         let output = temp_dir.join(&name);
-        
+
         // Compile phase
         if ext == "ving" {
             cmd_build(&file, &output, "c", None)?;
@@ -994,24 +1015,39 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
                 "const {{ Elm }} = require('./{}.js');\nconst app = Elm.Main.init();\napp.ports.emitResult.subscribe(res => process.exit(0));\n",
                 name
             );
-            fs::write(&runner_js, runner_code).map_err(|e| format!("failed to write runner: {}", e))?;
+            fs::write(&runner_js, runner_code)
+                .map_err(|e| format!("failed to write runner: {}", e))?;
         }
 
         let mut elapsed = Duration::ZERO;
         for _ in 0..runs {
             let start = Instant::now();
             let status = if ext == "py" {
-                Command::new("python3").arg(&file).stdout(Stdio::null()).stderr(Stdio::null()).status()
+                Command::new("python3")
+                    .arg(&file)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
             } else if ext == "elm" {
                 let runner_js = temp_dir.join(format!("{}_runner.js", name));
-                Command::new("node").arg(&runner_js).stdout(Stdio::null()).stderr(Stdio::null()).status()
+                Command::new("node")
+                    .arg(&runner_js)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
             } else {
-                Command::new(&output).stdout(Stdio::null()).stderr(Stdio::null()).status()
+                Command::new(&output)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
             }
             .map_err(|e| format!("cannot run '{}': {}", display_name, e))?;
-            
+
             if !status.success() {
-                return Err(format!("benchmark '{}' exited with {}", display_name, status));
+                return Err(format!(
+                    "benchmark '{}' exited with {}",
+                    display_name, status
+                ));
             }
             elapsed += start.elapsed();
         }

@@ -17,19 +17,29 @@ pub enum Value {
     Bool(bool),
     Text(String),
     Unit,
-    List(Vec<Value>),
+    List(u64),
     Function(FunctionId),
     NativeFunction(NativeFn),
     Struct(u64),
     Return(Box<Value>),
-    Reference(Box<Value>),
+    Reference(ReferenceLoc),
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ReferenceLoc {
+    Local(SsaValueId),
+    ListElement(u64, usize), // addr, index
+    StructField(u64, FieldId), // addr, field_id
+}
+
+/// TODO: Describe implementation.
+pub type NativeFnPointer = fn(Vec<Value>) -> Result<Value, InterpError>;
 
 /// TODO: Describe implementation.
 #[derive(Clone)]
 pub struct NativeFn {
     pub name: &'static str,
-    pub f: fn(Vec<Value>) -> Result<Value, InterpError>,
+    pub f: NativeFnPointer,
 }
 
 impl fmt::Debug for NativeFn {
@@ -69,15 +79,24 @@ impl Value {
             Value::Bool(b) => b.to_string(),
             Value::Text(s) => s.clone(),
             Value::Unit => "()".to_string(),
-            Value::List(vs) => {
-                let inner: Vec<_> = vs.iter().map(|v| v.to_display()).collect();
-                format!("[{}]", inner.join(", "))
+            Value::List(addr) => {
+                let store = get_list_store().lock().unwrap();
+                if let Some(vs) = store.get(addr) {
+                    let inner: Vec<_> = vs.iter().map(|v| v.to_display()).collect();
+                    format!("[{}]", inner.join(", "))
+                } else {
+                    "<freed list>".to_string()
+                }
             }
             Value::Struct(_) => "<struct>".to_string(),
             Value::Function(_) => "<function>".to_string(),
             Value::NativeFunction(nf) => format!("<native:{}>", nf.name),
             Value::Return(v) => v.to_display(),
-            Value::Reference(v) => format!("&{}", v.to_display()),
+            Value::Reference(loc) => match loc {
+                ReferenceLoc::Local(id) => format!("&var_{}", id.0),
+                ReferenceLoc::ListElement(addr, idx) => format!("&list_{}[{}]", addr, idx),
+                ReferenceLoc::StructField(addr, fid) => format!("&struct_{}.field_{}", addr, fid.0),
+            },
         }
     }
 }
@@ -108,11 +127,10 @@ impl fmt::Display for InterpError {
 
 impl std::error::Error for InterpError {}
 
-/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Interpreter
 // ─────────────────────────────────────────────────────────────────────────────
-
+/// TODO: Describe implementation.
 pub struct Interpreter<'a> {
     _symbol_table: &'a SymbolTable,
     functions: HashMap<FunctionId, &'a MirFunction<SsaValueId>>,
@@ -134,6 +152,11 @@ fn get_struct_store() -> &'static Mutex<HashMap<u64, HashMap<FieldId, Value>>> {
     STRUCT_STORE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+fn get_list_store() -> &'static Mutex<HashMap<u64, Vec<Value>>> {
+    static LIST_STORE: OnceLock<Mutex<HashMap<u64, Vec<Value>>>> = OnceLock::new();
+    LIST_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 impl<'a> Interpreter<'a> {
     /// TODO: Describe implementation.
     pub fn new(symbol_table: &'a SymbolTable) -> Self {
@@ -143,7 +166,7 @@ impl<'a> Interpreter<'a> {
             native_functions: HashMap::new(),
         };
 
-        let builtins: Vec<(&'static str, fn(Vec<Value>) -> Result<Value, InterpError>)> = vec![
+        let builtins: Vec<(&'static str, NativeFnPointer)> = vec![
             ("print", |args| {
                 if let Some(val) = args.first() {
                     print!("{}", val.to_display());
@@ -177,14 +200,14 @@ impl<'a> Interpreter<'a> {
                 }
             }),
             ("min", |args| {
-                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.get(0), args.get(1)) {
+                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.first(), args.get(1)) {
                     Ok(Value::Int(*a.min(b)))
                 } else {
                     Ok(Value::Int(0))
                 }
             }),
             ("max", |args| {
-                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.get(0), args.get(1)) {
+                if let (Some(Value::Int(a)), Some(Value::Int(b))) = (args.first(), args.get(1)) {
                     Ok(Value::Int(*a.max(b)))
                 } else {
                     Ok(Value::Int(0))
@@ -201,10 +224,9 @@ impl<'a> Interpreter<'a> {
 
         for (name, f) in builtins {
             if let Some(id) = symbol_table.lookup(name) {
-                interp.native_functions.insert(vinglish_hir::symbol::FunctionId(id), NativeFn {
-                    name,
-                    f,
-                });
+                interp
+                    .native_functions
+                    .insert(vinglish_hir::symbol::FunctionId(id), NativeFn { name, f });
             }
         }
 
@@ -262,21 +284,22 @@ impl<'a> Interpreter<'a> {
                             if args.len() >= 3 {
                                 let addr = match &args[0] {
                                     Value::Int(a) => *a as u64,
-                                    Value::Reference(r) => match &**r {
-                                        Value::Int(a) => *a as u64,
-                                        _ => {
-                                            return Err(InterpError::new(
-                                                "ving_write: expected pointer",
-                                            ))
-                                        }
-                                    },
+                                    Value::Reference(_) => {
+                                        return Err(InterpError::new(
+                                            "ving_write: expected raw address pointer",
+                                        ));
+                                    }
                                     _ => {
-                                        return Err(InterpError::new("ving_write: expected pointer"))
+                                        return Err(InterpError::new(
+                                            "ving_write: expected pointer",
+                                        ));
                                     }
                                 };
                                 let index = match &args[1] {
                                     Value::Int(i) => *i as usize,
-                                    _ => return Err(InterpError::new("ving_write: expected index")),
+                                    _ => {
+                                        return Err(InterpError::new("ving_write: expected index"));
+                                    }
                                 };
                                 let val = args[2].clone();
                                 let mut heap = get_heap().lock().unwrap();
@@ -298,16 +321,15 @@ impl<'a> Interpreter<'a> {
                             if args.len() >= 2 {
                                 let addr = match &args[0] {
                                     Value::Int(a) => *a as u64,
-                                    Value::Reference(r) => match &**r {
-                                        Value::Int(a) => *a as u64,
-                                        _ => {
-                                            return Err(InterpError::new(
-                                                "ving_read: expected pointer",
-                                            ))
-                                        }
-                                    },
+                                    Value::Reference(_) => {
+                                        return Err(InterpError::new(
+                                            "ving_read: expected raw address pointer",
+                                        ));
+                                    }
                                     _ => {
-                                        return Err(InterpError::new("ving_read: expected pointer"))
+                                        return Err(InterpError::new(
+                                            "ving_read: expected pointer",
+                                        ));
                                     }
                                 };
                                 let index = match &args[1] {
@@ -315,10 +337,10 @@ impl<'a> Interpreter<'a> {
                                     _ => return Err(InterpError::new("ving_read: expected index")),
                                 };
                                 let heap = get_heap().lock().unwrap();
-                                if let Some(vec) = heap.get(&addr) {
-                                    if index < vec.len() {
-                                        return Ok(vec[index].clone());
-                                    }
+                                if let Some(vec) = heap.get(&addr)
+                                    && index < vec.len()
+                                {
+                                    return Ok(vec[index].clone());
                                 }
                             }
                             Ok(Value::Int(0))
@@ -426,15 +448,25 @@ impl<'a> Interpreter<'a> {
             }
             Instruction::<SsaValueId>::LoadField(dest, obj_op, field_id) => {
                 let mut obj = self.eval_operand(obj_op, locals)?;
-                while let Value::Reference(inner) = obj {
-                    obj = *inner;
+                while let Value::Reference(loc) = &obj {
+                    match loc {
+                        ReferenceLoc::Local(var) => obj = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            obj = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
                 }
                 if let Value::Struct(struct_id) = obj {
                     let store = get_struct_store().lock().unwrap();
                     let fields = store
                         .get(&struct_id)
                         .ok_or_else(|| InterpError::new("Struct not found in store"))?;
-                    let val = fields.get(&field_id.field_id).cloned().unwrap_or(Value::Unit);
+                    let val = fields
+                        .get(&field_id.field_id)
+                        .cloned()
+                        .unwrap_or(Value::Unit);
                     locals.insert(*dest, val);
                 } else {
                     return Err(InterpError::new("Cannot load field from non-struct"));
@@ -446,8 +478,15 @@ impl<'a> Interpreter<'a> {
                     .get(obj_var)
                     .cloned()
                     .ok_or_else(|| InterpError::new("Variable not found"))?;
-                while let Value::Reference(inner) = obj_val {
-                    obj_val = *inner;
+                while let Value::Reference(loc) = &obj_val {
+                    match loc {
+                        ReferenceLoc::Local(var) => obj_val = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            obj_val = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
                 }
                 if let Value::Struct(struct_id) = obj_val {
                     let mut store = get_struct_store().lock().unwrap();
@@ -465,7 +504,25 @@ impl<'a> Interpreter<'a> {
                 for arg_op in arg_ops {
                     args.push(self.eval_operand(arg_op, locals)?);
                 }
-                let func_id = match func_id { vinglish_mir::CallTarget::Direct(id) => *id, vinglish_mir::CallTarget::Foreign { c_symbol } => return Err(InterpError { message: format!("cannot interpret foreign call `{c_symbol}`") }) };
+                let func_id = match func_id {
+                    vinglish_mir::CallTarget::Direct(id) => *id,
+                    vinglish_mir::CallTarget::Foreign { c_symbol } => {
+                        let mut matched_id = None;
+                        for (id, nf) in &self.native_functions {
+                            if nf.name == c_symbol {
+                                matched_id = Some(*id);
+                                break;
+                            }
+                        }
+                        if let Some(id) = matched_id {
+                            id
+                        } else {
+                            return Err(InterpError {
+                                message: format!("cannot interpret foreign call `{c_symbol}`"),
+                            });
+                        }
+                    }
+                };
                 let ret = self.call_function(func_id, args)?;
                 locals.insert(*dest, ret);
             }
@@ -499,17 +556,61 @@ impl<'a> Interpreter<'a> {
             }
             Instruction::<SsaValueId>::Borrow(dest, op)
             | Instruction::<SsaValueId>::BorrowMut(dest, op) => {
-                let val = self.eval_operand(op, locals)?;
-                locals.insert(*dest, Value::Reference(Box::new(val)));
+                if let Operand::Var(var) = op {
+                    locals.insert(*dest, Value::Reference(ReferenceLoc::Local(*var)));
+                } else {
+                    return Err(InterpError::new("Cannot borrow a constant"));
+                }
             }
             Instruction::<SsaValueId>::Deref(dest, op, _) => {
                 let val = self.eval_operand(op, locals)?;
-                if let Value::Reference(inner) = val {
-                    locals.insert(*dest, *inner);
+                if let Value::Reference(loc) = val {
+                    let deref_val = match loc {
+                        ReferenceLoc::Local(var) => locals.get(&var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            if let Some(vec) = store.get(&addr) {
+                                vec.get(idx).cloned().unwrap_or(Value::Unit)
+                            } else {
+                                Value::Unit
+                            }
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    };
+                    locals.insert(*dest, deref_val);
                 } else {
                     return Err(InterpError::new(format!(
                         "Cannot deref non-reference value: {:?}",
                         val
+                    )));
+                }
+            }
+            Instruction::<SsaValueId>::StoreDeref(ptr_op, val_op) => {
+                let ptr = self.eval_operand(ptr_op, locals)?;
+                let val = self.eval_operand(val_op, locals)?;
+                if let Value::Reference(loc) = ptr {
+                    match loc {
+                        ReferenceLoc::Local(var) => {
+                            locals.insert(var, val);
+                        }
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let mut store = get_list_store().lock().unwrap();
+                            if let Some(vec) = store.get_mut(&addr) {
+                                if idx < vec.len() {
+                                    vec[idx] = val;
+                                } else {
+                                    return Err(InterpError::new("List index out of bounds in StoreDeref"));
+                                }
+                            } else {
+                                return Err(InterpError::new("List not found in store"));
+                            }
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                } else {
+                    return Err(InterpError::new(format!(
+                        "Cannot store deref non-reference value: {:?}",
+                        ptr
                     )));
                 }
             }
@@ -532,6 +633,202 @@ impl<'a> Interpreter<'a> {
                         "Phi node has no argument for predecessor block {}",
                         previous_block.0
                     )));
+                }
+            }
+            Instruction::<SsaValueId>::ListNew(dest, cap_op) => {
+                let _cap = self.eval_operand(cap_op, locals)?;
+                let addr = NEXT_ADDR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                let mut store = get_list_store().lock().unwrap();
+                store.insert(addr, Vec::new());
+                locals.insert(*dest, Value::List(addr));
+            }
+            Instruction::<SsaValueId>::ListGet(dest, list_op, idx_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+                let idx_val = self.eval_operand(idx_op, locals)?;
+                
+                let idx = match idx_val {
+                    Value::Int(i) => i as usize,
+                    _ => return Err(InterpError::new("List index must be an integer")),
+                };
+
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                }
+
+                if let Value::List(addr) = actual_list {
+                    let mut store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get_mut(&addr) {
+                        if idx < vec.len() {
+                            let got = std::mem::replace(&mut vec[idx], Value::Unit);
+                            locals.insert(*dest, got);
+                        } else {
+                            return Err(InterpError::new(format!("Index {} out of bounds", idx)));
+                        }
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot get from non-list"));
+                }
+            }
+            Instruction::<SsaValueId>::ListBorrowGet(dest, list_op, idx_op)
+            | Instruction::<SsaValueId>::ListBorrowMutGet(dest, list_op, idx_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+                let idx_val = self.eval_operand(idx_op, locals)?;
+                
+                let idx = match idx_val {
+                    Value::Int(i) => i as usize,
+                    _ => return Err(InterpError::new("List index must be an integer")),
+                };
+
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(v) => actual_list = locals.get(v).cloned().unwrap(),
+                        ReferenceLoc::ListElement(a, i) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(a).unwrap()[*i].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field not supported")),
+                    }
+                }
+
+                if let Value::List(addr) = actual_list {
+                    let store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get(&addr) {
+                        if idx < vec.len() {
+                            locals.insert(*dest, Value::Reference(ReferenceLoc::ListElement(addr, idx)));
+                        } else {
+                            return Err(InterpError::new(format!("Index {} out of bounds", idx)));
+                        }
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot get from non-list"));
+                }
+            }
+            Instruction::<SsaValueId>::ListSet(list_op, idx_op, val_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+                let idx_val = self.eval_operand(idx_op, locals)?;
+                let idx = match idx_val {
+                    Value::Int(i) => i as usize,
+                    _ => return Err(InterpError::new("List index must be an integer")),
+                };
+                let val = self.eval_operand(val_op, locals)?;
+                
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                }
+
+                if let Value::List(addr) = actual_list {
+                    let mut store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get_mut(&addr) {
+                        if idx < vec.len() {
+                            vec[idx] = val;
+                        } else {
+                            return Err(InterpError::new(format!("Index {} out of bounds", idx)));
+                        }
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot set non-list"));
+                }
+            }
+            Instruction::<SsaValueId>::ListLen(dest, list_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                }
+                
+                if let Value::List(addr) = actual_list {
+                    let store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get(&addr) {
+                        locals.insert(*dest, Value::Int(vec.len() as i64));
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot get len of non-list"));
+                }
+            }
+            Instruction::<SsaValueId>::ListPush(list_op, val_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+                let val = self.eval_operand(val_op, locals)?;
+
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                }
+
+                if let Value::List(addr) = actual_list {
+                    let mut store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get_mut(&addr) {
+                        vec.push(val);
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot push to non-list"));
+                }
+            }
+            Instruction::<SsaValueId>::ListPop(dest, list_op) => {
+                let list_val = self.eval_operand(list_op, locals)?;
+
+                let mut actual_list = list_val;
+                while let Value::Reference(loc) = &actual_list {
+                    match loc {
+                        ReferenceLoc::Local(var) => actual_list = locals.get(var).cloned().unwrap_or(Value::Unit),
+                        ReferenceLoc::ListElement(addr, idx) => {
+                            let store = get_list_store().lock().unwrap();
+                            actual_list = store.get(addr).unwrap()[*idx].clone();
+                        }
+                        ReferenceLoc::StructField(_, _) => return Err(InterpError::new("Struct field deref unsupported")),
+                    }
+                }
+
+                if let Value::List(addr) = actual_list {
+                    let mut store = get_list_store().lock().unwrap();
+                    if let Some(vec) = store.get_mut(&addr) {
+                        let popped = vec.pop().unwrap_or(Value::Unit);
+                        locals.insert(*dest, popped);
+                    } else {
+                        return Err(InterpError::new("List not found in store"));
+                    }
+                } else {
+                    return Err(InterpError::new("Cannot pop from non-list"));
                 }
             }
         }

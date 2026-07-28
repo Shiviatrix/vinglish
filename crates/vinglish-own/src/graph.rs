@@ -1,7 +1,7 @@
 use crate::state::OwnershipState;
-use vinglish_hir::symbol::SsaValueId;
 use std::collections::HashMap;
 use std::fmt;
+use vinglish_hir::symbol::SsaValueId;
 
 /// TODO: Describe implementation.
 #[derive(Debug, Default)]

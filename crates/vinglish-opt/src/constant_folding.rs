@@ -1,18 +1,24 @@
 use crate::{OptimizationPass, PassStats};
-use vinglish_mir::{Instruction, MirModule, Operand};
-use vinglish_parser::ast::{BinOp, Literal, UnOp};
 use std::fmt::Display;
 use std::hash::Hash;
+use vinglish_mir::{Instruction, MirModule, Operand};
+use vinglish_parser::ast::{BinOp, Literal, UnOp};
 
 /// TODO: Describe implementation.
 pub struct ConstantFoldingPass;
 
-impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V> for ConstantFoldingPass {
+impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V>
+    for ConstantFoldingPass
+{
     fn name(&self) -> &'static str {
         "Constant Folding"
     }
 
-    fn run(&mut self, module: &mut MirModule<V>, _symbol_table: &vinglish_hir::symbol::SymbolTable) -> PassStats {
+    fn run(
+        &mut self,
+        module: &mut MirModule<V>,
+        _symbol_table: &vinglish_hir::symbol::SymbolTable,
+    ) -> PassStats {
         let mut stats = PassStats::default();
 
         for func in &mut module.functions {

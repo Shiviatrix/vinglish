@@ -5,6 +5,6 @@ pub mod span;
 /// TODO: Describe implementation.
 pub mod token;
 
-pub use lexer::{tokenize, LexError};
+pub use lexer::{LexError, tokenize};
 pub use span::{Span, Spanned};
 pub use token::Token;
