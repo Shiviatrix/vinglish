@@ -17,27 +17,28 @@ Two rules exist:
 2. `ToText`: When expected `Text` but actual is any other type, insert a `to_text()` call.
 
 The healing process:
-1. Generate candidate transformations.
-2. Shuffle candidates randomly.
-3. For each candidate (up to 100 rollouts):
-   - Clone the AST.
+1. Generate candidate transformations and calculate costs.
+2. Sort candidates greedily by lowest cost first.
+3. For each candidate (using Alpha-Beta Pruning):
+   - Path-clone the AST down to the failing node using `Arc::make_mut` (persistent structural sharing).
    - Apply the transformation.
    - Re-run type checking.
-   - If it passes, commit the modified AST.
+   - If it passes, commit the modified AST and update the alpha bound.
+   - Immediately break out of the loop, pruning all more expensive candidates.
 4. Emit warning `T1001` for successful healings.
 
 Evidence from the codebase:
 - `Healer::MAX_STEPS` is 2. Candidates with cost > 2 are skipped.
-- `attempt_heal()` clones the entire `Module` for each trial.
+- `attempt_heal()` uses persistent structural sharing, avoiding $O(N)$ clones.
 - `try_heal_in_place()` provides an alternative API that mutates a single expression slot.
 
 ## Consequences
 
 - **Ergonomics**: Reduces explicit conversion boilerplate.
 - **Transparency**: All healings produce warnings, never silent.
-- **Non-determinism**: Random candidate shuffling means different compilations may try candidates in different orders. However, any successful healing is semantically correct.
-- **Performance**: Cloning the entire AST per rollout is expensive for large programs.
-- **Bounded**: The budget (100 rollouts, max cost 2) prevents unbounded search.
+- **Determinism & Optimality**: Because candidates are sorted by cost, the first successful candidate is guaranteed to be the optimal fix. The engine is fully deterministic.
+- **Performance**: Path-cloning via `Arc` allows near $O(1)$ memory overhead per rollout, and alpha-beta pruning completely avoids evaluating sub-optimal paths.
+- **Bounded**: Bounded by finite discrete candidate generation and a strict max cost threshold.
 
 ## Related Files
 

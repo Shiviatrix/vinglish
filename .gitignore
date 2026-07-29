@@ -35,6 +35,7 @@ scratch/
 # Documentation Builds
 docs/_build/
 docs/_site/
+docs/latex/
 *.pdf
 
 # Sub-projects

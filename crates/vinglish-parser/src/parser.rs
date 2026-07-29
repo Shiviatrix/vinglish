@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use vinglish_lexer::{Span, Spanned, Token};
 
 use crate::ast::*;
@@ -823,9 +824,9 @@ impl<'t> Parser<'t> {
             let right = self.parse_and_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
-                left: Box::new(left),
+                left: Arc::new(left),
                 op: BinOp::Or,
-                right: Box::new(right),
+                right: Arc::new(right),
                 span,
             };
         }
@@ -840,9 +841,9 @@ impl<'t> Parser<'t> {
             let right = self.parse_comparison()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
-                left: Box::new(left),
+                left: Arc::new(left),
                 op: BinOp::And,
-                right: Box::new(right),
+                right: Arc::new(right),
                 span,
             };
         }
@@ -869,9 +870,9 @@ impl<'t> Parser<'t> {
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
-                                left: Box::new(left),
+                                left: Arc::new(left),
                                 op: BinOp::IsBelow,
-                                right: Box::new(right),
+                                right: Arc::new(right),
                                 span,
                             };
                             continue;
@@ -881,9 +882,9 @@ impl<'t> Parser<'t> {
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
-                                left: Box::new(left),
+                                left: Arc::new(left),
                                 op: BinOp::IsAbove,
-                                right: Box::new(right),
+                                right: Arc::new(right),
                                 span,
                             };
                             continue;
@@ -893,9 +894,9 @@ impl<'t> Parser<'t> {
                             let right = self.parse_add_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
-                                left: Box::new(left),
+                                left: Arc::new(left),
                                 op: BinOp::Eq,
-                                right: Box::new(right),
+                                right: Arc::new(right),
                                 span,
                             };
                             continue;
@@ -909,9 +910,9 @@ impl<'t> Parser<'t> {
             let right = self.parse_add_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
-                left: Box::new(left),
+                left: Arc::new(left),
                 op,
-                right: Box::new(right),
+                right: Arc::new(right),
                 span,
             };
         }
@@ -931,9 +932,9 @@ impl<'t> Parser<'t> {
             let right = self.parse_mul_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
-                left: Box::new(left),
+                left: Arc::new(left),
                 op,
-                right: Box::new(right),
+                right: Arc::new(right),
                 span,
             };
         }
@@ -954,9 +955,9 @@ impl<'t> Parser<'t> {
             let right = self.parse_unary()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
-                left: Box::new(left),
+                left: Arc::new(left),
                 op,
-                right: Box::new(right),
+                right: Arc::new(right),
                 span,
             };
         }
@@ -972,7 +973,7 @@ impl<'t> Parser<'t> {
                 let span = start.merge(operand.span());
                 Some(Expr::UnOp {
                     op: UnOp::Neg,
-                    operand: Box::new(operand),
+                    operand: Arc::new(operand),
                     span,
                 })
             }
@@ -982,7 +983,7 @@ impl<'t> Parser<'t> {
                 let span = start.merge(operand.span());
                 Some(Expr::UnOp {
                     op: UnOp::Not,
-                    operand: Box::new(operand),
+                    operand: Arc::new(operand),
                     span,
                 })
             }
@@ -993,7 +994,7 @@ impl<'t> Parser<'t> {
                 let span = start.merge(operand.span());
                 Some(Expr::UnOp {
                     op: UnOp::Borrow(mutable),
-                    operand: Box::new(operand),
+                    operand: Arc::new(operand),
                     span,
                 })
             }
@@ -1003,7 +1004,7 @@ impl<'t> Parser<'t> {
                 let span = start.merge(operand.span());
                 Some(Expr::UnOp {
                     op: UnOp::Deref,
-                    operand: Box::new(operand),
+                    operand: Arc::new(operand),
                     span,
                 })
             }
@@ -1020,7 +1021,7 @@ impl<'t> Parser<'t> {
                     let field = self.expect_ident()?;
                     let span = expr.span().merge(field.span);
                     expr = Expr::Field {
-                        object: Box::new(expr),
+                        object: Arc::new(expr),
                         field,
                         span,
                     };
@@ -1041,7 +1042,7 @@ impl<'t> Parser<'t> {
                     self.expect(&Token::RParen);
                     let span = call_start.merge(end);
                     expr = Expr::Call {
-                        callee: Box::new(expr),
+                        callee: Arc::new(expr),
                         args,
                         span,
                     };
@@ -1052,8 +1053,8 @@ impl<'t> Parser<'t> {
                     let span = expr.span().merge(self.current_span());
                     self.expect(&Token::RBracket);
                     expr = Expr::Index {
-                        object: Box::new(expr),
-                        index: Box::new(index),
+                        object: Arc::new(expr),
+                        index: Arc::new(index),
                         span,
                     };
                 }
@@ -1088,7 +1089,7 @@ impl<'t> Parser<'t> {
                     self.advance();
                     let span = expr.span().merge(end);
                     expr = Expr::PostfixTry {
-                        inner: Box::new(expr),
+                        inner: Arc::new(expr),
                         span,
                     };
                 }
@@ -1184,7 +1185,7 @@ impl<'t> Parser<'t> {
                     let end = self.current_span();
                     self.expect(&Token::RBrace);
                     Some(Expr::StructLit {
-                        ty: Box::new(expr),
+                        ty: Arc::new(expr),
                         fields,
                         span: span.merge(end),
                     })
@@ -1244,21 +1245,21 @@ impl<'t> Parser<'t> {
             if s == "List" {
                 self.advance();
                 self.eat(&Token::Of);
-                let inner = self.parse_type_expr().map(Box::new)?;
+                let inner = self.parse_type_expr().map(Arc::new)?;
                 return Some(TypeExpr::List(inner));
             }
             if s == "Dictionary" {
                 self.advance();
                 self.eat(&Token::From);
-                let key = self.parse_type_expr().map(Box::new)?;
+                let key = self.parse_type_expr().map(Arc::new)?;
                 self.eat(&Token::To);
-                let val = self.parse_type_expr().map(Box::new)?;
+                let val = self.parse_type_expr().map(Arc::new)?;
                 return Some(TypeExpr::Dict { key, val });
             }
             if s == "Result" {
                 self.advance();
                 self.eat(&Token::Of);
-                let inner = self.parse_type_expr().map(Box::new)?;
+                let inner = self.parse_type_expr().map(Arc::new)?;
                 return Some(TypeExpr::Result(inner));
             }
         }
@@ -1305,7 +1306,7 @@ impl<'t> Parser<'t> {
             Token::Borrow => {
                 self.advance();
                 let mutable = self.eat(&Token::Mutable);
-                let inner = self.parse_type_expr().map(Box::new)?;
+                let inner = self.parse_type_expr().map(Arc::new)?;
                 Some(TypeExpr::Reference { mutable, inner })
             }
             _ => None,

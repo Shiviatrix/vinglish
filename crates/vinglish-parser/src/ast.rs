@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use vinglish_lexer::Span;
 
 /// TODO: Describe implementation.
@@ -50,20 +51,20 @@ pub enum TypeExpr {
     /// `number`, `text`, `boolean`, `decimal`, or any named type
     Named(Ident),
     /// `List of T`
-    List(Box<TypeExpr>),
+    List(Arc<TypeExpr>),
     /// `Dictionary from K to V`
     Dict {
-        key: Box<TypeExpr>,
-        val: Box<TypeExpr>,
+        key: Arc<TypeExpr>,
+        val: Arc<TypeExpr>,
     },
     /// `Optional T` / `T?`
-    Optional(Box<TypeExpr>),
+    Optional(Arc<TypeExpr>),
     /// `Result of T` (error type is inferred)
-    Result(Box<TypeExpr>),
+    Result(Arc<TypeExpr>),
     /// Generic instantiation: `Array of length N` etc.
     Generic { base: Ident, args: Vec<TypeExpr> },
     /// `borrow T` or `borrow mutable T`
-    Reference { mutable: bool, inner: Box<TypeExpr> },
+    Reference { mutable: bool, inner: Arc<TypeExpr> },
 }
 
 /// TODO: Describe implementation.
@@ -116,43 +117,43 @@ pub enum Expr {
     },
     /// Function call: `f(a, b)` or `calculate tax for order`
     Call {
-        callee: Box<Expr>,
+        callee: Arc<Expr>,
         args: Vec<Expr>,
         span: Span,
     },
     /// Binary operation: `a + b`, `balance is below 0`
     BinOp {
-        left: Box<Expr>,
+        left: Arc<Expr>,
         op: BinOp,
-        right: Box<Expr>,
+        right: Arc<Expr>,
         span: Span,
     },
     /// Unary operation: `not x`, `-x`
     UnOp {
         op: UnOp,
-        operand: Box<Expr>,
+        operand: Arc<Expr>,
         span: Span,
     },
     /// Field access: `account.balance`
     Field {
-        object: Box<Expr>,
+        object: Arc<Expr>,
         field: Ident,
         span: Span,
     },
     /// Index: `list[i]`
     Index {
-        object: Box<Expr>,
-        index: Box<Expr>,
+        object: Arc<Expr>,
+        index: Arc<Expr>,
         span: Span,
     },
     /// Struct Literal: `Point { x: 10, y: 20 }` or `Pair<number> { first: 10, second: 20 }`
     StructLit {
-        ty: Box<Expr>,
+        ty: Arc<Expr>,
         fields: Vec<(Ident, Expr)>,
         span: Span,
     },
     /// A block used as an expression (rare but valid)
-    Block(Box<Block>),
+    Block(Arc<Block>),
     /// List literal: `[1, 2, 3]`
     List { elements: Vec<Expr>, span: Span },
     /// Macro call: `fmt!(...)`
@@ -162,7 +163,7 @@ pub enum Expr {
         span: Span,
     },
     /// Postfix Try `?`
-    PostfixTry { inner: Box<Expr>, span: Span },
+    PostfixTry { inner: Arc<Expr>, span: Span },
 }
 
 impl Expr {

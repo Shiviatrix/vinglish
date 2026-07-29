@@ -28,19 +28,20 @@ The `Healer::candidates()` method generates a list of `HealingCandidate` values.
 `attempt_heal()` works as follows:
 1. Extract the type constraint from the `TypeError::Mismatch` variant.
 2. Find the failing expression in the AST by matching `AstNodeId` (span-based lookup).
-3. Generate candidates.
-4. Shuffle candidates (uses `rand::seq::SliceRandom`).
-5. For each candidate (up to 100 rollouts):
-   - Clone the AST.
-   - Replace the expression.
+3. Generate candidate repairs and calculate their costs.
+4. Sort candidates by cost (lowest cost first).
+5. For each candidate (Greedy + Alpha-Beta Pruning):
+   - Path-clone the AST to the failing expression using `Arc::make_mut` (persistent sharing).
+   - Replace the expression with the candidate fix.
    - Re-run the type pass on the modified AST.
-   - If it succeeds, commit the AST and return a `HealingWarning`.
-   - Otherwise, discard and try the next candidate.
+   - If it succeeds, the candidate is accepted. Since candidates are sorted, the first success is guaranteed to be the optimal lowest-cost fix.
+   - The engine updates its alpha bound and prunes all remaining, more expensive permutations without testing them.
+   - Emit a `HealingWarning` and commit the new AST.
 
 ### Bounds
 
 - `Healer::MAX_STEPS`: 2 (candidates with cost > 2 are skipped).
-- Rollout budget: 100 iterations per error.
+- Budget: Because the engine is completely deterministic and prunes sub-optimal paths immediately, there is no arbitrary iteration budget.
 
 ### Diagnostics
 
@@ -51,9 +52,7 @@ Successful healings produce warning `T1001` which is rendered to stderr. The war
 ## Limitations
 
 - Only two healing rules exist.
-- The candidate search uses random shuffling, introducing non-determinism.
 - `find_expr()` and `find_expr_mut()` perform a full AST walk per healing attempt.
-- Each rollout clones the entire AST module.
 
 ---
 

@@ -55,7 +55,7 @@ impl Healer {
                 rule: HealingRule::AutoDeref,
                 replacement: Expr::UnOp {
                     op: UnOp::Deref,
-                    operand: Box::new(expr.clone()),
+                    operand: std::sync::Arc::new(expr.clone()),
                     span: constraint.span,
                 },
                 cost: 1,
@@ -66,7 +66,7 @@ impl Healer {
             candidates.push(HealingCandidate {
                 rule: HealingRule::ToText,
                 replacement: Expr::Call {
-                    callee: Box::new(callee),
+                    callee: std::sync::Arc::new(callee),
                     args: vec![expr.clone()],
                     span: constraint.span,
                 },
@@ -89,25 +89,21 @@ pub fn try_heal_in_place<E>(
     let original = slot.clone();
     let mut candidates = healer.candidates(&original, constraint);
 
-    // MCTS Phase: Probabilistic rollout of candidate mutations
-    use rand::seq::SliceRandom;
-    let mut rng = rand::rng();
-    candidates.shuffle(&mut rng);
+    // Greedy Phase: Sort candidates to evaluate cheapest transformations first
+    candidates.sort_by_key(|c| c.cost);
 
-    let mcts_budget = 100; // bounded simulation budget
-    let mut rollouts = 0;
+    let mut best_cost = u8::MAX; // alpha bound
 
     for candidate in candidates {
-        if candidate.cost > Healer::MAX_STEPS {
-            continue;
-        }
-        if rollouts >= mcts_budget {
+        // Pruning: if we've already found a valid fix, we can prune all candidates
+        // with equal or greater cost. Since the list is sorted, we can just break.
+        if candidate.cost > Healer::MAX_STEPS || candidate.cost >= best_cost {
             break;
         }
-        rollouts += 1;
 
         *slot = candidate.replacement;
         if recheck().is_ok() {
+            best_cost = candidate.cost;
             return Some(candidate.rule);
         }
         *slot = original.clone();
@@ -141,22 +137,17 @@ pub fn attempt_heal<E>(
 
     let mut candidates = Healer.candidates(expr, &constraint);
 
-    // MCTS Phase: Probabilistic rollout of candidate mutations
-    use rand::seq::SliceRandom;
-    let mut rng = rand::rng();
-    candidates.shuffle(&mut rng);
+    // Greedy Phase: Sort candidates to evaluate cheapest transformations first
+    candidates.sort_by_key(|c| c.cost);
 
-    let mcts_budget = 100; // bounded simulation budget
-    let mut rollouts = 0;
+    let mut best_cost = u8::MAX; // alpha bound
 
     for candidate in candidates {
-        if candidate.cost > Healer::MAX_STEPS {
-            continue;
-        }
-        if rollouts >= mcts_budget {
+        // Pruning: if we've already found a valid fix, we can prune all candidates
+        // with equal or greater cost. Since the list is sorted, we can just break.
+        if candidate.cost > Healer::MAX_STEPS || candidate.cost >= best_cost {
             break;
         }
-        rollouts += 1;
 
         let mut candidate_ast = original.clone();
         let Some(slot) = find_expr_mut(&mut candidate_ast, *node_id) else {
@@ -164,6 +155,7 @@ pub fn attempt_heal<E>(
         };
         *slot = candidate.replacement;
         if recheck(&candidate_ast).is_ok() {
+            best_cost = candidate.cost;
             *ast = candidate_ast;
             return Some(HealingWarning {
                 rule: candidate.rule,
@@ -372,36 +364,36 @@ fn find_expr_in_expr_mut(expr: &mut Expr, id: AstNodeId) -> Option<&mut Expr> {
     }
     match expr {
         Expr::Call { callee, args, .. } => {
-            if let Some(e) = find_expr_in_expr_mut(callee, id) {
+            if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(callee), id) {
                 return Some(e);
             }
             args.iter_mut().find_map(|e| find_expr_in_expr_mut(e, id))
         }
         Expr::BinOp { left, right, .. } => {
-            if let Some(e) = find_expr_in_expr_mut(left, id) {
+            if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(left), id) {
                 return Some(e);
             }
-            find_expr_in_expr_mut(right, id)
+            find_expr_in_expr_mut(std::sync::Arc::make_mut(right), id)
         }
         Expr::UnOp { operand, .. } | Expr::PostfixTry { inner: operand, .. } => {
-            find_expr_in_expr_mut(operand, id)
+            find_expr_in_expr_mut(std::sync::Arc::make_mut(operand), id)
         }
-        Expr::Field { object, .. } => find_expr_in_expr_mut(object, id),
+        Expr::Field { object, .. } => find_expr_in_expr_mut(std::sync::Arc::make_mut(object), id),
         Expr::Index { object, index, .. } => {
-            if let Some(e) = find_expr_in_expr_mut(object, id) {
+            if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(object), id) {
                 return Some(e);
             }
-            find_expr_in_expr_mut(index, id)
+            find_expr_in_expr_mut(std::sync::Arc::make_mut(index), id)
         }
         Expr::StructLit { ty, fields, .. } => {
-            if let Some(e) = find_expr_in_expr_mut(ty, id) {
+            if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(ty), id) {
                 return Some(e);
             }
             fields
                 .iter_mut()
                 .find_map(|(_, e)| find_expr_in_expr_mut(e, id))
         }
-        Expr::Block(b) => find_expr_in_block_mut(b, id),
+        Expr::Block(b) => find_expr_in_block_mut(std::sync::Arc::make_mut(b), id),
         Expr::List { elements, .. } | Expr::MacroCall { args: elements, .. } => elements
             .iter_mut()
             .find_map(|e| find_expr_in_expr_mut(e, id)),
