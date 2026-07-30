@@ -120,4 +120,13 @@ fn render_one(diag: &Diagnostic, filename: &str, color: bool, out: &mut String) 
             out.push_str(&format!("  = note: {}\n", note));
         }
     }
+
+    // ── Helps ─────────────────────────────────────────────────────────────────
+    for help in &diag.helps {
+        if color {
+            out.push_str(&format!("  {CYAN}={RESET} {BOLD}help{RESET}: {}\n", help));
+        } else {
+            out.push_str(&format!("  = help: {}\n", help));
+        }
+    }
 }

@@ -9,6 +9,14 @@ use vinglish_parser::ast::Visibility;
 use vinglish_parser::ast::{Item as AstItem, Module as AstModule};
 
 /// TODO: Describe implementation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HealingMode {
+    SuggestOnly,
+    ApplyInMemory,
+    Deny,
+}
+
+/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy)]
 pub enum ScopedId {
     Type(TypeId),
@@ -58,6 +66,7 @@ pub struct CompilerContext {
     pub type_errors: Vec<TypeError>,
     /// Successful bounded repairs are non-fatal but must be visible to users.
     pub healing_warnings: Vec<HealingWarning>,
+    pub healing_mode: HealingMode,
     pub types: HashMap<u32, TypeId>, // Map ast node id -> resolved TypeId
     pub scope_stack: Vec<HashMap<String, ScopedId>>,
     pub current_return_type: Option<Type>,
@@ -151,8 +160,9 @@ impl CompilerContext {
 
         Self {
             symbol_table,
-            type_errors: Vec::new(),
-            healing_warnings: Vec::new(),
+            type_errors: vec![],
+            healing_warnings: vec![],
+            healing_mode: HealingMode::SuggestOnly,
             types: HashMap::new(),
             scope_stack: vec![scope],
             current_return_type: None,

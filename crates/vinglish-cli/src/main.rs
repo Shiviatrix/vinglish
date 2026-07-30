@@ -18,7 +18,7 @@ use vinglish_ownership::check_module;
 use vinglish_parser::parse;
 use vinglish_types::{
     CompilerContext, MirLowerer,
-    passes::{CompilerPass, NameResolutionPass},
+    passes::{CompilerPass, NameResolutionPass, HealingMode},
     type_pass::TypeInferencePass,
     validator::HirValidatorPass,
 };
@@ -68,6 +68,12 @@ enum Commands {
         /// What to emit (c | mir)
         #[arg(long)]
         emit: Option<String>,
+        /// Automatically apply deterministic type healing in memory (output will not match source)
+        #[arg(long)]
+        heal: bool,
+        /// Disable all type healing suggestions (useful for strict CI pipelines)
+        #[arg(long)]
+        deny_heal: bool,
     },
     /// Compile and immediately run an Vinglish file (interpreted)
     Run {
@@ -87,6 +93,24 @@ enum Commands {
     Check {
         /// Source file to check
         file: PathBuf,
+        /// Automatically apply deterministic type healing in memory
+        #[arg(long)]
+        heal: bool,
+        /// Disable all type healing suggestions
+        #[arg(long)]
+        deny_heal: bool,
+    },
+    /// Automatically fix type errors in source files
+    Fix {
+        /// Source file(s) to fix
+        #[arg(default_value = ".")]
+        file: PathBuf,
+        /// Allow fixing even if the git working tree is dirty
+        #[arg(long)]
+        allow_dirty: bool,
+        /// Automatically accept all fixes without prompting
+        #[arg(short, long)]
+        yes: bool,
     },
     /// Format an Vinglish source file in place (or to stdout with --check)
     Fmt {
@@ -131,8 +155,11 @@ async fn main() {
             output,
             backend,
             emit,
+            heal,
+            deny_heal,
         }) => {
-            if let Err(e) = cmd_build(&file, &output, &backend, emit) {
+            let mode = get_healing_mode(heal, deny_heal);
+            if let Err(e) = cmd_build(&file, &output, &backend, emit, mode) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
@@ -146,9 +173,16 @@ async fn main() {
         Some(Commands::Lsp) => {
             vinglish_lsp::run_server().await;
         }
-        Some(Commands::Check { file }) => {
-            let ok = cmd_check(&file);
+        Some(Commands::Check { file, heal, deny_heal }) => {
+            let mode = get_healing_mode(heal, deny_heal);
+            let ok = cmd_check(&file, mode);
             if !ok {
+                std::process::exit(1);
+            }
+        }
+        Some(Commands::Fix { file, allow_dirty, yes }) => {
+            if let Err(e) = cmd_fix(&file, allow_dirty, yes) {
+                eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
@@ -372,7 +406,11 @@ fn topological_sort(
     Ok(order)
 }
 
-fn compile_project(file: &Path) -> Result<CompileResult, String> {
+fn compile_project(
+    file: &Path,
+    mode: HealingMode,
+    mut collected_fixes: Option<&mut Vec<(PathBuf, String, vinglish_types::healer::HealingWarning)>>,
+) -> Result<CompileResult, String> {
     let entry_path = file.to_path_buf();
     let entry_name = "main".to_string();
 
@@ -400,6 +438,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         }
 
         let mut ctx = CompilerContext::with_symbol_table(symbol_table);
+        ctx.healing_mode = mode;
         ctx.current_module = if module_name == &entry_name {
             String::new()
         } else {
@@ -416,13 +455,25 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
         validator.validate(&mut ctx, &hir);
 
         let mut has_errors = false;
+        let is_fixing = collected_fixes.is_some();
+        
         for e in &ctx.type_errors {
             let mut diag = Diagnostic::error("T0001", e.message(), e.span());
+            
+            if mode == HealingMode::SuggestOnly && !is_fixing {
+                if let Some(warning) = ctx.healing_warnings.iter().find(|w| w.span == e.span()) {
+                    diag.add_help(format!("auto-fixable — wrap in `{}` (run `vng fix` to apply)", vinglish_fmt::format_expr(&warning.replacement)));
+                }
+            }
+            
             diag.enrich(src);
-            let rendered = render(&[diag], &path.display().to_string());
-            eprint!("{}", rendered);
+            if !is_fixing {
+                let rendered = render(&[diag], &path.display().to_string());
+                eprint!("{}", rendered);
+            }
             has_errors = true;
         }
+        
         for warning in &ctx.healing_warnings {
             let mut diag = Diagnostic::warning(
                 "T1001",
@@ -432,19 +483,32 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
                 ),
                 warning.span,
             );
+            if mode == HealingMode::ApplyInMemory {
+                diag.add_note("⚠ 1 TYPE ERROR WAS AUTO-HEALED IN MEMORY — output does not match source verbatim. Run `vng fix` to apply this change to source, or omit --heal to disable.");
+            }
             diag.enrich(src);
-            eprint!("{}", render(&[diag], &path.display().to_string()));
+            if !is_fixing && mode == HealingMode::ApplyInMemory {
+                eprint!("{}", render(&[diag], &path.display().to_string()));
+            }
+        }
+        
+        if let Some(ref mut fixes) = collected_fixes {
+            for warning in ctx.healing_warnings {
+                fixes.push((path.clone(), src.clone(), warning));
+            }
         }
 
         let own_errors = check_module(&ast);
         for e in &own_errors {
             let mut diag = Diagnostic::error("O0001", &e.message, e.span);
             if let Some(note) = &e.note {
-                diag = diag.with_note(note);
+                diag.add_note(note.clone());
             }
             diag.enrich(src);
-            let rendered = render(&[diag], &path.display().to_string());
-            eprint!("{}", rendered);
+            if !is_fixing {
+                let rendered = render(&[diag], &path.display().to_string());
+                eprint!("{}", rendered);
+            }
             has_errors = true;
         }
 
@@ -475,7 +539,7 @@ fn compile_project(file: &Path) -> Result<CompileResult, String> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn cmd_emit_ir(file: &Path) -> Result<(), String> {
-    let compilation = compile_project(file)?;
+    let compilation = compile_project(file, HealingMode::Deny, None)?;
     let document = ExportBuilder::new(&compilation.symbol_table).document(
         compilation
             .hir_modules
@@ -488,7 +552,7 @@ fn cmd_emit_ir(file: &Path) -> Result<(), String> {
 }
 
 fn cmd_run(file: &Path) -> Result<(), String> {
-    let compile_res = compile_project(file)?;
+    let compile_res = compile_project(file, HealingMode::Deny, None)?;
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
 
@@ -558,8 +622,9 @@ fn cmd_build(
     output: &Path,
     backend: &str,
     emit: Option<String>,
+    mode: HealingMode,
 ) -> Result<(), String> {
-    let compile_res = compile_project(file)?;
+    let compile_res = compile_project(file, mode, None)?;
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
 
@@ -806,8 +871,8 @@ fn cmd_build(
     Err(format!("unknown backend: {}", backend))
 }
 
-fn cmd_check(file: &Path) -> bool {
-    let compile_res = match compile_project(file) {
+fn cmd_check(file: &Path, mode: HealingMode) -> bool {
+    let compile_res = match compile_project(file, mode, None) {
         Ok(res) => res,
         Err(e) => {
             eprintln!("{}", e);
@@ -972,7 +1037,7 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
 
         // Compile phase
         if ext == "ving" {
-            cmd_build(&file, &output, "c", None)?;
+            cmd_build(&file, &output, "c", None, HealingMode::Deny)?;
         } else if ext == "c" {
             let status = Command::new("gcc")
                 .arg("-O3")
@@ -1068,5 +1133,82 @@ fn rustc_version() -> String {
         String::from_utf8_lossy(&out.stdout).trim().to_string()
     } else {
         "unknown".into()
+    }
+}
+
+fn get_healing_mode(heal: bool, deny_heal: bool) -> HealingMode {
+    if deny_heal {
+        HealingMode::Deny
+    } else if heal {
+        HealingMode::ApplyInMemory
+    } else {
+        HealingMode::SuggestOnly
+    }
+}
+
+fn cmd_fix(file: &Path, allow_dirty: bool, yes: bool) -> Result<(), String> {
+    if !allow_dirty {
+        let output = std::process::Command::new("git")
+            .args(["status", "--porcelain"])
+            .output()
+            .map_err(|e| format!("Failed to run git status: {}", e))?;
+        if !output.stdout.is_empty() {
+            return Err("Git working tree is dirty. Commit or stash changes, or use --allow-dirty.".into());
+        }
+    }
+
+    let mut collected_fixes = Vec::new();
+    let _ = compile_project(file, HealingMode::SuggestOnly, Some(&mut collected_fixes));
+
+    if collected_fixes.is_empty() {
+        println!("No auto-fixable errors found.");
+        return Ok(());
+    }
+
+    println!("Found {} auto-fixable error(s):", collected_fixes.len());
+    for (path, _, warning) in &collected_fixes {
+        println!("  - {}:{}:{} : wrap in `{}`", path.display(), warning.span.start, warning.span.end, vinglish_fmt::format_expr(&warning.replacement));
+    }
+
+    if !yes {
+        use std::io::Write;
+        print!("Apply these fixes? [y/N] ");
+        std::io::stdout().flush().unwrap();
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        if !input.trim().eq_ignore_ascii_case("y") {
+            println!("Aborted.");
+            return Ok(());
+        }
+    }
+
+    // Group by file
+    let mut files_to_fix: std::collections::HashMap<PathBuf, (String, Vec<vinglish_types::healer::HealingWarning>)> = std::collections::HashMap::new();
+    for (path, src, warning) in collected_fixes.clone() {
+        files_to_fix.entry(path).or_insert_with(|| (src, Vec::new())).1.push(warning);
+    }
+
+    for (path, (mut src, mut warnings)) in files_to_fix {
+        warnings.sort_by_key(|w| std::cmp::Reverse(w.span.start));
+        for warning in warnings {
+            let start = warning.span.start as usize;
+            let end = warning.span.end as usize;
+            let replacement_str = vinglish_fmt::format_expr(&warning.replacement);
+            src = format!("{}{}{}", &src[..start], replacement_str, &src[end..]);
+        }
+        std::fs::write(&path, src).map_err(|e| format!("Failed to write {}: {}", path.display(), e))?;
+    }
+
+    println!("Fixes applied. Verifying...");
+    
+    // We expect it to succeed now. If it still fails, it's fine, the user can see errors.
+    match compile_project(file, HealingMode::Deny, None) {
+        Ok(_) => {
+            println!("Healed {} type mismatch(es). Review with `git diff` before committing.", collected_fixes.len());
+            Ok(())
+        }
+        Err(_) => {
+            Err("Fixes applied, but compilation still fails. Please review the errors.".into())
+        }
     }
 }

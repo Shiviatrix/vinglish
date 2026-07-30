@@ -59,6 +59,7 @@ pub struct Diagnostic {
     pub col_number: Option<u32>,
     pub suggestions: Vec<Suggestion>,
     pub notes: Vec<String>,
+    pub helps: Vec<String>,
 }
 
 impl Diagnostic {
@@ -74,6 +75,7 @@ impl Diagnostic {
             col_number: None,
             suggestions: vec![],
             notes: vec![],
+            helps: vec![],
         }
     }
 
@@ -89,6 +91,7 @@ impl Diagnostic {
             col_number: None,
             suggestions: vec![],
             notes: vec![],
+            helps: vec![],
         }
     }
 
@@ -104,6 +107,7 @@ impl Diagnostic {
             col_number: None,
             suggestions: vec![],
             notes: vec![],
+            helps: vec![],
         }
     }
 
@@ -117,6 +121,21 @@ impl Diagnostic {
     pub fn with_note(mut self, note: impl Into<String>) -> Self {
         self.notes.push(note.into());
         self
+    }
+
+    pub fn add_note(&mut self, note: impl Into<String>) {
+        self.notes.push(note.into());
+    }
+
+    /// TODO: Describe implementation.
+    pub fn with_help(mut self, help: impl Into<String>) -> Self {
+        self.helps.push(help.into());
+        self
+    }
+
+    /// TODO: Describe implementation.
+    pub fn add_help(&mut self, help: impl Into<String>) {
+        self.helps.push(help.into());
     }
 
     /// Fill in line/column information from the source text.

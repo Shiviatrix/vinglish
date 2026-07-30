@@ -274,7 +274,7 @@ impl Formatter {
 // Expression and type formatters (pure functions — no mutable state)
 // ─────────────────────────────────────────────────────────────────────────────
 
-fn fmt_expr(expr: &Expr) -> String {
+pub fn fmt_expr(expr: &Expr) -> String {
     match expr {
         Expr::Lit { value, .. } => match value {
             Literal::Int(i) => i.to_string(),

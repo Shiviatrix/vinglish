@@ -161,9 +161,15 @@ impl UnionFind {
                     ));
                 }
                 for (x, y) in aa.into_iter().zip(ba) {
-                    self.unify(x, y, span)?;
+                    // x is from expected (which was built from actual arguments)
+                    // y is from actual (which is the callee signature)
+                    // So we must unify(expected=y, actual=x)
+                    self.unify(y, x, span)?;
                 }
-                self.unify(*ar, *br, span)
+                // reta is expected return, br is actual return. Wait, if caller did unify(expected_fn, callee_fn),
+                // expected_fn has a fresh variable for reta, so it's actual return! And callee_fn has the real return.
+                // So unify(expected=br, actual=ar)
+                self.unify(*br, *ar, span)
             }
             (Type::Reference(a_inner, a_mut), Type::Reference(b_inner, b_mut)) => {
                 if a_mut != b_mut {
@@ -347,46 +353,70 @@ impl TypeInferencePass {
     /// repair attempt for the first structured mismatch. This is the live
     /// `TypeError::Mismatch -> healer::attempt_heal` interception point.
     pub fn run_with_healing(&mut self, ast: &mut Module, ctx: &mut CompilerContext) -> HirModule {
+        use crate::passes::HealingMode;
+        
         let baseline = ctx.clone();
         let initial_hir = self
             .run(ast, ctx)
             .unwrap_or_else(|| HirModule { items: vec![] });
-        let Some(mismatch) = ctx
+            
+        if ctx.healing_mode == HealingMode::Deny {
+            return initial_hir;
+        }
+
+        let mismatches: Vec<_> = ctx
             .type_errors
             .iter()
-            .find(|error| matches!(error, TypeError::Mismatch { .. }))
+            .filter(|error| matches!(error, TypeError::Mismatch { .. }))
             .cloned()
-        else {
+            .collect();
+            
+        if mismatches.is_empty() {
             return initial_hir;
-        };
+        }
 
-        let warning = crate::healer::attempt_heal(&mismatch, ast, |candidate| {
-            let mut retry_ctx = baseline.clone();
-            let mut retry_pass = TypeInferencePass::new();
-            retry_pass.run(candidate, &mut retry_ctx);
-            if retry_ctx.type_errors.is_empty() {
-                Ok(())
-            } else {
-                Err(())
+        let mut any_healed = false;
+        
+        for mismatch in mismatches {
+            let warning = crate::healer::attempt_heal(&mismatch, ast, ctx.healing_mode, |candidate| {
+                let mut retry_ctx = baseline.clone();
+                let mut retry_pass = TypeInferencePass::new();
+                retry_pass.run(candidate, &mut retry_ctx);
+                if retry_ctx.type_errors.len() < ctx.type_errors.len() {
+                    Ok(())
+                } else {
+                    Err(())
+                }
+            });
+            
+            if let Some(w) = warning {
+                ctx.healing_warnings.push(w);
+                any_healed = true;
             }
-        });
-        let Some(warning) = warning else {
+        }
+        
+        if !any_healed {
             return initial_hir;
-        };
+        }
 
-        // Re-run from the pre-inference context so no symbols, inference
-        // variables, or diagnostics from the rejected AST survive.
-        *ctx = baseline;
-        *self = TypeInferencePass::new();
-        let healed_hir = self
-            .run(ast, ctx)
-            .unwrap_or_else(|| HirModule { items: vec![] });
-        if ctx.type_errors.is_empty() {
-            ctx.healing_warnings.push(warning);
-            healed_hir
+        if ctx.healing_mode == HealingMode::ApplyInMemory {
+            // Re-run from the pre-inference context so no symbols, inference
+            // variables, or diagnostics from the rejected AST survive.
+            let warnings = ctx.healing_warnings.clone();
+            *ctx = baseline;
+            *self = TypeInferencePass::new();
+            let healed_hir = self
+                .run(ast, ctx)
+                .unwrap_or_else(|| HirModule { items: vec![] });
+            if ctx.type_errors.is_empty() {
+                // Keep the warnings we found
+                ctx.healing_warnings = warnings;
+                healed_hir
+            } else {
+                initial_hir
+            }
         } else {
-            // Defensive fallback: the checker used by `attempt_heal` already
-            // proved this should not happen, but never hide a real failure.
+            // SuggestOnly: ctx already contains original type_errors and the newly appended healing_warnings.
             initial_hir
         }
     }

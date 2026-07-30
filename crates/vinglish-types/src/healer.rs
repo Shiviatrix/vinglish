@@ -3,7 +3,7 @@
 //! A repair is never guessed: each rule is explicit, has a bounded cost, and is
 //! accepted only after the normal type pass succeeds on the rebuilt AST.
 
-use crate::{AstNodeId, Type, TypeError};
+use crate::{passes::HealingMode, AstNodeId, Type, TypeError};
 use vinglish_lexer::Span;
 use vinglish_parser::ast::{Block, Expr, Ident, Item, Module, Stmt, TypeExpr, UnOp};
 
@@ -35,6 +35,7 @@ pub struct HealingCandidate {
 pub struct HealingWarning {
     pub rule: HealingRule,
     pub span: Span,
+    pub replacement: Expr,
 }
 
 /// Pure candidate generator. It does not mutate a tree or suppress diagnostics.
@@ -116,6 +117,7 @@ pub fn try_heal_in_place<E>(
 pub fn attempt_heal<E>(
     error: &TypeError,
     ast: &mut Module,
+    mode: HealingMode,
     mut recheck: impl FnMut(&Module) -> Result<(), E>,
 ) -> Option<HealingWarning> {
     let TypeError::Mismatch {
@@ -153,13 +155,16 @@ pub fn attempt_heal<E>(
         let Some(slot) = find_expr_mut(&mut candidate_ast, *node_id) else {
             continue;
         };
-        *slot = candidate.replacement;
+        *slot = candidate.replacement.clone();
         if recheck(&candidate_ast).is_ok() {
             best_cost = candidate.cost;
-            *ast = candidate_ast;
+            if mode == HealingMode::ApplyInMemory {
+                *ast = candidate_ast;
+            }
             return Some(HealingWarning {
                 rule: candidate.rule,
                 span: *span,
+                replacement: candidate.replacement,
             });
         }
     }
