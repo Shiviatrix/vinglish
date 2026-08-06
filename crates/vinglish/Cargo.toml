@@ -1,5 +1,5 @@
 [package]
-name        = "vinglish-cli"
+name        = "vinglish"
 version.workspace    = true
 edition.workspace    = true
 description = "vng — the Vinglish compiler driver"

@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/vinglish-cli",
+    "crates/vinglish",
     "crates/vinglish-lexer",
     "crates/vinglish-parser",
     "crates/vinglish-types",
