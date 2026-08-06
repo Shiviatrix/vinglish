@@ -52,6 +52,9 @@ docs/latex/
 *.bcf
 *.run.xml
 *thesis*
+vinglish_thesis.*
+vinglish_thesis.aux
+vinglish_thesis.toc
 
 # Media & Video Generation (Manim)
 /media/
