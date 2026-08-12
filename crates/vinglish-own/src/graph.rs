@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fmt;
 use vinglish_hir::symbol::SsaValueId;
 
-/// TODO: Describe implementation.
 #[derive(Debug, Default)]
 pub struct OwnershipGraph {
     states: HashMap<SsaValueId, OwnershipState>,
@@ -11,7 +10,6 @@ pub struct OwnershipGraph {
 }
 
 impl OwnershipGraph {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             states: HashMap::new(),
@@ -19,13 +17,11 @@ impl OwnershipGraph {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn set_state(&mut self, var: SsaValueId, state: OwnershipState) {
         self.states.insert(var, state.clone());
         self.history.entry(var).or_default().push(state);
     }
 
-    /// TODO: Describe implementation.
     pub fn get_state(&self, var: SsaValueId) -> OwnershipState {
         self.states
             .get(&var)
@@ -33,7 +29,6 @@ impl OwnershipGraph {
             .unwrap_or(OwnershipState::Uninitialized)
     }
 
-    /// TODO: Describe implementation.
     pub fn is_owned(&self, var: SsaValueId) -> bool {
         matches!(self.get_state(var), OwnershipState::Owned)
     }

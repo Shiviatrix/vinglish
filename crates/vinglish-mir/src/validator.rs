@@ -19,12 +19,10 @@ impl Default for MirValidatorPass {
 }
 
 impl MirValidatorPass {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn validate<V: Clone + Copy + std::fmt::Display>(
         &self,
         symbol_table: &SymbolTable,

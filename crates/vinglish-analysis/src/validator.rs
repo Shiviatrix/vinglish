@@ -6,7 +6,6 @@ use vinglish_hir::symbol::SsaValueId;
 use vinglish_lexer::Span;
 use vinglish_mir::{Instruction, MirModule};
 
-/// TODO: Describe implementation.
 pub struct AnalysisValidator;
 
 impl Default for AnalysisValidator {
@@ -16,12 +15,10 @@ impl Default for AnalysisValidator {
 }
 
 impl AnalysisValidator {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn validate(
         &self,
         module: &MirModule<SsaValueId>,

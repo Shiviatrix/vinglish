@@ -4,7 +4,6 @@ use std::fmt;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirFunction, MirModule, Operand, Terminator};
 
-/// TODO: Describe implementation.
 pub struct EscapeAnalysis {
     pub escaped_aliases: HashSet<AliasId>,
 }
@@ -16,14 +15,12 @@ impl Default for EscapeAnalysis {
 }
 
 impl EscapeAnalysis {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             escaped_aliases: HashSet::new(),
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn is_escaped(&self, alias: AliasId) -> bool {
         self.escaped_aliases.contains(&alias)
     }
@@ -41,7 +38,6 @@ impl fmt::Display for EscapeAnalysis {
     }
 }
 
-/// TODO: Describe implementation.
 pub struct EscapeAnalysisPass;
 
 impl Default for EscapeAnalysisPass {
@@ -51,12 +47,10 @@ impl Default for EscapeAnalysisPass {
 }
 
 impl EscapeAnalysisPass {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn run(&self, module: &MirModule<SsaValueId>, alias_graph: &AliasGraph) -> EscapeAnalysis {
         let mut analysis = EscapeAnalysis::new();
 

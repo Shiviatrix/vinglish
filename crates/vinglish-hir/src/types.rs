@@ -7,7 +7,6 @@ pub struct TypeVar(pub u32);
 static NEXT_VAR: AtomicU32 = AtomicU32::new(0);
 
 impl TypeVar {
-    /// TODO: Describe implementation.
     pub fn fresh() -> Self {
         Self(NEXT_VAR.fetch_add(1, Ordering::Relaxed))
     }

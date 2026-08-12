@@ -4,7 +4,6 @@ use std::collections::HashSet;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule, Operand};
 
-/// TODO: Describe implementation.
 pub struct OwnershipAnalysisPass;
 
 impl Default for OwnershipAnalysisPass {
@@ -14,12 +13,10 @@ impl Default for OwnershipAnalysisPass {
 }
 
 impl OwnershipAnalysisPass {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn run(
         &self,
         module: &mut MirModule<vinglish_hir::symbol::SsaValueId>,

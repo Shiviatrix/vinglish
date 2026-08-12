@@ -12,7 +12,6 @@ use sha2::{Digest, Sha256};
 use std::io::Read;
 use thiserror::Error;
 
-/// TODO: Describe implementation.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum DecompileError {
     #[error("Missing VINGLISH_MIR_PAYLOAD comment in the source file")]
@@ -27,7 +26,6 @@ pub enum DecompileError {
     Deserialize,
 }
 
-/// TODO: Describe implementation.
 pub trait MirSnapshotDecoder {
     type MirModule;
     type Error: std::error::Error + Send + Sync + 'static;

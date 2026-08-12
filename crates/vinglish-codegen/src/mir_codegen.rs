@@ -8,7 +8,6 @@ use vinglish_hir::types::Type;
 use vinglish_mir::{Instruction, MirFunction, MirModule, Operand, Terminator};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
 
-/// TODO: Describe implementation.
 #[derive(Debug, Error)]
 pub enum MirCEmitError {
     #[error("formatting C output failed")]

@@ -4,7 +4,6 @@ use vinglish_hir::symbol::HasSymbolId;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule, Operand, Terminator};
 
-/// TODO: Describe implementation.
 pub struct GlobalValueNumberingPass;
 
 impl OptimizationPass<SsaValueId> for GlobalValueNumberingPass {

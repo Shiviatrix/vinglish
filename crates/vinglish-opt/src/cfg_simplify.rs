@@ -4,7 +4,6 @@ use std::fmt::Display;
 use std::hash::Hash;
 use vinglish_mir::{BlockId, MirModule, Terminator};
 
-/// TODO: Describe implementation.
 pub struct CfgSimplifyPass;
 
 impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> OptimizationPass<V>

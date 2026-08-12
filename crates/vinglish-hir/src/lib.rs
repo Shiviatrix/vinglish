@@ -1,8 +1,5 @@
-/// TODO: Describe implementation.
 pub mod layout;
-/// TODO: Describe implementation.
 pub mod symbol;
-/// TODO: Describe implementation.
 pub mod types;
 
 #[cfg(test)]
@@ -12,13 +9,11 @@ use crate::symbol::{FieldId, FunctionId, TypeId, VariableId};
 use vinglish_lexer::span::Span;
 use vinglish_parser::ast::{BinOp, Literal, UnOp, Visibility};
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Module {
     pub items: Vec<Item>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Item {
     Function(FunctionDef),
@@ -27,7 +22,6 @@ pub enum Item {
     Statement(Stmt),
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDef {
     pub visibility: Visibility,
@@ -40,7 +34,6 @@ pub struct FunctionDef {
     pub span: Span,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Param {
     pub id: VariableId,
@@ -49,7 +42,6 @@ pub struct Param {
     pub span: Span,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypeDef {
     pub visibility: Visibility,
@@ -59,7 +51,6 @@ pub struct TypeDef {
     pub span: Span,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumDef {
     pub visibility: Visibility,
@@ -69,14 +60,12 @@ pub struct EnumDef {
     pub span: Span,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variant {
     pub name: String,
     pub payload: Option<TypeId>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     Let {
@@ -111,7 +100,6 @@ pub enum Stmt {
     Expr(Expr),
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Lit {
@@ -181,7 +169,6 @@ pub enum Expr {
 }
 
 impl Expr {
-    /// TODO: Describe implementation.
     pub fn ty(&self) -> TypeId {
         match self {
             Expr::Lit { ty, .. } => *ty,
@@ -199,7 +186,6 @@ impl Expr {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn span(&self) -> Span {
         match self {
             Expr::Lit { span, .. } => *span,
@@ -218,7 +204,6 @@ impl Expr {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub stmts: Vec<Stmt>,

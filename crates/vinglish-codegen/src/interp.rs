@@ -5,7 +5,6 @@ use vinglish_hir::symbol::{FieldId, FunctionId, SsaValueId, SymbolTable};
 use vinglish_mir::{BlockId, Instruction, MirFunction, MirModule, Operand, Terminator};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
 
-/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Value
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,10 +31,8 @@ pub enum ReferenceLoc {
     StructField(u64, FieldId), // addr, field_id
 }
 
-/// TODO: Describe implementation.
 pub type NativeFnPointer = fn(Vec<Value>) -> Result<Value, InterpError>;
 
-/// TODO: Describe implementation.
 #[derive(Clone)]
 pub struct NativeFn {
     pub name: &'static str,
@@ -55,7 +52,6 @@ impl PartialEq for NativeFn {
 }
 
 impl Value {
-    /// TODO: Describe implementation.
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Bool(b) => *b,
@@ -65,7 +61,6 @@ impl Value {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn to_display(&self) -> String {
         match self {
             Value::Int(i) => i.to_string(),
@@ -101,7 +96,6 @@ impl Value {
     }
 }
 
-/// TODO: Describe implementation.
 // ─────────────────────────────────────────────────────────────────────────────
 // Errors
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,7 +124,6 @@ impl std::error::Error for InterpError {}
 // ─────────────────────────────────────────────────────────────────────────────
 // Interpreter
 // ─────────────────────────────────────────────────────────────────────────────
-/// TODO: Describe implementation.
 pub struct Interpreter<'a> {
     _symbol_table: &'a SymbolTable,
     functions: HashMap<FunctionId, &'a MirFunction<SsaValueId>>,
@@ -158,7 +151,6 @@ fn get_list_store() -> &'static Mutex<HashMap<u64, Vec<Value>>> {
 }
 
 impl<'a> Interpreter<'a> {
-    /// TODO: Describe implementation.
     pub fn new(symbol_table: &'a SymbolTable) -> Self {
         let mut interp = Self {
             _symbol_table: symbol_table,
@@ -233,7 +225,6 @@ impl<'a> Interpreter<'a> {
         interp
     }
 
-    /// TODO: Describe implementation.
     pub fn run_module(
         &mut self,
         module: &'a MirModule<vinglish_hir::symbol::SsaValueId>,

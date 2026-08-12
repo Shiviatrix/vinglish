@@ -1,10 +1,6 @@
-/// TODO: Describe implementation.
 pub mod backend;
-/// TODO: Describe implementation.
 pub mod interp;
-/// TODO: Describe implementation.
 pub mod lower;
-/// TODO: Describe implementation.
 pub mod mir_codegen;
 
 #[cfg(test)]

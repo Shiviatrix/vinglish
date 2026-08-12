@@ -1,11 +1,9 @@
-/// TODO: Describe implementation.
 pub mod validator;
 
 use std::fmt;
 use vinglish_hir::symbol::{FieldId, FunctionId, TypeId};
 use vinglish_parser::ast::{BinOp, Literal, UnOp};
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, serde::Serialize, serde::Deserialize)]
 pub struct BlockId(pub usize);
 
@@ -15,13 +13,11 @@ impl fmt::Display for BlockId {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MirModule<V: Clone + Copy + fmt::Display> {
     pub functions: Vec<MirFunction<V>>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MirFunction<V: Clone + Copy + fmt::Display> {
     pub id: FunctionId,
@@ -32,7 +28,6 @@ pub struct MirFunction<V: Clone + Copy + fmt::Display> {
     pub locals: Vec<V>, // includes parameters and synthesized temporaries
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BasicBlock<V: Clone + Copy + fmt::Display> {
     pub id: BlockId,
@@ -40,7 +35,6 @@ pub struct BasicBlock<V: Clone + Copy + fmt::Display> {
     pub terminator: Terminator<V>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Operand<V: Clone + Copy + fmt::Display> {
     Constant(Literal),
@@ -81,7 +75,6 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Operand<V> {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Instruction<V: Clone + Copy + fmt::Display> {
     Assign(V, Operand<V>),
@@ -199,7 +192,6 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for Instruction<V> {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Terminator<V: Clone + Copy + fmt::Display> {
     Return(Option<Operand<V>>),

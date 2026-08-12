@@ -17,12 +17,10 @@ impl Default for OwnershipValidator {
 }
 
 impl OwnershipValidator {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn validate(
         &self,
         symbol_table: &SymbolTable,

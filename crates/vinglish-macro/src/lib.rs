@@ -7,7 +7,6 @@ use std::io::Write;
 use std::path::PathBuf;
 use syn::{parse_macro_input, FnArg, ItemFn, Pat, ReturnType, Type};
 
-/// TODO: Describe implementation.
 #[proc_macro_attribute]
 pub fn vinglish_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);

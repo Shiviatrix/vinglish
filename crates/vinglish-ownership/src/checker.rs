@@ -12,7 +12,6 @@ pub enum VarState {
     Dropped,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct OwnershipError {
     pub message: String,

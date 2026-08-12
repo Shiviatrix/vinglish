@@ -3,7 +3,6 @@ use crate::escape::EscapeAnalysis;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_mir::{Instruction, MirModule};
 
-/// TODO: Describe implementation.
 pub struct StackPromotionPass;
 
 impl Default for StackPromotionPass {
@@ -13,12 +12,10 @@ impl Default for StackPromotionPass {
 }
 
 impl StackPromotionPass {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn run(
         &self,
         module: &mut MirModule<SsaValueId>,

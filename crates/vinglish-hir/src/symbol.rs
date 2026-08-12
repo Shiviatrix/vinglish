@@ -3,19 +3,15 @@ use std::collections::HashMap;
 use std::fmt;
 use vinglish_parser::ast::Visibility;
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct SymbolId(pub u32);
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct TypeId(pub SymbolId);
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct FunctionId(pub SymbolId);
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct VariableId(pub SymbolId);
 
@@ -25,7 +21,6 @@ impl fmt::Display for VariableId {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct SsaValueId(pub u32);
 
@@ -35,11 +30,9 @@ impl fmt::Display for SsaValueId {
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct FieldId(pub usize);
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct SymbolTable {
     symbols: Vec<SymbolKind>,
@@ -47,7 +40,6 @@ pub struct SymbolTable {
     interned_types: HashMap<Type, TypeId>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub enum SymbolKind {
     Type(TypeSymbol),
@@ -63,7 +55,6 @@ impl Default for SymbolTable {
 }
 
 impl SymbolTable {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self {
             symbols: Vec::new(),
@@ -72,12 +63,10 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn num_symbols(&self) -> usize {
         self.symbols.len()
     }
 
-    /// TODO: Describe implementation.
     pub fn intern_type(&mut self, ty: Type) -> TypeId {
         if let Some(&id) = self.interned_types.get(&ty) {
             return id;
@@ -89,7 +78,6 @@ impl SymbolTable {
         type_id
     }
 
-    /// TODO: Describe implementation.
     pub fn get_interned_type(&self, id: TypeId) -> Option<&Type> {
         match self.symbols.get(id.0.0 as usize) {
             Some(SymbolKind::InternedType(ty)) => Some(ty),
@@ -102,7 +90,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn define_type(&mut self, name: String, symbol: TypeSymbol) -> TypeId {
         let id = SymbolId(self.symbols.len() as u32);
         self.symbols.push(SymbolKind::Type(symbol));
@@ -110,7 +97,6 @@ impl SymbolTable {
         TypeId(id)
     }
 
-    /// TODO: Describe implementation.
     pub fn define_func(&mut self, name: String, symbol: FunctionSymbol) -> FunctionId {
         let id = SymbolId(self.symbols.len() as u32);
         self.symbols.push(SymbolKind::Function(symbol));
@@ -118,7 +104,6 @@ impl SymbolTable {
         FunctionId(id)
     }
 
-    /// TODO: Describe implementation.
     pub fn define_var(&mut self, name: String, symbol: VariableSymbol) -> VariableId {
         let id = SymbolId(self.symbols.len() as u32);
         self.symbols.push(SymbolKind::Variable(symbol));
@@ -126,21 +111,18 @@ impl SymbolTable {
         VariableId(id)
     }
 
-    /// TODO: Describe implementation.
     pub fn define_anon_func(&mut self, symbol: FunctionSymbol) -> FunctionId {
         let id = SymbolId(self.symbols.len() as u32);
         self.symbols.push(SymbolKind::Function(symbol));
         FunctionId(id)
     }
 
-    /// TODO: Describe implementation.
     pub fn define_anon_var(&mut self, symbol: VariableSymbol) -> VariableId {
         let id = SymbolId(self.symbols.len() as u32);
         self.symbols.push(SymbolKind::Variable(symbol));
         VariableId(id)
     }
 
-    /// TODO: Describe implementation.
     pub fn define_var_with_id(&mut self, id: SymbolId, symbol: VariableSymbol) {
         let idx = id.0 as usize;
         if idx >= self.symbols.len() {
@@ -150,12 +132,10 @@ impl SymbolTable {
         self.symbols[idx] = SymbolKind::Variable(symbol);
     }
 
-    /// TODO: Describe implementation.
     pub fn get(&self, id: SymbolId) -> Option<&SymbolKind> {
         self.symbols.get(id.0 as usize)
     }
 
-    /// TODO: Describe implementation.
     pub fn get_type(&self, id: TypeId) -> Option<&TypeSymbol> {
         if let Some(SymbolKind::Type(ts)) = self.symbols.get(id.0.0 as usize) {
             Some(ts)
@@ -164,7 +144,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn get_func(&self, id: FunctionId) -> Option<&FunctionSymbol> {
         if let Some(SymbolKind::Function(fs)) = self.symbols.get(id.0.0 as usize) {
             Some(fs)
@@ -173,7 +152,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn get_var(&self, id: VariableId) -> Option<&VariableSymbol> {
         if let Some(SymbolKind::Variable(vs)) = self.symbols.get(id.0.0 as usize) {
             Some(vs)
@@ -182,7 +160,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn get_type_mut(&mut self, id: TypeId) -> Option<&mut TypeSymbol> {
         if let Some(SymbolKind::Type(ts)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(ts)
@@ -191,7 +168,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn get_func_mut(&mut self, id: FunctionId) -> Option<&mut FunctionSymbol> {
         if let Some(SymbolKind::Function(fs)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(fs)
@@ -200,7 +176,6 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn get_var_mut(&mut self, id: VariableId) -> Option<&mut VariableSymbol> {
         if let Some(SymbolKind::Variable(vs)) = self.symbols.get_mut(id.0.0 as usize) {
             Some(vs)
@@ -209,18 +184,15 @@ impl SymbolTable {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn lookup(&self, name: &str) -> Option<SymbolId> {
         self.names.get(name).copied()
     }
 
-    /// TODO: Describe implementation.
     pub fn names(&self) -> &HashMap<String, SymbolId> {
         &self.names
     }
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct TypeSymbol {
     pub id: TypeId,
@@ -232,7 +204,6 @@ pub struct TypeSymbol {
     pub capabilities: Vec<String>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct FunctionSymbol {
     pub id: FunctionId,
@@ -244,7 +215,6 @@ pub struct FunctionSymbol {
     pub is_foreign: bool,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct VariableSymbol {
     pub id: VariableId,
@@ -254,7 +224,6 @@ pub struct VariableSymbol {
     pub span: Option<vinglish_lexer::span::Span>,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct FieldSymbol {
     pub id: FieldId,
@@ -264,7 +233,6 @@ pub struct FieldSymbol {
 }
 
 impl TypeSymbol {
-    /// TODO: Describe implementation.
     pub fn new(id: TypeId, name: String, visibility: Visibility) -> Self {
         Self {
             id,
@@ -277,7 +245,6 @@ impl TypeSymbol {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn add_field(&mut self, name: String, ty: Type, visibility: Visibility) -> FieldId {
         let index = self.fields.len();
         let id = FieldId(index);
@@ -290,18 +257,15 @@ impl TypeSymbol {
         id
     }
 
-    /// TODO: Describe implementation.
     pub fn get_field(&self, name: &str) -> Option<&FieldSymbol> {
         self.fields.iter().find(|f| f.name == name)
     }
 
-    /// TODO: Describe implementation.
     pub fn add_method(&mut self, name: String, func_id: FunctionId) {
         self.methods.insert(name, func_id);
     }
 }
 
-/// TODO: Describe implementation.
 pub trait HasSymbolId {
     fn symbol_id(&self) -> SymbolId;
 }

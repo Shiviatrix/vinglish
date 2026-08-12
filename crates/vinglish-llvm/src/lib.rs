@@ -1,10 +1,6 @@
-/// TODO: Describe implementation.
 pub mod builtins;
-/// TODO: Describe implementation.
 pub mod codegen;
-/// TODO: Describe implementation.
 pub mod emit;
-/// TODO: Describe implementation.
 pub mod types;
 
 use std::path::Path;

@@ -7,7 +7,6 @@ use crate::{passes::HealingMode, AstNodeId, Type, TypeError};
 use vinglish_lexer::Span;
 use vinglish_parser::ast::{Block, Expr, Ident, Item, Module, Stmt, TypeExpr, UnOp};
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct TypeConstraint {
     pub expected: Type,
@@ -15,7 +14,6 @@ pub struct TypeConstraint {
     pub span: Span,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HealingRule {
     AutoDeref,
@@ -23,7 +21,6 @@ pub enum HealingRule {
     AutoWiden,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct HealingCandidate {
     pub rule: HealingRule,
@@ -31,7 +28,6 @@ pub struct HealingCandidate {
     pub cost: u8,
 }
 
-/// TODO: Describe implementation.
 #[derive(Debug, Clone)]
 pub struct HealingWarning {
     pub rule: HealingRule,
@@ -44,10 +40,8 @@ pub struct HealingWarning {
 pub struct Healer;
 
 impl Healer {
-    /// TODO: Describe implementation.
     pub const MAX_STEPS: u8 = 2;
 
-    /// TODO: Describe implementation.
     pub fn candidates(&self, expr: &Expr, constraint: &TypeConstraint) -> Vec<HealingCandidate> {
         let mut candidates = Vec::new();
         if let Type::Reference(inner, _) = &constraint.actual

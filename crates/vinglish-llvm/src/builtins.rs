@@ -11,7 +11,6 @@ pub struct Builtins<'ctx> {
 }
 
 impl<'ctx> Builtins<'ctx> {
-    /// TODO: Describe implementation.
     pub fn declare(context: &'ctx Context, module: &Module<'ctx>) -> Self {
         let ptr_type = context.ptr_type(AddressSpace::default());
         let i64_type = context.i64_type();

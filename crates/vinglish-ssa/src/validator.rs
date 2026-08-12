@@ -19,12 +19,10 @@ impl Default for SSAValidator {
 }
 
 impl SSAValidator {
-    /// TODO: Describe implementation.
     pub fn new() -> Self {
         Self
     }
 
-    /// TODO: Describe implementation.
     pub fn validate(
         &self,
         module: &MirModule<vinglish_hir::symbol::SsaValueId>,

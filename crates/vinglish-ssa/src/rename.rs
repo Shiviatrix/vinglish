@@ -3,14 +3,12 @@ use std::collections::HashMap;
 use vinglish_hir::symbol::{SymbolId, VariableId};
 use vinglish_mir::{BlockId, Instruction, MirFunction, Operand, Terminator};
 
-/// TODO: Describe implementation.
 pub struct Renamer {
     pub next_id: u32,
     pub stacks: HashMap<VariableId, Vec<VariableId>>,
 }
 
 impl Renamer {
-    /// TODO: Describe implementation.
     pub fn new(start_id: u32) -> Self {
         Self {
             next_id: start_id,
@@ -18,7 +16,6 @@ impl Renamer {
         }
     }
 
-    /// TODO: Describe implementation.
     pub fn new_name(&mut self, orig: VariableId, locals: &mut Vec<VariableId>) -> VariableId {
         let new_id = VariableId(SymbolId(self.next_id));
         self.next_id += 1;
@@ -27,7 +24,6 @@ impl Renamer {
         new_id
     }
 
-    /// TODO: Describe implementation.
     pub fn current_name(&self, orig: VariableId) -> VariableId {
         *self
             .stacks
@@ -37,7 +33,6 @@ impl Renamer {
     }
 }
 
-/// TODO: Describe implementation.
 pub fn rename_variables(
     func: &mut MirFunction<VariableId>,
     dom_tree: &DominatorTree,

@@ -27,7 +27,6 @@ enum ReturnMode {
     Value,
 }
 
-/// TODO: Describe implementation.
 pub struct LLVMCodeGen<'ctx> {
     pub context: &'ctx Context,
     pub module: Module<'ctx>,
@@ -46,7 +45,6 @@ pub struct LLVMCodeGen<'ctx> {
 }
 
 impl<'ctx> LLVMCodeGen<'ctx> {
-    /// TODO: Describe implementation.
     pub fn new(context: &'ctx Context, module_name: &str, symbol_table: &'ctx SymbolTable) -> Self {
         let module = context.create_module(module_name);
         let builder = context.create_builder();

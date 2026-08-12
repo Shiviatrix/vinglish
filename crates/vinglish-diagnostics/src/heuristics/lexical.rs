@@ -6,7 +6,6 @@ const VINGLISH_KEYWORDS: &[&str] = &[
     "boolean", "true", "false", "and", "or", "not", "is", "below", "above",
 ];
 
-/// TODO: Describe implementation.
 pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> bool {
     let mut scored: Vec<(&str, f64)> = VINGLISH_KEYWORDS
         .iter()
