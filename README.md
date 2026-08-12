@@ -66,10 +66,12 @@ Other directories:
 
 ## Quick Start
 
-### Build
+### Installation
+
+To install the Vinglish compiler globally so you can use the `vng` command from anywhere:
 
 ```sh
-cargo build --release
+cargo install --path crates/vinglish
 ```
 
 Requires Rust (edition 2024) and a C compiler (cc, gcc, or clang).
