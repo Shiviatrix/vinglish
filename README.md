@@ -77,19 +77,19 @@ Requires Rust (edition 2024) and a C compiler (cc, gcc, or clang).
 ### Run (interpreter)
 
 ```sh
-cargo run --bin vng -- run path/to/file.ving
+vng run path/to/file.ving
 ```
 
 ### Compile to native binary
 
 ```sh
-cargo run --bin vng -- build path/to/file.ving --output my_program --backend c
+vng build path/to/file.ving --output my_program --backend c
 ```
 
 ### Type-check without compiling
 
 ```sh
-cargo run --bin vng -- check path/to/file.ving
+vng check path/to/file.ving
 ```
 
 ### Test

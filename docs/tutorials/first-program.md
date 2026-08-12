@@ -35,7 +35,7 @@ This defines a `main` function that prints a string and returns 0.
 ## Step 2: Run with the Interpreter
 
 ```sh
-cargo run --bin vng -- run hello.ving
+vng run hello.ving
 ```
 
 Expected output:
@@ -49,7 +49,7 @@ Hello, World!
 ## Step 3: Compile to a Native Binary
 
 ```sh
-cargo run --bin vng -- build hello.ving --output hello
+vng build hello.ving --output hello
 ```
 
 This generates `hello.c` and compiles it to a native binary `hello`.
@@ -65,7 +65,7 @@ Run the binary:
 ## Step 4: Type-Check
 
 ```sh
-cargo run --bin vng -- check hello.ving
+vng check hello.ving
 ```
 
 This runs name resolution, type inference, and ownership checking without producing output.
