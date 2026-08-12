@@ -11,7 +11,7 @@ I wanted a language that reads naturally but still gives you low-level control. 
 
 ---
 
-## 🛠 What's working
+## Features
 
 - **Frontend:** Custom lexer (indentation-sensitive), recursive descent parser, and a full AST.
 - **Middle-end:** Type inference, symbol resolution, and automatic type healing (e.g., auto-dereferencing or inserting `to_text()` calls when a string is expected).
@@ -19,7 +19,7 @@ I wanted a language that reads naturally but still gives you low-level control. 
 - **Backend:** Emits C code. It embeds the MIR payload inside the generated C as a base64 comment with a SHA-256 hash so it can be decompiled later.
 - **Tooling:** Comes with a CLI (`vng`), a formatter, a tree-walk interpreter, and an LSP server for editor support.
 
-## 📦 Project Structure
+## Project Structure
 
 The compiler is split across multiple crates for modularity:
 
