@@ -1,9 +1,0 @@
-function main() return number begin
-
-    function fibonacci(x) return number begin
-        fibonacci(0) = 1
-        return fibonacci(x-2) + fibonacci(x-1)
-    end
-
-    print(fibonacci(5))
-end
