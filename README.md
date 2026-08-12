@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logos/vinglish-favicon-16.svg" alt="Vinglish Icon" width="16" height="16" />
+  <img src="logos/vinglish-icon-color.svg" alt="Vinglish Icon" width="128" height="128" />
 </div>
 
 A statically-typed programming language with English-inspired syntax that compiles to C.
