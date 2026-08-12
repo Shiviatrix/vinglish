@@ -976,7 +976,7 @@ checksum = "cab834c73d247e67f4fae452806d17d3c7501756d98c8808d7c9c7aa7d18f973"
 
 [[package]]
 name = "rt_rust"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "lazy_static",
  "minifb",
@@ -1418,7 +1418,7 @@ checksum = "579a42fc0b8e0c63b76519a339be31bed574929511fa53c1a3acae26eb258f29"
 
 [[package]]
 name = "vinglish"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "tokio",
@@ -1442,7 +1442,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-analysis"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "vinglish-diagnostics",
  "vinglish-hir",
@@ -1453,7 +1453,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-codegen"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "bincode",
@@ -1472,7 +1472,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-decompile"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "bincode",
@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-diagnostics"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "strsim",
  "vinglish-lexer",
@@ -1492,7 +1492,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-fmt"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "vinglish-lexer",
  "vinglish-parser",
@@ -1500,7 +1500,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-hir"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "vinglish-lexer",
@@ -1509,7 +1509,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-ir-export"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1520,14 +1520,14 @@ dependencies = [
 
 [[package]]
 name = "vinglish-lexer"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "vinglish-llvm"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "inkwell",
  "vinglish-hir",
@@ -1537,7 +1537,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-lsp"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "tokio",
  "tower-lsp",
@@ -1548,7 +1548,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-macro"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1557,7 +1557,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-mir"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "vinglish-hir",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-opt"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "vinglish-hir",
  "vinglish-mir",
@@ -1576,7 +1576,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-own"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "vinglish-diagnostics",
  "vinglish-hir",
@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-ownership"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "thiserror",
  "vinglish-lexer",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-parser"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "thiserror",
@@ -1606,7 +1606,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-ssa"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "vinglish-hir",
  "vinglish-mir",
@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "vinglish-types"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "indexmap",
  "rand",

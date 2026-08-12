@@ -23,4 +23,4 @@ jobs:
           npm install -g elm
 
       - name: Run Benchmarks
-        run: cargo run --release --bin eng -- benchmark benchmarks --runs 5
+        run: cargo run --release --bin vng -- benchmark benchmarks --runs 5
