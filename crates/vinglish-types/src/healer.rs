@@ -20,6 +20,7 @@ pub struct TypeConstraint {
 pub enum HealingRule {
     AutoDeref,
     ToText,
+    AutoWiden,
 }
 
 /// TODO: Describe implementation.
@@ -62,6 +63,18 @@ impl Healer {
                 cost: 1,
             });
         }
+        if constraint.expected == Type::Float && constraint.actual == Type::Int {
+            let callee = Expr::Ident(Ident::new("to_decimal", constraint.span));
+            candidates.push(HealingCandidate {
+                rule: HealingRule::AutoWiden,
+                replacement: Expr::Call {
+                    callee: std::sync::Arc::new(callee),
+                    args: vec![expr.clone()],
+                    span: constraint.span,
+                },
+                cost: 1,
+            });
+        }
         if constraint.expected == Type::Text && constraint.actual != Type::Text {
             let callee = Expr::Ident(Ident::new("to_text", constraint.span));
             candidates.push(HealingCandidate {
@@ -70,6 +83,18 @@ impl Healer {
                     callee: std::sync::Arc::new(callee),
                     args: vec![expr.clone()],
                     span: constraint.span,
+                },
+                cost: 1,
+            });
+        }
+        if constraint.expected == Type::Float && constraint.actual == Type::Int {
+            let callee = Expr::Ident(Ident::new("to_decimal", constraint.span));
+            candidates.push(HealingCandidate {
+                rule: HealingRule::AutoWiden,
+                replacement: Expr::Call {
+                    callee: std::sync::Arc::new(callee),
+                    args: vec![expr.clone()],
+                    span:constraint.span,
                 },
                 cost: 1,
             });
