@@ -1,143 +1,75 @@
 # Compiler Pipeline
 
-The Vinglish compiler transforms `.ving` source files into native binaries through a sequence of lowering passes, each consuming the output of the previous stage. This document explains the purpose and behavior of each stage.
+This document explains how Vinglish takes your `.ving` code and compiles it into a native executable. We run a sequence of lowering passes, where the output of one step feeds directly into the next. 
 
 ---
 
-## Purpose
+## 1. Module Loading & Sorting
 
-Describe the complete path from source text to native binary, as implemented in `compile_project()` and `cmd_build()` in `vinglish-cli/src/main.rs`.
+When you compile a project, `load_module_graph()` recursively resolves your `use` statements.
+- If it sees `std`, it loads it from the standard library folder.
+- Otherwise, it checks your `.ving_modules` (for packages) or just looks for local files relative to the current one.
+
+Once we have all the modules, we run `topological_sort()`. This ensures we compile dependencies *before* the code that depends on them. If you accidentally created a circular dependency, this step reports an error.
 
 ---
 
-## Stages
+## 2. Compiling Each Module
 
-### 1. Module Loading
+We run the frontend passes on every module one by one:
 
-`load_module_graph()` recursively resolves `use` declarations. For each referenced module:
-1. If the path starts with `std`, resolve relative to `$VINGLISH_ROOT/std/`.
-2. Otherwise, check `.ving_modules/<package>/` first.
-3. Fall back to a path relative to the current file.
-4. The file extension `.ving` is appended automatically.
+### Lexing & Parsing
+The lexer (`vinglish_lexer`) processes your code line-by-line. Because Vinglish is whitespace-sensitive, the lexer counts your leading spaces (4 spaces = 1 indent) and emits synthetic `Indent` and `Dedent` tokens. It also handles string escapes, numbers with underscores, and maps English-like keywords.
 
-Parsed modules are stored in a `HashMap<String, (Module, String, PathBuf)>`. Dependencies are tracked in a separate `HashMap<String, Vec<String>>`.
+The parser (`vinglish_parser`) takes those tokens and builds an Abstract Syntax Tree (AST) using standard recursive descent.
 
-### 2. Topological Sort
+### Name Resolution & Type Inference
+`NameResolutionPass` populates our `CompilerContext` with all the symbols it can find.
 
-`topological_sort()` orders modules so that dependencies are compiled before dependents. Cyclic dependencies produce an error.
+Then `TypeInferencePass` executes. We run it in "healing mode": if you provided a mismatched type—like passing a raw string where a `Text` object is expected—the compiler runs a bounded search to attempt to auto-fix it (e.g., by implicitly inserting a `.to_text()` call). It logs these fixes as warnings but continues compiling.
 
-### 3. Per-Module Compilation
+### AST-level Checks
+We run `vinglish_ownership` over the AST to check for basic memory safety violations before lowering to the intermediate representation.
 
-For each module in topological order:
+### Lowering to MIR
+Once the AST is typed and valid, `MirLowerer` flattens it down into our Mid-level Intermediate Representation (MIR). At this point, we consolidate all the functions from all the modules into one `MirModule`.
 
-#### 3a. Lexing
+---
 
-`vinglish_lexer::tokenize(&src)` returns `(Vec<Spanned<Token>>, Vec<LexError>)`.
+## 3. The Optimizer (SSA & MIR)
 
-The lexer operates line-by-line:
-- Measures leading whitespace per line (tab = 4 spaces).
-- Emits `Indent` when indentation increases, `Dedent` when it decreases.
-- Emits `Newline` at the end of each physical line.
-- Closes remaining open indent blocks at end of input.
-- Appends `EOF`.
+Now that everything is in MIR, we can optimize it.
 
-Within each line, `lex_line()` produces tokens for: string literals (with escape sequences), integer/float literals (with `_` separators), identifiers and keywords (via `Token::from_word()`), operators, and punctuation. Comments (`--` or `#`) terminate a line.
+1. **Pre-SSA Opts:** We do a quick pass of Dead Code Elimination and CFG Simplification to reduce instruction count early.
+2. **SSA Conversion:** We run `SSAConversionPass`. This is a critical transformation. We calculate the dominator tree for each function, drop `phi` nodes at the dominance frontiers, and rename all the variables so every variable is assigned exactly once (Static Single Assignment form).
+3. **Post-SSA Opts:** Now that we're in SSA, the compiler runs advanced passes: Constant Folding, Constant Propagation, Copy Propagation, and Global Value Numbering (GVN), followed by another round of dead code elimination. 
+4. **MIR Ownership:** We run `OwnershipAnalysisPass` to build an ownership graph and validate that you aren't committing memory violations, like double-freeing memory or using a value after you've moved it.
 
-#### 3b. Parsing
+*(Note: We run an `SSAValidator` and `MirValidatorPass` between almost every step here just to make sure our own optimizer didn't break the code).*
 
-`vinglish_parser::parse(&tokens)` returns `(ast::Module, Vec<ParseError>)`.
+---
 
-The parser is recursive-descent. Parse errors are enriched with diagnostics via `vinglish_diagnostics::Diagnostic` and rendered to stderr.
+## 4. Code Generation
 
-#### 3c. Name Resolution
+If validation succeeds, the compiler emits C code.
 
-`NameResolutionPass::run(&ast, &mut ctx)` populates the `CompilerContext` with symbol definitions.
+`emit_mir_c()` generates a `.c` file that includes:
+- Standard `#include`s and a static string pool.
+- Forward declarations so C doesn't complain about function order.
+- Function bodies packed with `goto` statements (since we lowered control flow to raw branches).
 
-#### 3d. Type Inference
+**A notable feature:** We take your entire optimized MIR payload, compress it, hash it (SHA-256), and embed it at the very bottom of the generated C file as a base64 comment. This lets us decompile the C code back into Vinglish MIR later.
 
-`TypeInferencePass::run_with_healing(&mut ast, &mut ctx)` performs type inference and returns a `hir::Module`. On type mismatches, the healer attempts bounded AST repairs (auto-deref, to_text insertion). Successful repairs are recorded as `HealingWarning` values in the context.
+---
 
-#### 3e. HIR Validation
+## 5. Native Compilation
 
-`HirValidatorPass::validate(&mut ctx, &hir)` checks the typed HIR for consistency.
+Finally, the generated C file is passed to your system's C compiler (like `clang` or `gcc`):
 
-#### 3f. Ownership Checking (AST)
-
-`vinglish_ownership::check_module(&ast)` performs ownership checking on the AST. Returns a list of ownership errors.
-
-#### 3g. MIR Lowering
-
-`MirLowerer::lower_module(&hir)` converts the HIR into `MirModule<VariableId>`. Functions from all modules are accumulated into a single `MirModule`.
-
-### 4. MIR Validation
-
-`MirValidatorPass::validate(&symbol_table, &mir_module)` checks the MIR for structural correctness.
-
-### 5. Pre-SSA Optimization
-
-`vinglish_opt::pre_ssa_pipeline()` runs:
-1. Dead Code Elimination
-2. CFG Simplification
-
-MIR validation runs after each pass.
-
-### 6. SSA Conversion
-
-`SSAConversionPass::run(mir_module, &mut symbol_table)` converts `MirModule<VariableId>` to `MirModule<SsaValueId>`:
-1. Compute dominator tree per function.
-2. Insert phi nodes at dominance frontiers.
-3. Rename variables to SSA form.
-4. Convert all `VariableId` references to `SsaValueId`.
-
-### 7. SSA Validation
-
-`SSAValidator::validate(&ssa_module)` verifies SSA properties hold.
-
-### 8. Post-SSA Optimization
-
-`vinglish_opt::post_ssa_pipeline()` runs:
-1. Constant Folding
-2. Constant Propagation
-3. Copy Propagation
-4. Global Value Numbering
-5. Dead Code Elimination
-6. CFG Simplification
-
-MIR validation runs after each pass.
-
-### 9. Ownership Analysis (MIR)
-
-`OwnershipAnalysisPass::run(&mut ssa_module, &symbol_table)` builds an `OwnershipGraph`. `OwnershipValidator::validate()` checks the graph for violations.
-
-### 10. Code Generation
-
-Depending on the `--backend` flag:
-
-**C backend** (default): `emit_mir_c(&ssa_module, &symbol_table)` generates C source. The C source includes:
-- `#include` directives for stdint, stdio, stdlib.
-- `_Generic` macros for `print` / `println`.
-- A static string pool for string literals.
-- Forward declarations for all non-foreign functions.
-- `extern` declarations for foreign functions.
-- Function bodies with `goto`-based control flow.
-- A compressed MIR payload as a trailing comment.
-
-**LLVM backend**: `vinglish_llvm::compile_to_executable()` generates LLVM IR and invokes LLVM tools.
-
-### 11. Native Compilation
-
-For the C backend, the system C compiler is invoked:
-```
-cc -O2 -Wno-int-conversion -o <output> <generated.c> rt/*.c [-lvinglish_rt ...]
+```bash
+cc -O2 -Wno-int-conversion -o <output> <generated.c> rt/*.c
 ```
 
-If `rt_rust/Cargo.toml` exists, `cargo build --release` is run first, and the resulting static library is linked.
+We link it against our C runtime (`rt/*.c`). If UI components are used, we'll also build the Rust runtime (`rt_rust`) and link that static library. 
 
----
-
-## Related Components
-
-- [Architecture](architecture.md)
-- [Reference: MIR](../reference/mir.md)
-- [Reference: Optimizations](../reference/optimizations.md)
-- [Reference: Code Generation](../reference/codegen.md)
+This produces the final native binary.

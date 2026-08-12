@@ -1,86 +1,79 @@
 # Build and Run
 
-How to compile and run Vinglish programs.
+This guide covers how to use the `vng` CLI to compile and run Vinglish programs.
 
 ---
 
-## Build a Native Binary
+## Building a Native Binary
+
+To compile a `.ving` file into an executable:
 
 ```sh
-vng build <file.ving> --output <binary> --backend c
+vng build <file.ving> --output <binary>
 ```
 
-The `--backend` flag selects the code generation backend:
+By default, this emits C code and passes it to your system's `cc` compiler. If you prefer to use the experimental LLVM backend, pass `--backend llvm`.
 
-| Backend | Description |
-|---|---|
-| `c` (default) | Emit C, compile with system `cc` |
-| `llvm` | Emit LLVM IR, compile with LLVM tools |
-
-The `--emit` flag stops early and prints an intermediate representation:
-
-| Value | Description |
-|---|---|
-| `c` | Generated C source |
-| `mir-before` | MIR before optimization |
-| `mir` / `mir-after` | MIR after optimization |
-| `ssa` | SSA form after optimization |
-| `mir-stats` | Optimization statistics |
-| `mir-diff` | Before and after MIR |
-| `ownership` | Ownership graph |
-| `llvm` | LLVM IR |
+**Diagnostic Output:** The `--emit` flag stops the compiler early and outputs the internal state, which is useful for debugging:
+- `--emit c`: Dump the generated C source
+- `--emit mir`: Dump the optimized MIR
+- `--emit ssa`: Dump the SSA form
+- `--emit mir-diff`: Shows you exactly what the optimization passes changed
+- `--emit ownership`: Dumps the ownership graph
 
 ---
 
-## Run with the Interpreter
+## Running without Compiling
+
+To execute code directly without invoking a C compiler, use the built-in tree-walk interpreter:
 
 ```sh
 vng run <file.ving>
 ```
 
-Compiles through the full pipeline and executes via the tree-walk interpreter. No C compiler required.
-
 ---
 
-## Type-Check Only
+## Type-Checking
+
+To validate code without compiling or executing it: 
 
 ```sh
 vng check <file.ving>
 ```
 
-Runs lexing, parsing, name resolution, type inference, and ownership checking. Reports errors without producing output.
+This runs the lexer, parser, type inference, and ownership checks. It reports any syntax or type errors and exits silently on success.
 
 ---
 
-## Format Source Code
+## Formatting
+
+Vinglish includes a built-in code formatter to ensure consistent style:
 
 ```sh
 vng fmt <file.ving>
 ```
 
-Formats the file in place.
+To verify formatting in CI environments (prints a diff and exits with a non-zero status if the file requires formatting), use:
 
 ```sh
 vng fmt --check <file.ving>
 ```
 
-Prints a diff and exits non-zero if the file would change.
-
 ---
 
-## Set the Standard Library Path
+## Environment Variables
+
+### 1. The Standard Library Path
+For the compiler to resolve `std` imports, you must provide the path to the Vinglish repository:
 
 ```sh
 export VINGLISH_ROOT=/path/to/vinglish
 vng build src/main.ving
 ```
 
-The `VINGLISH_ROOT` environment variable points to the repository root. This is required for resolving `use std.*` imports.
-
----
-
-## Select a C Compiler
+### 2. Custom C Compiler
+By default, Vinglish just calls `cc`. If you want to use `gcc` or `clang` specifically, just set the `CC` variable:
 
 ```sh
-CC=gcc vng build file.ving
+CC=clang vng build file.ving
 ```

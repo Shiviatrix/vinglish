@@ -2,67 +2,39 @@
   <img src="logos/vinglish-icon-color.svg" alt="Vinglish Icon" width="128" height="128" />
 </div>
 
-A statically-typed programming language with English-inspired syntax that compiles to C.
+**Vinglish** is a statically-typed programming language with an English-inspired syntax.
 
-## Features
+I built this compiler in Rust. It implements a standard compiler pipeline: lexing, parsing, name resolution, type inference, building an SSA-form MIR, optimizing it (DCE, constant folding, GVN), and generating C code. 
 
-- [x] Lexer with indent/dedent tracking and natural-language keyword aliases
-- [x] Recursive-descent parser producing a typed AST
-- [x] Symbol table with type interning
-- [x] Name resolution and type inference
-- [x] Type healing (auto-deref, `to_text` insertion via bounded candidate search)
-- [x] MIR lowering from HIR
-- [x] SSA construction (dominator tree, phi node insertion, variable renaming)
-- [x] Optimization passes: DCE, CFG simplification, constant folding, constant propagation, copy propagation, GVN
-- [x] C code generation from SSA MIR
-- [x] MIR round-trip payload embedded in generated C (SHA-256 integrity check)
-- [x] Ownership analysis on MIR
-- [x] AST-level ownership checking
-- [x] Tree-walk interpreter
-- [x] Diagnostics with source spans and intent resolution
-- [x] LSP server
-- [x] Source code formatter
-- [x] Standard library: io, string, math, file, net, thread, subprocess, term, ui, collections (vector, map)
-- [x] C runtime implementations for each standard library module
-- [x] Rust FFI bridge via `#[vinglish_export]` procedural macro
-- [x] LLVM backend (experimental)
-- [x] IR export to JSON
-- [x] Module system with topological dependency resolution
-- [x] Package manager scaffolding (`vng pkg init`, `vng pkg add`)
+### Why Vinglish?
+I wanted a language that reads naturally but still gives you low-level control. The compiler uses a custom C runtime for standard libraries (like networking and IO), and it even ships with an experimental LLVM backend and a built-in LSP.
 
-## Repository Structure
+---
 
-| Crate | Purpose |
+## 🛠 What's working
+
+- **Frontend:** Custom lexer (indentation-sensitive), recursive descent parser, and a full AST.
+- **Middle-end:** Type inference, symbol resolution, and automatic type healing (e.g., auto-dereferencing or inserting `to_text()` calls when a string is expected).
+- **Optimizer:** Lowers AST to HIR, then to an SSA-form MIR. It runs dead code elimination, constant propagation, copy propagation, and global value numbering.
+- **Backend:** Emits C code. It embeds the MIR payload inside the generated C as a base64 comment with a SHA-256 hash so it can be decompiled later.
+- **Tooling:** Comes with a CLI (`vng`), a formatter, a tree-walk interpreter, and an LSP server for editor support.
+
+## 📦 Project Structure
+
+The compiler is split across multiple crates for modularity:
+
+| Crate | Function |
 |---|---|
-| `vinglish-lexer` | Tokenizes `.ving` source into `Vec<Spanned<Token>>` |
-| `vinglish-parser` | Parses tokens into an AST (`ast::Module`) |
-| `vinglish-hir` | HIR node types, symbol table, type interning, struct layout |
-| `vinglish-types` | Name resolution, type inference, type healing, MIR lowering |
-| `vinglish-mir` | MIR data structures: `BasicBlock`, `Instruction`, `Terminator` |
-| `vinglish-ssa` | Dominator tree computation, phi insertion, variable renaming |
-| `vinglish-opt` | `PassManager` with DCE, CFG simplification, constant folding, constant propagation, copy propagation, GVN |
-| `vinglish-codegen` | C code emitter (`emit_mir_c`), tree-walk interpreter |
-| `vinglish-own` | MIR-level ownership graph construction and validation |
-| `vinglish-ownership` | AST-level ownership checking |
-| `vinglish-diagnostics` | `Diagnostic` type, renderer, intent resolution, polyglot heuristics |
-| `vinglish-decompile` | Extracts MIR payload from generated C (SHA-256 + zlib + base64) |
-| `vinglish-ir-export` | Serializes HIR to JSON |
-| `vinglish-fmt` | Source code formatter |
-| `vinglish-lsp` | Language Server Protocol server |
-| `vinglish-llvm` | LLVM IR code generation (experimental) |
-| `vinglish-macro` | `#[vinglish_export]` procedural macro for Rust FFI |
-| `vinglish-analysis` | Alias analysis, escape analysis, lifetime analysis, promotion |
-| `vinglish-cli` | CLI binary: `vng build`, `vng run`, `vng check`, `vng fmt`, `vng lsp`, `vng pkg`, `vng benchmark` |
-| `rt_rust` | Rust runtime (UI via minifb, FFI bridge generation) |
+| `vinglish-lexer` / `parser` | Turns `.ving` files into an AST. |
+| `vinglish-hir` / `types` | Resolves names, infers types, and lowers to MIR. |
+| `vinglish-mir` / `ssa` / `opt` | Data structures for the IR, SSA conversion, and the optimization passes. |
+| `vinglish-codegen` | The C backend and the tree-walk interpreter. |
+| `vinglish-own` / `ownership` | Memory safety checks (AST and MIR levels). |
+| `vinglish-diagnostics` | Makes the error messages look nice. |
+| `vinglish-lsp` / `fmt` | Language server and source code formatter. |
+| `vinglish-cli` | The main `vng` binary entry point. |
 
-Other directories:
-
-| Path | Contents |
-|---|---|
-| `std/` | Standard library modules (`.ving` files) |
-| `rt/` | C runtime implementations |
-| `tests/` | Integration test programs (`.ving` files) |
-| `examples/` | Example Vinglish programs |
+The repository also includes the standard library (`std/`), the C runtime (`rt/`), and integration tests (`tests/`).
 
 ## Quick Start
 
