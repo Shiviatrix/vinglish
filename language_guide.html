@@ -1,71 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Language Guide — Vinglish</title>
-  <link rel="icon" type="image/svg+xml" href="logos/vinglish-favicon-16.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="site.css">
-  <style>
-    /* Adjust hero for inner pages */
-    .hero-inner { min-height: auto; padding: 72px 0; text-align: center; display: block; }
-    .hero-inner h1 { margin: 18px auto; max-width: 800px; }
-    .hero-inner p { margin: 0 auto; max-width: 650px; }
-  </style>
+  <title>Language Guide - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="site.css">
 </head>
-<body>
-  <div class="top-strip"><div class="marquee">✦ VINGLISH · LANGUAGE GUIDE · READABLE SYSTEMS PROGRAMMING ✦ VINGLISH · LANGUAGE GUIDE · READABLE SYSTEMS PROGRAMMING ✦ VINGLISH · LANGUAGE GUIDE · READABLE SYSTEMS PROGRAMMING ✦</div></div>
-  <header class="topbar">
-    <div class="shell nav">
-      <a class="brand" href="index.html"><img src="logos/vinglish-icon-color.svg" alt=""><span>Vinglish</span></a>
-      <nav class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="language_guide.html" aria-current="page">Language Guide</a>
-        <a href="architecture.html" >Architecture</a>
-        <a href="standard_library.html" >Standard Library</a>
-      </nav>
-      <a class="nav-cta" href="index.html#get-started">Begin building →</a>
-    </div>
-  </header>
-  
-    <main id="top">
-      <section class="shell">
-        <div class="reveal">
-          <h1>Language Guide</h1>
-          <p>The Vinglish language design and semantics are documented in the <code>docs/</code> directory.</p>
-          <hr>
-          <h2>Reference Manuals</h2>
-          <p>Please see the following reference documents for factual information regarding the language:</p>
-          <ul>
-            <li><a href="docs/reference/type-system.md">Type System</a></li>
-            <li><a href="docs/reference/ownership.md">Ownership</a></li>
-            <li><a href="docs/tutorials/first-program.md">First Program Tutorial</a></li>
-          </ul>
-        </div>
-      </section>
-    </main>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
 
-  <footer>
-    <div class="shell footer-inner">
-      <span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span>
-      <nav class="footer-links">
-        <a href="language_guide.html">Guide</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="standard_library.html">Library</a>
-      </nav>
-    </div>
-  </footer>
-  <script>
-    const sections = document.querySelectorAll(".doc-section");
-    const sideLinks = document.querySelectorAll(".docs-sidebar a");
-    const sectionObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      sideLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id));
-    }), { rootMargin: "-20% 0px -65% 0px", threshold: 0 });
-    sections.forEach((section) => sectionObserver.observe(section));
-  </script>
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Vinglish Language Guide</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="index.html">Home</a> ] | [ <a href="language_guide.html">Language Guide</a> ] | [ <a href="architecture.html">Architecture</a> ] | [ <a href="standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#000080">
+          <font size="+2" face="Courier New" color="#FFFFFF"><b>Reference Manuals</b></font>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#C0C0C0">
+          <font color="#000000" face="Times New Roman">
+            <p>The Vinglish language design and semantics are documented in the <code>docs/</code> directory.</p>
+            <p>Please see the following reference documents for factual information regarding the language:</p>
+            <ul>
+              <li><a href="docs/reference/type-system.md">Type System</a></li>
+              <li><a href="docs/reference/ownership.md">Ownership</a></li>
+              <li><a href="docs/tutorials/first-program.md">First Program Tutorial</a></li>
+            </ul>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+  <br><br>
+  <center>
+    <hr width="80%">
+    <font size="-1" face="Arial">
+      Copyright &copy; 2026 Vinglish Project.<br>
+      <i>Best viewed in Netscape Navigator 3.0 at 800x600 resolution.</i>
+    </font>
+  </center>
+
 </body>
 </html>

@@ -1,67 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Architecture — Vinglish</title>
-  <link rel="icon" type="image/svg+xml" href="logos/vinglish-favicon-16.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="site.css">
-  <style>
-    /* Adjust hero for inner pages */
-    .hero-inner { min-height: auto; padding: 72px 0; text-align: center; display: block; }
-    .hero-inner h1 { margin: 18px auto; max-width: 800px; }
-    .hero-inner p { margin: 0 auto; max-width: 650px; }
-  </style>
+  <title>Architecture - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="site.css">
 </head>
-<body>
-  <div class="top-strip"><div class="marquee">✦ VINGLISH · COMPILER ARCHITECTURE · MIR ALL THE WAY DOWN ✦ VINGLISH · COMPILER ARCHITECTURE · MIR ALL THE WAY DOWN ✦ VINGLISH · COMPILER ARCHITECTURE · MIR ALL THE WAY DOWN ✦</div></div>
-  <header class="topbar">
-    <div class="shell nav">
-      <a class="brand" href="index.html"><img src="logos/vinglish-icon-color.svg" alt=""><span>Vinglish</span></a>
-      <nav class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="language_guide.html" >Language Guide</a>
-        <a href="architecture.html" aria-current="page">Architecture</a>
-        <a href="standard_library.html" >Standard Library</a>
-      </nav>
-      <a class="nav-cta" href="index.html#get-started">Begin building →</a>
-    </div>
-  </header>
-  
-    <main id="top">
-      <section class="shell">
-        <div class="reveal">
-          <h1>Compiler Architecture</h1>
-          <p>The Vinglish compiler architecture is documented in the <code>docs/explanation/architecture.md</code> file.</p>
-          <hr>
-          <h2>Pipeline Overview</h2>
-          <p>Source file -&gt; Lexer -&gt; Parser -&gt; Type Inference -&gt; MIR Lowering -&gt; SSA Conversion -&gt; Optimization -&gt; C Code Generation.</p>
-          <p>For more details, see <code>docs/explanation/compiler-pipeline.md</code>.</p>
-        </div>
-      </section>
-    </main>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
 
-  <footer>
-    <div class="shell footer-inner">
-      <span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span>
-      <nav class="footer-links">
-        <a href="language_guide.html">Guide</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="standard_library.html">Library</a>
-      </nav>
-    </div>
-  </footer>
-  <script>
-    const sections = document.querySelectorAll(".doc-section");
-    const sideLinks = document.querySelectorAll(".docs-sidebar a");
-    const sectionObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      sideLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id));
-    }), { rootMargin: "-20% 0px -65% 0px", threshold: 0 });
-    sections.forEach((section) => sectionObserver.observe(section));
-  </script>
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Compiler Architecture</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="index.html">Home</a> ] | [ <a href="language_guide.html">Language Guide</a> ] | [ <a href="architecture.html">Architecture</a> ] | [ <a href="standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#000080">
+          <font size="+2" face="Courier New" color="#FFFFFF"><b>Pipeline Overview</b></font>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#C0C0C0">
+          <font color="#000000" face="Times New Roman">
+            <p>The Vinglish compiler architecture is documented in the <code>docs/explanation/architecture.md</code> file.</p>
+            <p><b>Source file -&gt; Lexer -&gt; Parser -&gt; Type Inference -&gt; MIR Lowering -&gt; SSA Conversion -&gt; Optimization -&gt; C Code Generation.</b></p>
+            <p>For more details, see <a href="docs/explanation/compiler-pipeline.md"><code>docs/explanation/compiler-pipeline.md</code></a>.</p>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+  <br><br>
+  <center>
+    <hr width="80%">
+    <font size="-1" face="Arial">
+      Copyright &copy; 2026 Vinglish Project.<br>
+      <i>Best viewed in Netscape Navigator 3.0 at 800x600 resolution.</i>
+    </font>
+  </center>
+
 </body>
 </html>

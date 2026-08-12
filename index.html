@@ -1,391 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Vinglish is a readable, statically typed systems programming language with native performance.">
-  <title>Vinglish — Readable systems programming</title>
-  <link rel="icon" type="image/svg+xml" href="logos/vinglish-favicon-16.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="site.css">
+  <title>Vinglish - Readable Systems Programming</title>
+  <link rel="stylesheet" type="text/css" href="site.css">
 </head>
-<body>
-  <div class="top-strip"><div class="marquee">✦ VINGLISH · READABLE SYSTEMS PROGRAMMING ✦ STATICALLY TYPED · NATIVE PERFORMANCE ✦ CLEAR SOURCE · PRECISE COMPILATION ✦ VINGLISH · READABLE SYSTEMS PROGRAMMING ✦</div></div>
-  <header class="topbar">
-    <div class="shell nav">
-      <a class="brand" href="#top" aria-label="Vinglish home"><img src="logos/vinglish-icon-color.svg" alt=""><span>Vinglish</span></a>
-      <button class="menu-button" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
-      <nav class="nav-links" aria-label="Primary navigation"><a href="index.html" aria-current="page">Home</a><a href="language_guide.html">Language Guide</a><a href="architecture.html">Architecture</a><a href="standard_library.html">Standard Library</a></nav>
-      <a class="nav-cta" href="#get-started">Begin building →</a>
-    </div>
-  </header>
-  
-    <main id="top">
-    <!-- Hero Section -->
-    <section class="shell hero">
-      <div class="reveal">
-        <span class="eyebrow">v0.2.1 OUT NOW</span>
-        <h1>Readable systems <span>programming</span></h1>
-        <p class="hero-copy">Vinglish is a statically-typed programming language that combines English-inspired readability with <strong>native performance</strong>. Fast, safe, and transparent.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#get-started">Get Started</a>
-          <a class="button secondary" href="language_guide.html">Read the Guide</a>
-        </div>
-        <p class="microcopy">Requires Rust 1.97.1 & C compiler</p>
-      </div>
-      
-      <div class="hero-art reveal" style="animation-delay: 0.1s;">
-        <div class="sun">
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span>
-        </div>
-        <div class="code-board">
-          <header class="code-top">
-            <span>examples/hello.ving</span>
-            <span>Vinglish</span>
-          </header>
-          <pre><code><span class="k">use</span> std.io
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
 
-<span class="k">function</span> <span class="f">main</span>()
-<span class="k">begin</span>
-    <span class="f">println</span>(<span class="s">"Hello from Vinglish!"</span>)
-<span class="k">end</span></code></pre>
-        </div>
-      </div>
-    </section>
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Welcome to the Vinglish Homepage!</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Times New Roman">
+            <h2><img src="logos/vinglish-icon-color.svg" width="32" height="32" alt="Vinglish Logo"> Vinglish</h2>
+            <i>Readable systems programming. Native performance.</i>
+          </font>
+        </td>
+      </tr>
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="index.html">Home</a> ] | [ <a href="language_guide.html">Language Guide</a> ] | [ <a href="architecture.html">Architecture</a> ] | [ <a href="standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
 
-    <!-- Ticket Row -->
-    <section class="shell reveal">
-      <div class="ticket-row">
-        <div><b>//</b> NATIVE PERFORMANCE</div>
-        <div><b>//</b> STATICALLY TYPED</div>
-        <div><b>//</b> MIR OWNERSHIP</div>
-        <div><b>//</b> C INTEROP</div>
-      </div>
-    </section>
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#000080" colspan="2">
+          <font size="+2" face="Courier New" color="#FFFFFF"><b>Features</b></font>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#C0C0C0" width="50%">
+          <font color="#000000" face="Times New Roman">
+            <ul>
+              <li><b>Readable Syntax:</b> Ditch cryptic symbols for clear keywords.</li>
+              <li><b>Strict Ownership:</b> Memory safety guaranteed through a robust MIR-level ownership graph.</li>
+              <li><b>Native Backends:</b> Compiles down to clean C code or experimental LLVM!</li>
+            </ul>
+          </font>
+        </td>
+        <td bgcolor="#C0C0C0" width="50%" align="center">
+          <font color="#000000">
+            <h3>Quick Start (Requires Rust & C Compiler)</h3>
+            <pre style="background-color: #000000; color: #00FF00; padding: 10px; border: inset 2px; text-align: left;">
+cargo install --path crates/vinglish
+vng run hello.ving</pre>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
 
-    <!-- Features -->
-    <section class="shell features reveal">
-      <header class="section-head">
-        <div class="section-tag">Why Vinglish?</div>
-        <h2>A language designed for clarity</h2>
-        <p>Combining the expressiveness of natural language with the strict guarantees of systems programming.</p>
-      </header>
-      <div class="feature-grid">
-        <article class="feature">
-          <span class="feature-number">01</span>
-          <h3>Readable Syntax</h3>
-          <p>Ditch cryptic symbols for clear keywords. Vinglish supports natural-language aliases (e.g. 'is below' for '<') and clean block structures.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-number">02</span>
-          <h3>Strict Ownership</h3>
-          <p>Memory safety guaranteed through a robust MIR-level ownership graph, preventing use-after-move and double mutable borrows natively.</p>
-        </article>
-        <article class="feature">
-          <span class="feature-number">03</span>
-          <h3>Native Backends</h3>
-          <p>Compiles down to clean, readable C code or directly via our experimental LLVM backend, guaranteeing blazing-fast native binaries.</p>
-        </article>
-      </div>
-    </section>
+  <center>
+    <br><br>
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <h3>Documentation & Downloads</h3>
+            <p>
+              <a href="language_guide.html">Read the Tutorial</a><br><br>
+              <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" target="_blank">Download VS Code Extension</a>
+            </p>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
 
-    <!-- Playground -->
-    <section class="playground reveal">
-      <div class="shell">
-        <header class="section-head">
-          <div class="section-tag">Interactive Preview</div>
-          <h2>Playground: Skyline Runner</h2>
-          <p>See Vinglish in action. This game was written entirely in Vinglish and compiled using the native UI standard library. (Works locally or embedded if supported!)</p>
-        </header>
-        <div class="playground-grid">
-          <!-- Game Canvas -->
-          <div class="game-shell">
-            <div class="game-hud">
-              <span id="runnerScore">SCORE 0</span>
-              <span id="runnerStatus">READY</span>
-            </div>
-            <canvas id="runnerCanvas" class="runner-canvas" width="640" height="360"></canvas>
-            <div class="game-controls">
-              <button id="runnerStart" class="game-button">Start runner</button>
-              <button id="runnerJump" class="game-button">Jump</button>
-            </div>
-            <p class="game-note">Press Space or Up Arrow to jump</p>
-          </div>
-          <!-- Source Code -->
-          <div class="source-panel">
-            <header>
-              <span>skyline_runner.ving</span>
-              <span>std.ui</span>
-            </header>
-            <pre><code><span class="cm">-- Main game loop snippet</span>
-<span class="k">repeat while</span> <span class="f">is_window_open</span>(window) == <span class="n">1</span>
-<span class="k">begin</span>
-    <span class="k">if</span> <span class="f">is_space_pressed</span>(window) == <span class="n">1</span> <span class="k">then begin</span>
-        velocity <span class="k">be</span> -<span class="n">12</span>
-    <span class="k">end</span>
+  <br><br>
+  <center>
+    <hr width="80%">
+    <font size="-1" face="Arial">
+      Copyright &copy; 2026 Vinglish Project.<br>
+      <i>Best viewed in Netscape Navigator 3.0 at 800x600 resolution.</i>
+    </font>
+  </center>
 
-    velocity <span class="k">be</span> velocity + <span class="n">1</span>
-    player_y <span class="k">be</span> player_y + velocity
-
-    <span class="cm">-- Draw UI buffer</span>
-    <span class="f">fill_buffer</span>(buffer, <span class="n">15856383</span>)
-    <span class="f">draw_square</span>(buffer, <span class="n">70</span>, player_y, <span class="n">28</span>, <span class="n">13382451</span>)
-    <span class="f">update_window</span>(window, buffer)
-<span class="k">end</span></code></pre>
-            <div class="source-actions">
-              <a href="language_guide.html">Learn syntax →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Resources -->
-    <section class="shell resource-section reveal" style="margin-top: 120px;">
-      <header class="section-head">
-        <div class="section-tag">Documentation</div>
-        <h2>Explore the ecosystem</h2>
-        <p>Comprehensive guides and internals documentation to master the language.</p>
-      </header>
-      <div class="resource-grid">
-        <a href="language_guide.html" class="resource-card">
-          <span>TUTORIAL</span>
-          <h3>Language Guide</h3>
-          <p>Learn the basics of Vinglish, from simple variables to complex ownership patterns.</p>
-          <strong>→</strong>
-        </a>
-        <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" class="resource-card" target="_blank" rel="noopener noreferrer">
-          <span>TOOLING</span>
-          <h3>VS Code Extension</h3>
-          <p>Get intelligent hover, autocomplete, and go-to-definition directly in your editor.</p>
-          <strong>→</strong>
-        </a>
-        <a href="standard_library.html" class="resource-card">
-          <span>REFERENCE</span>
-          <h3>Standard Library</h3>
-          <p>Explore built-in modules for IO, Networking, Maps, and the UI Toolkit.</p>
-          <strong>→</strong>
-        </a>
-        <a href="architecture.html" class="resource-card">
-          <span>EXPLANATION</span>
-          <h3>Architecture</h3>
-          <p>Dive deep into the compiler design, MIR, SSA, and the execution pipeline.</p>
-          <strong>→</strong>
-        </a>
-        <a href="docs/reference/optimizations.md" class="resource-card">
-          <span>INTERNALS</span>
-          <h3>Optimizations</h3>
-          <p>Read about our CFG simplification, constant folding, and DCE passes.</p>
-          <strong>→</strong>
-        </a>
-      </div>
-    </section>
-
-    <div class="motif-line">STATICALLY TYPED · ENGLISH SYNTAX · C COMPILATION</div>
-
-    <!-- CTA & Quick Start Tutorial -->
-    <section id="get-started" class="cta reveal">
-      <div class="shell">
-        <div class="cta-box" style="text-align: left;">
-          <h2 style="text-align: center;">Quick Start Tutorial</h2>
-          <p style="text-align: center; margin-bottom: 30px;">Get up and running with Vinglish in less than two minutes.</p>
-          
-          <div style="margin-bottom: 24px;">
-            <h3>1. Install Editor Support</h3>
-            <p>Download the <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" target="_blank" style="color: #ffd749;">official Vinglish VS Code Extension</a> to get syntax highlighting, intelligent hover, and autocomplete.</p>
-          </div>
-
-          <div style="margin-bottom: 24px;">
-            <h3>2. Install the Compiler</h3>
-            <p>Clone the repository and install the `vng` binary globally using Cargo:</p>
-            <div class="install" style="margin-top: 12px; margin-bottom: 12px;">
-              <code>cargo install --path crates/vinglish</code>
-              <button class="copy-button" data-copy="cargo install --path crates/vinglish">Copy command</button>
-            </div>
-          </div>
-
-          <div style="margin-bottom: 24px;">
-            <h3>3. Write your first program</h3>
-            <p>Create a file named <code>hello.ving</code> and add the following code:</p>
-            <pre style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 215, 73, 0.2); margin-top: 12px;"><code>use std.io
-
-function main()
-begin
-    println("Hello, Vinglish!")
-end</code></pre>
-          </div>
-
-          <div>
-            <h3>4. Run it!</h3>
-            <p>Use the compiler to execute your program:</p>
-            <div class="install" style="margin-top: 12px;">
-              <code>vng run hello.ving</code>
-              <button class="copy-button" data-copy="vng run hello.ving">Copy command</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer><div class="shell footer-inner"><span>VINGLISH · READABLE SYSTEMS PROGRAMMING</span><nav class="footer-links" aria-label="Footer navigation"><a href="language_guide.html">Guide</a><a href="architecture.html">Architecture</a><a href="standard_library.html">Library</a></nav></div></footer>
-  <script>
-    const menuButton = document.querySelector(".menu-button");
-    const navLinks = document.querySelector(".nav-links");
-    const copyButton = document.querySelector(".copy-button");
-    const sections = document.querySelectorAll(".doc-section");
-    const sideLinks = document.querySelectorAll(".docs-sidebar a");
-    menuButton.addEventListener("click", () => {
-      const open = navLinks.classList.toggle("open");
-      menuButton.setAttribute("aria-expanded", String(open));
-    });
-    navLinks.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
-      navLinks.classList.remove("open");
-      menuButton.setAttribute("aria-expanded", "false");
-    }));
-    const runnerCanvas = document.querySelector("#runnerCanvas");
-    const runnerStart = document.querySelector("#runnerStart");
-    const runnerJump = document.querySelector("#runnerJump");
-    const runnerScore = document.querySelector("#runnerScore");
-    const runnerStatus = document.querySelector("#runnerStatus");
-
-    if (runnerCanvas && runnerStart && runnerJump && runnerScore && runnerStatus) {
-      const runnerContext = runnerCanvas.getContext("2d");
-      const runner = { running: false, ended: false, score: 0, playerY: 242, velocity: 0, obstacleX: 720, obstacleHeight: 54, spawnDelay: 0, lastTime: 0 };
-      const floorY = 290;
-      const playerX = 90;
-      const playerSize = 31;
-
-      const updateRunnerLabels = () => {
-        runnerScore.textContent = "SCORE " + Math.floor(runner.score);
-        runnerStatus.textContent = runner.ended ? "TRY AGAIN" : runner.running ? "RUNNING" : "READY";
-        runnerStart.textContent = runner.ended ? "Run again" : runner.running ? "Restart runner" : "Start runner";
-      };
-
-      const resetRunner = () => {
-        runner.running = true;
-        runner.ended = false;
-        runner.score = 0;
-        runner.playerY = floorY - playerSize;
-        runner.velocity = 0;
-        runner.obstacleX = 720;
-        runner.obstacleHeight = 54;
-        runner.spawnDelay = 0;
-        updateRunnerLabels();
-      };
-
-      const jumpRunner = () => {
-        if (!runner.running) resetRunner();
-        if (runner.playerY >= floorY - playerSize - 1) runner.velocity = -11.5;
-      };
-
-      const drawRunner = () => {
-        runnerContext.fillStyle = "#fff2c8";
-        runnerContext.fillRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-        runnerContext.fillStyle = "#ffd749";
-        runnerContext.fillRect(0, 0, runnerCanvas.width, 52);
-        runnerContext.fillStyle = "#cf2d2d";
-        runnerContext.beginPath();
-        runnerContext.arc(584, 69, 31, 0, Math.PI * 2);
-        runnerContext.fill();
-        runnerContext.fillStyle = "#075a91";
-        for (let index = 0; index < 10; index += 1) {
-          const towerX = index * 79 - ((runner.score * 0.65) % 79);
-          const towerHeight = 48 + (index % 3) * 21;
-          runnerContext.fillRect(towerX, floorY - towerHeight, 52, towerHeight);
-          runnerContext.fillStyle = "#ffd749";
-          runnerContext.fillRect(towerX + 10, floorY - towerHeight + 12, 8, 8);
-          runnerContext.fillRect(towerX + 30, floorY - towerHeight + 26, 8, 8);
-          runnerContext.fillStyle = "#075a91";
-        }
-        runnerContext.fillStyle = "#177144";
-        runnerContext.fillRect(0, floorY, runnerCanvas.width, 70);
-        runnerContext.fillStyle = "#18243a";
-        for (let index = 0; index < runnerCanvas.width; index += 24) runnerContext.fillRect(index, floorY + 18, 13, 4);
-        runnerContext.fillStyle = "#eb7a1b";
-        runnerContext.fillRect(runner.obstacleX, floorY - runner.obstacleHeight, 30, runner.obstacleHeight);
-        runnerContext.fillStyle = "#ffd749";
-        runnerContext.fillRect(runner.obstacleX + 7, floorY - runner.obstacleHeight + 13, 16, 9);
-        runnerContext.fillStyle = "#cf2d2d";
-        runnerContext.fillRect(playerX, runner.playerY, playerSize, playerSize);
-        runnerContext.fillStyle = "#fff2c8";
-        runnerContext.font = "bold 24px Shrikhand";
-        runnerContext.fillText("V", playerX + 6, runner.playerY + 24);
-        runnerContext.strokeStyle = "#18243a";
-        runnerContext.lineWidth = 4;
-        runnerContext.strokeRect(playerX, runner.playerY, playerSize, playerSize);
-        if (runner.ended) {
-          runnerContext.fillStyle = "rgba(24,36,58,.88)";
-          runnerContext.fillRect(158, 104, 364, 108);
-          runnerContext.strokeStyle = "#ffd749";
-          runnerContext.lineWidth = 5;
-          runnerContext.strokeRect(158, 104, 364, 108);
-          runnerContext.fillStyle = "#fff2c8";
-          runnerContext.font = "700 28px Baloo 2";
-          runnerContext.fillText("Run complete · Press Space", 197, 151);
-          runnerContext.font = "700 18px Space Mono";
-          runnerContext.fillText("Score: " + Math.floor(runner.score), 268, 184);
-        }
-      };
-
-      const updateRunner = (delta) => {
-        if (!runner.running) return;
-        const step = Math.min(delta / 16.67, 2);
-        runner.velocity += 0.62 * step;
-        runner.playerY += runner.velocity * step;
-        if (runner.playerY >= floorY - playerSize) {
-          runner.playerY = floorY - playerSize;
-          runner.velocity = 0;
-        }
-        runner.obstacleX -= (5.2 + runner.score * 0.018) * step;
-        if (runner.obstacleX < -32) {
-          runner.obstacleX = 700 + Math.random() * 120;
-          runner.obstacleHeight = 48 + Math.random() * 70;
-          runner.score += 10;
-        }
-        const playerBottom = runner.playerY + playerSize;
-        const obstacleTop = floorY - runner.obstacleHeight;
-        if (playerX + playerSize > runner.obstacleX && playerX < runner.obstacleX + 30 && playerBottom > obstacleTop) {
-          runner.running = false;
-          runner.ended = true;
-        }
-        runner.score += 0.11 * step;
-        updateRunnerLabels();
-      };
-
-      const runnerLoop = (timestamp) => {
-        const delta = runner.lastTime ? timestamp - runner.lastTime : 16.67;
-        runner.lastTime = timestamp;
-        updateRunner(delta);
-        drawRunner();
-        window.requestAnimationFrame(runnerLoop);
-      };
-
-      runnerStart.addEventListener("click", resetRunner);
-      runnerJump.addEventListener("click", jumpRunner);
-      runnerCanvas.addEventListener("pointerdown", jumpRunner);
-      window.addEventListener("keydown", (event) => {
-        if (event.code !== "Space" && event.code !== "ArrowUp") return;
-        if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
-        event.preventDefault();
-        jumpRunner();
-      });
-      updateRunnerLabels();
-      window.requestAnimationFrame(runnerLoop);
-    }
-    const sectionObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      sideLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id));
-    }), { rootMargin: "-20% 0px -65% 0px", threshold: 0 });
-    sections.forEach((section) => sectionObserver.observe(section));
-    copyButton.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(copyButton.dataset.copy); copyButton.textContent = "Copied"; }
-      catch (error) { copyButton.textContent = "Select & copy"; }
-      window.setTimeout(() => { copyButton.textContent = "Copy command"; }, 1800);
-    });
-  </script>
 </body>
 </html>
