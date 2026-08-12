@@ -4,10 +4,7 @@
 
 **Vinglish** is a statically-typed programming language with an English-inspired syntax.
 
-I built this compiler in Rust. It implements a standard compiler pipeline: lexing, parsing, name resolution, type inference, building an SSA-form MIR, optimizing it (DCE, constant folding, GVN), and generating C code. 
-
-### Why Vinglish?
-I wanted a language that reads naturally but still gives you low-level control. The compiler uses a custom C runtime for standard libraries (like networking and IO), and it even ships with an experimental LLVM backend and a built-in LSP.
+I built this compiler in Rust. It implements a standard compiler pipeline: lexing, parsing, name resolution, type inference, building an SSA-form MIR, optimizing it (DCE, constant folding, GVN), and generating C code.
 
 ---
 
