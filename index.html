@@ -157,6 +157,12 @@
           <p>Learn the basics of Vinglish, from simple variables to complex ownership patterns.</p>
           <strong>→</strong>
         </a>
+        <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" class="resource-card" target="_blank" rel="noopener noreferrer">
+          <span>TOOLING</span>
+          <h3>VS Code Extension</h3>
+          <p>Get intelligent hover, autocomplete, and go-to-definition directly in your editor.</p>
+          <strong>→</strong>
+        </a>
         <a href="standard_library.html" class="resource-card">
           <span>REFERENCE</span>
           <h3>Standard Library</h3>
@@ -180,15 +186,45 @@
 
     <div class="motif-line">STATICALLY TYPED · ENGLISH SYNTAX · C COMPILATION</div>
 
-    <!-- CTA -->
+    <!-- CTA & Quick Start Tutorial -->
     <section id="get-started" class="cta reveal">
       <div class="shell">
-        <div class="cta-box">
-          <h2>Ready to build?</h2>
-          <p>Install the Vinglish compiler locally via Cargo to start building native binaries in seconds.</p>
-          <div class="install">
-            <code>cargo run --bin vng -- run test.ving</code>
-            <button class="copy-button" data-copy="cargo run --bin vng -- run test.ving">Copy command</button>
+        <div class="cta-box" style="text-align: left;">
+          <h2 style="text-align: center;">Quick Start Tutorial</h2>
+          <p style="text-align: center; margin-bottom: 30px;">Get up and running with Vinglish in less than two minutes.</p>
+          
+          <div style="margin-bottom: 24px;">
+            <h3>1. Install Editor Support</h3>
+            <p>Download the <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" target="_blank" style="color: #ffd749;">official Vinglish VS Code Extension</a> to get syntax highlighting, intelligent hover, and autocomplete.</p>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <h3>2. Install the Compiler</h3>
+            <p>Clone the repository and install the `vng` binary globally using Cargo:</p>
+            <div class="install" style="margin-top: 12px; margin-bottom: 12px;">
+              <code>cargo install --path crates/vinglish</code>
+              <button class="copy-button" data-copy="cargo install --path crates/vinglish">Copy command</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <h3>3. Write your first program</h3>
+            <p>Create a file named <code>hello.ving</code> and add the following code:</p>
+            <pre style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 215, 73, 0.2); margin-top: 12px;"><code>use std.io
+
+function main()
+begin
+    println("Hello, Vinglish!")
+end</code></pre>
+          </div>
+
+          <div>
+            <h3>4. Run it!</h3>
+            <p>Use the compiler to execute your program:</p>
+            <div class="install" style="margin-top: 12px;">
+              <code>vng run hello.ving</code>
+              <button class="copy-button" data-copy="vng run hello.ving">Copy command</button>
+            </div>
           </div>
         </div>
       </div>
