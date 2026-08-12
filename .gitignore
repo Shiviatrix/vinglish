@@ -32,37 +32,4 @@ scratch/
 # OS Generated
 .DS_Store
 
-# Documentation & LaTeX / Thesis Builds
-docs/_build/
-docs/_site/
-docs/latex/
-*.pdf
-*.aux
-*.toc
-*.lof
-*.lot
-*.bbl
-*.blg
-*.synctex*
-*.fls
-*.fdb_latexmk
-*.nav
-*.snm
-*.vrb
-*.bcf
-*.run.xml
-*thesis*
-vinglish_thesis.*
-vinglish_thesis.aux
-vinglish_thesis.toc
 
-# Media & Video Generation (Manim)
-/media/
-*.mp4
-*.mov
-*.webm
-*.avi
-
-# Sub-projects & Workspaces
-/VinglishZero/
-/video_workspace/
