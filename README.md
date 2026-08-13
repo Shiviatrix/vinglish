@@ -29,12 +29,7 @@ if entropy is above 0.50 {
 
 ### Current Limitations
 
-The compiler is currently in an experimental state and is not suitable for production use. Known limitations include:
-
-- The C backend currently treats most primitives as `int64_t` (`long`).
-- Stack allocations currently fall back to `calloc` under the hood.
-- The MIR includes a `Drop` instruction for memory management, but the C backend currently emits a no-op `(void)0` for it, resulting in memory leaks.
-- The package manager (`vng pkg`) builds project scaffolding, but a package registry has not yet been implemented.
+The compiler is currently in an experimental state and is not suitable for production use. The C backend currently treats most primitives as `int64_t` (`long`). Additionally, stack allocations currently fall back to `calloc` under the hood. While the MIR includes a `Drop` instruction for memory management, the C backend currently emits a no-op `(void)0` for it, resulting in memory leaks across all compiled programs. Finally, the package manager (`vng pkg`) builds project scaffolding, but a package registry has not yet been implemented.
 
 ### Compilation Instructions
 
