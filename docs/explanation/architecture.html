@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Architecture - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Architecture</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="architecture">Architecture</h1>
+<p>Vinglish compiles down to C in a few distinct passes. It takes your
+<code>.ving</code> code, performs parsing and type inference, optimizes
+the intermediate representation, and generates C code that your system’s
+compiler (like <code>gcc</code> or <code>clang</code>) turns into a
+native binary.</p>
+<hr />
+<h2 id="overview">1. Overview</h2>
+<p>Vinglish is a statically-typed language. The compiler is written in
+Rust and split across 19 different crates in a Cargo workspace so it’s
+easier to maintain and test.</p>
+<h2 id="what-it-does">2. What it does</h2>
+<ul>
+<li>Parses an English-like syntax into a typed Abstract Syntax Tree
+(AST).</li>
+<li>Infers types and resolves variable names.</li>
+<li>Converts the AST into a mid-level Intermediate Representation (MIR)
+in Static Single Assignment (SSA) form so we can optimize it.</li>
+<li>Generates C code from that optimized MIR.</li>
+</ul>
+<h2 id="constraints">3. Constraints</h2>
+<ul>
+<li>We primarily compile to C. There is an experimental LLVM backend,
+but it’s not the main path.</li>
+<li>The C runtime (<code>rt/</code>) provides the underlying C code for
+standard library features.</li>
+<li>A Rust runtime (<code>rt_rust/</code>) handles UI capabilities via
+<code>minifb</code> and facilitates Rust interop.</li>
+</ul>
+<hr />
+<h2 id="how-the-pieces-fit-together">4. How the pieces fit together</h2>
+<pre class="text"><code>You write .ving files
+       │
+       ▼
+vng CLI (vinglish-cli) parses your code + standard library
+       │
+       ▼
+Compiler Pipeline processes code (AST -&gt; HIR -&gt; MIR -&gt; C)
+       │
+       ▼
+Generated C source + rt/*.c
+       │
+       ▼
+System C compiler (cc/gcc/clang) builds it
+       │
+       ▼
+Native executable!</code></pre>
+<hr />
+<h2 id="the-pipeline">5. The Pipeline</h2>
+<p>The whole process is kicked off by <code>cmd_build()</code> in
+<code>vinglish-cli/src/main.rs</code>.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Crate</th>
+<th>Input</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lexing</td>
+<td><code>vinglish-lexer</code></td>
+<td>Source string</td>
+<td><code>Vec&lt;Spanned&lt;Token&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>Parsing</td>
+<td><code>vinglish-parser</code></td>
+<td>Token stream</td>
+<td><code>ast::Module</code></td>
+</tr>
+<tr>
+<td>Name resolution</td>
+<td><code>vinglish-types</code></td>
+<td><code>ast::Module</code></td>
+<td>Populated <code>CompilerContext</code></td>
+</tr>
+<tr>
+<td>Type inference</td>
+<td><code>vinglish-types</code></td>
+<td><code>ast::Module</code> + context</td>
+<td><code>hir::Module</code></td>
+</tr>
+<tr>
+<td>HIR validation</td>
+<td><code>vinglish-types</code></td>
+<td><code>hir::Module</code> + context</td>
+<td>Errors or pass</td>
+</tr>
+<tr>
+<td>Ownership check (AST)</td>
+<td><code>vinglish-ownership</code></td>
+<td><code>ast::Module</code></td>
+<td>Errors or pass</td>
+</tr>
+<tr>
+<td>MIR lowering</td>
+<td><code>vinglish-types</code></td>
+<td><code>hir::Module</code></td>
+<td><code>MirModule&lt;VariableId&gt;</code></td>
+</tr>
+<tr>
+<td>MIR validation</td>
+<td><code>vinglish-mir</code></td>
+<td><code>MirModule</code></td>
+<td>Errors or pass</td>
+</tr>
+<tr>
+<td>Pre-SSA opt</td>
+<td><code>vinglish-opt</code></td>
+<td><code>MirModule&lt;VariableId&gt;</code></td>
+<td>Optimized <code>MirModule&lt;VariableId&gt;</code></td>
+</tr>
+<tr>
+<td>SSA conversion</td>
+<td><code>vinglish-ssa</code></td>
+<td><code>MirModule&lt;VariableId&gt;</code></td>
+<td><code>MirModule&lt;SsaValueId&gt;</code></td>
+</tr>
+<tr>
+<td>SSA validation</td>
+<td><code>vinglish-ssa</code></td>
+<td><code>MirModule&lt;SsaValueId&gt;</code></td>
+<td>Errors or pass</td>
+</tr>
+<tr>
+<td>Post-SSA opt</td>
+<td><code>vinglish-opt</code></td>
+<td><code>MirModule&lt;SsaValueId&gt;</code></td>
+<td>Optimized <code>MirModule&lt;SsaValueId&gt;</code></td>
+</tr>
+<tr>
+<td>Ownership analysis (MIR)</td>
+<td><code>vinglish-own</code></td>
+<td><code>MirModule&lt;SsaValueId&gt;</code></td>
+<td><code>OwnershipGraph</code></td>
+</tr>
+<tr>
+<td>Ownership validation</td>
+<td><code>vinglish-own</code></td>
+<td><code>MirModule</code> + graph</td>
+<td>Errors or pass</td>
+</tr>
+<tr>
+<td>C code generation</td>
+<td><code>vinglish-codegen</code></td>
+<td><code>MirModule&lt;SsaValueId&gt;</code></td>
+<td>C source string</td>
+</tr>
+<tr>
+<td>Native compilation</td>
+<td>System <code>cc</code></td>
+<td>C source + <code>rt/*.c</code></td>
+<td>Binary</td>
+</tr>
+</tbody>
+</table>
+<p>If you have multiple files, we load the module graph, resolve your
+<code>use</code> statements, and compile them in topological order.</p>
+<hr />
+<h2 id="what-each-crate-actually-does">6. What each crate actually
+does</h2>
+<h3 id="frontend-vinglish-lexer-vinglish-parser">Frontend
+(<code>vinglish-lexer</code>, <code>vinglish-parser</code>)</h3>
+<p>The lexer tokenizes your code line-by-line. It’s
+indentation-sensitive, meaning it tracks your indents and emits
+synthetic <code>Indent</code>/<code>Dedent</code> tokens. It also maps
+English keywords (like <code>compute</code>) to standard ones. The
+parser is a standard recursive-descent parser that builds the AST.</p>
+<h3 id="middle-end-vinglish-hir-vinglish-types">Middle-end
+(<code>vinglish-hir</code>, <code>vinglish-types</code>)</h3>
+<p><code>vinglish-hir</code> holds our High-level IR types and the
+central symbol table. <code>vinglish-types</code> resolves names and
+infers types. It also implements an automatic “type healing” mode. If it
+sees a type mismatch, it performs a bounded search to fix it (like
+automatically dereferencing a pointer or wrapping something in a
+<code>to_text()</code> call) before throwing an error. Once types are
+valid, it lowers the HIR into MIR.</p>
+<h3 id="optimizer-vinglish-mir-vinglish-ssa-vinglish-opt">Optimizer
+(<code>vinglish-mir</code>, <code>vinglish-ssa</code>,
+<code>vinglish-opt</code>)</h3>
+<p><code>vinglish-mir</code> defines our instructions and blocks.
+<code>vinglish-ssa</code> converts those into SSA form by building a
+dominator tree, dropping in phi nodes, and renaming variables.
+<code>vinglish-opt</code> runs the actual optimization passes: dead code
+elimination, constant folding, constant/copy propagation, and global
+value numbering.</p>
+<h3 id="backend-vinglish-codegen-vinglish-decompile">Backend
+(<code>vinglish-codegen</code>, <code>vinglish-decompile</code>)</h3>
+<p><code>vinglish-codegen</code> generates C code. It handles struct
+fields using byte offsets and pointer math. A notable feature: it takes
+the optimized MIR payload, compresses it with zlib, signs it with
+SHA-256, and embeds it as a base64 comment at the bottom of the C file.
+<code>vinglish-decompile</code> lets you extract that payload later.</p>
+<h3 id="safety-checks-vinglish-ownership-vinglish-own">Safety Checks
+(<code>vinglish-ownership</code>, <code>vinglish-own</code>)</h3>
+<p>These enforce ownership rules to prevent double-freeing memory or
+using variables after they are moved. We check this both at the AST
+level and the MIR level.</p>
+<h3
+id="tooling-vinglish-diagnostics-vinglish-cli-vinglish-fmt-vinglish-lsp">Tooling
+(<code>vinglish-diagnostics</code>, <code>vinglish-cli</code>,
+<code>vinglish-fmt</code>, <code>vinglish-lsp</code>)</h3>
+<p>Additional tooling for the ecosystem. <code>diagnostics</code>
+provides formatted terminal errors with line snippets. <code>cli</code>
+is the main binary. We also have a formatter and a language server for
+VS Code.</p>
+<hr />
+<h2 id="key-data-types">7. Key Data Types</h2>
+<p>Here are the primary data structures used across the compiler:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Crate</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Token</code></td>
+<td><code>vinglish-lexer</code></td>
+<td>Keywords, literals, punctuation</td>
+</tr>
+<tr>
+<td><code>Spanned&lt;T&gt;</code></td>
+<td><code>vinglish-lexer</code></td>
+<td>Wraps something with its byte location in the source code</td>
+</tr>
+<tr>
+<td><code>ast::Module</code></td>
+<td><code>vinglish-parser</code></td>
+<td>The root of the un-typed AST</td>
+</tr>
+<tr>
+<td><code>hir::Module</code></td>
+<td><code>vinglish-hir</code></td>
+<td>The root of the typed IR</td>
+</tr>
+<tr>
+<td><code>SymbolTable</code></td>
+<td><code>vinglish-hir</code></td>
+<td>A flat list of variables/functions, indexed by
+<code>SymbolId</code></td>
+</tr>
+<tr>
+<td><code>MirModule&lt;V&gt;</code></td>
+<td><code>vinglish-mir</code></td>
+<td>A collection of basic blocks and instructions</td>
+</tr>
+<tr>
+<td><code>Diagnostic</code></td>
+<td><code>vinglish-diagnostics</code></td>
+<td>Formatted errors/warnings with suggestions</td>
+</tr>
+<tr>
+<td><code>CompilerContext</code></td>
+<td><code>vinglish-types</code></td>
+<td>Holds the symbol table and tracks errors during compilation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="limitations">8. Limitations</h2>
+<p>A few features that are currently incomplete: - The C backend just
+uses <code>long</code> (<code>int64_t</code>) for almost everything. -
+Stack allocations actually just call <code>calloc</code> (heap
+allocation) under the hood in C right now. - <code>Drop</code>
+instructions don’t actually emit <code>free()</code> in C yet, they just
+emit a no-op <code>(void)0</code>. - The package manager
+(<code>vng pkg</code>) just builds scaffolding; there’s no real package
+registry yet.</p>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

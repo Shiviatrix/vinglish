@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cli - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Cli</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="cli">CLI</h1>
+<p>The <code>vng</code> command-line tool compiles, runs, checks, and
+formats Vinglish source files.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Provide the primary user interface to the Vinglish compiler.</p>
+<hr />
+<h2 id="commands">Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vng build &lt;file&gt;</code></td>
+<td>Compile to native binary</td>
+</tr>
+<tr>
+<td><code>vng run &lt;file&gt;</code></td>
+<td>Compile and execute via interpreter</td>
+</tr>
+<tr>
+<td><code>vng check &lt;file&gt;</code></td>
+<td>Type-check without producing output</td>
+</tr>
+<tr>
+<td><code>vng fmt &lt;files...&gt;</code></td>
+<td>Format source files</td>
+</tr>
+<tr>
+<td><code>vng lsp</code></td>
+<td>Start the LSP server</td>
+</tr>
+<tr>
+<td><code>vng pkg init</code></td>
+<td>Initialize a new package</td>
+</tr>
+<tr>
+<td><code>vng pkg add &lt;name&gt; [url]</code></td>
+<td>Add a dependency</td>
+</tr>
+<tr>
+<td><code>vng benchmark &lt;dir&gt;</code></td>
+<td>Run benchmarks</td>
+</tr>
+<tr>
+<td><code>vng version</code></td>
+<td>Print version</td>
+</tr>
+<tr>
+<td><code>vng --emit-ir &lt;file&gt;</code></td>
+<td>Export stable semantic interchange JSON</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="build-options">Build Options</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-o</code>, <code>--output</code></td>
+<td><code>a.out</code></td>
+<td>Output binary path</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td><code>c</code></td>
+<td>Backend to use: <code>c</code>, <code>llvm</code>, or
+<code>interp</code></td>
+</tr>
+<tr>
+<td><code>--emit</code></td>
+<td>—</td>
+<td>Emit intermediate form: <code>c</code>, <code>mir</code>,
+<code>mir-before</code>, <code>mir-after</code>, <code>mir-stats</code>,
+<code>mir-diff</code>, <code>ssa</code>, <code>ownership</code>,
+<code>llvm</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="format-options">Format Options</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--check</code></td>
+<td>Print diff instead of writing; exit non-zero if any file would
+change</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="benchmark-options">Benchmark Options</h2>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--runs</code></td>
+<td>5</td>
+<td>Number of iterations per benchmark</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="environment-variables">Environment Variables</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VINGLISH_ROOT</code></td>
+<td>Root directory for <code>std/</code> resolution</td>
+</tr>
+<tr>
+<td><code>CC</code></td>
+<td>C compiler to use (default: <code>cc</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="exit-codes">Exit Codes</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Success</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Compilation error or runtime error</td>
+</tr>
+<tr>
+<td>2</td>
+<td>No command provided</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="package-management">Package Management</h2>
+<p><code>vng pkg init</code> creates: - <code>ving.toml</code> with
+<code>[package]</code> section - <code>src/main.ving</code> with a stub
+main function</p>
+<p><code>vng pkg add &lt;name&gt; [url]</code> creates: -
+<code>.ving_modules/&lt;name&gt;/</code> directory - A stub module file
+<code>.ving_modules/&lt;name&gt;/&lt;name&gt;.ving</code></p>
+<p>No registry or version resolution exists.</p>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="../explanation/compiler-pipeline.html">Compiler
+Pipeline</a></li>
+<li><a href="../explanation/architecture.html">Architecture</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

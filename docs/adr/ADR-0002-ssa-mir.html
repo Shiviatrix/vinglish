@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Adr 0002 Ssa Mir - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Adr 0002 Ssa Mir</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="adr-0002-ssa-form-for-mir">ADR-0002: SSA Form for MIR</h1>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>The MIR needs a form suitable for dataflow optimizations. The
+compiler must support constant propagation, copy propagation, global
+value numbering, and dead code elimination.</p>
+<h2 id="decision">Decision</h2>
+<p>The MIR uses a two-phase approach: 1. Initial MIR uses
+<code>VariableId</code> (non-SSA, mutable variables). 2.
+<code>SSAConversionPass</code> transforms to
+<code>MirModule&lt;SsaValueId&gt;</code> via dominator tree computation,
+phi node insertion, and variable renaming.</p>
+<p>The <code>MirModule&lt;V&gt;</code> type is generic over
+<code>V</code>, allowing the same data structures to represent both
+forms.</p>
+<p>Evidence from the codebase: - <code>vinglish-ssa/src/lib.rs</code>
+defines <code>SSAConversionPass</code> which takes
+<code>MirModule&lt;VariableId&gt;</code> and returns
+<code>MirModule&lt;SsaValueId&gt;</code>. - Pre-SSA passes operate on
+<code>MirModule&lt;VariableId&gt;</code>; post-SSA passes operate on
+<code>MirModule&lt;SsaValueId&gt;</code>. - The
+<code>PassManager&lt;V&gt;</code> in <code>vinglish-opt</code> is also
+generic over <code>V</code>.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Optimization</strong>: SSA form enables precise dataflow
+analysis (GVN, constant propagation, copy propagation).</li>
+<li><strong>Validation</strong>: <code>SSAValidator</code> can verify
+SSA properties between passes.</li>
+<li><strong>Complexity</strong>: Two pipeline phases (pre-SSA and
+post-SSA) with separate pass managers.</li>
+<li><strong>Type safety</strong>: The Rust type system prevents
+accidentally running SSA-only passes on non-SSA MIR.</li>
+</ul>
+<h2 id="related-files">Related Files</h2>
+<ul>
+<li><a
+href="../../crates/vinglish-ssa/src/lib.rs">vinglish-ssa/src/lib.rs</a></li>
+<li><a
+href="../../crates/vinglish-opt/src/lib.rs">vinglish-opt/src/lib.rs</a>
+(<code>pre_ssa_pipeline</code>, <code>post_ssa_pipeline</code>)</li>
+<li><a
+href="../../crates/vinglish-mir/src/lib.rs">vinglish-mir/src/lib.rs</a>
+(<code>MirModule&lt;V&gt;</code>)</li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

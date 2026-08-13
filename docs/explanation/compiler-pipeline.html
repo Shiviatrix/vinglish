@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Compiler Pipeline - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Compiler Pipeline</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="compiler-pipeline">Compiler Pipeline</h1>
+<p>This document explains how Vinglish takes your <code>.ving</code>
+code and compiles it into a native executable. We run a sequence of
+lowering passes, where the output of one step feeds directly into the
+next.</p>
+<hr />
+<h2 id="module-loading-sorting">1. Module Loading &amp; Sorting</h2>
+<p>When you compile a project, <code>load_module_graph()</code>
+recursively resolves your <code>use</code> statements. - If it sees
+<code>std</code>, it loads it from the standard library folder. -
+Otherwise, it checks your <code>.ving_modules</code> (for packages) or
+just looks for local files relative to the current one.</p>
+<p>Once we have all the modules, we run <code>topological_sort()</code>.
+This ensures we compile dependencies <em>before</em> the code that
+depends on them. If you accidentally created a circular dependency, this
+step reports an error.</p>
+<hr />
+<h2 id="compiling-each-module">2. Compiling Each Module</h2>
+<p>We run the frontend passes on every module one by one:</p>
+<h3 id="lexing-parsing">Lexing &amp; Parsing</h3>
+<p>The lexer (<code>vinglish_lexer</code>) processes your code
+line-by-line. Because Vinglish is whitespace-sensitive, the lexer counts
+your leading spaces (4 spaces = 1 indent) and emits synthetic
+<code>Indent</code> and <code>Dedent</code> tokens. It also handles
+string escapes, numbers with underscores, and maps English-like
+keywords.</p>
+<p>The parser (<code>vinglish_parser</code>) takes those tokens and
+builds an Abstract Syntax Tree (AST) using standard recursive
+descent.</p>
+<h3 id="name-resolution-type-inference">Name Resolution &amp; Type
+Inference</h3>
+<p><code>NameResolutionPass</code> populates our
+<code>CompilerContext</code> with all the symbols it can find.</p>
+<p>Then <code>TypeInferencePass</code> executes. We run it in “healing
+mode”: if you provided a mismatched type—like passing a raw string where
+a <code>Text</code> object is expected—the compiler runs a bounded
+search to attempt to auto-fix it (e.g., by implicitly inserting a
+<code>.to_text()</code> call). It logs these fixes as warnings but
+continues compiling.</p>
+<h3 id="ast-level-checks">AST-level Checks</h3>
+<p>We run <code>vinglish_ownership</code> over the AST to check for
+basic memory safety violations before lowering to the intermediate
+representation.</p>
+<h3 id="lowering-to-mir">Lowering to MIR</h3>
+<p>Once the AST is typed and valid, <code>MirLowerer</code> flattens it
+down into our Mid-level Intermediate Representation (MIR). At this
+point, we consolidate all the functions from all the modules into one
+<code>MirModule</code>.</p>
+<hr />
+<h2 id="the-optimizer-ssa-mir">3. The Optimizer (SSA &amp; MIR)</h2>
+<p>Now that everything is in MIR, we can optimize it.</p>
+<ol type="1">
+<li><strong>Pre-SSA Opts:</strong> We do a quick pass of Dead Code
+Elimination and CFG Simplification to reduce instruction count
+early.</li>
+<li><strong>SSA Conversion:</strong> We run
+<code>SSAConversionPass</code>. This is a critical transformation. We
+calculate the dominator tree for each function, drop <code>phi</code>
+nodes at the dominance frontiers, and rename all the variables so every
+variable is assigned exactly once (Static Single Assignment form).</li>
+<li><strong>Post-SSA Opts:</strong> Now that we’re in SSA, the compiler
+runs advanced passes: Constant Folding, Constant Propagation, Copy
+Propagation, and Global Value Numbering (GVN), followed by another round
+of dead code elimination.</li>
+<li><strong>MIR Ownership:</strong> We run
+<code>OwnershipAnalysisPass</code> to build an ownership graph and
+validate that you aren’t committing memory violations, like
+double-freeing memory or using a value after you’ve moved it.</li>
+</ol>
+<p><em>(Note: We run an <code>SSAValidator</code> and
+<code>MirValidatorPass</code> between almost every step here just to
+make sure our own optimizer didn’t break the code).</em></p>
+<hr />
+<h2 id="code-generation">4. Code Generation</h2>
+<p>If validation succeeds, the compiler emits C code.</p>
+<p><code>emit_mir_c()</code> generates a <code>.c</code> file that
+includes: - Standard <code>#include</code>s and a static string pool. -
+Forward declarations so C doesn’t complain about function order. -
+Function bodies packed with <code>goto</code> statements (since we
+lowered control flow to raw branches).</p>
+<p><strong>A notable feature:</strong> We take your entire optimized MIR
+payload, compress it, hash it (SHA-256), and embed it at the very bottom
+of the generated C file as a base64 comment. This lets us decompile the
+C code back into Vinglish MIR later.</p>
+<hr />
+<h2 id="native-compilation">5. Native Compilation</h2>
+<p>Finally, the generated C file is passed to your system’s C compiler
+(like <code>clang</code> or <code>gcc</code>):</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cc</span> <span class="at">-O2</span> <span class="at">-Wno-int-conversion</span> <span class="at">-o</span> <span class="op">&lt;</span>output<span class="op">&gt;</span> <span class="op">&lt;</span>generated.c<span class="op">&gt;</span> rt/<span class="pp">*</span>.c</span></code></pre></div>
+<p>We link it against our C runtime (<code>rt/*.c</code>). If UI
+components are used, we’ll also build the Rust runtime
+(<code>rt_rust</code>) and link that static library.</p>
+<p>This produces the final native binary.</p>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

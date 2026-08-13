@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Parser - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Parser</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="parser">Parser</h1>
+<p>The Vinglish parser consumes a token stream and produces an abstract
+syntax tree.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Convert <code>Vec&lt;Spanned&lt;Token&gt;&gt;</code> into
+<code>ast::Module</code>, reporting parse errors as structured
+diagnostics.</p>
+<hr />
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Parse top-level items: functions, types, enums, use declarations,
+packages, modules, routes.</li>
+<li>Parse statements: let, return, if/then/otherwise, when, repeat,
+match, assign, spawn, send, receive, transaction.</li>
+<li>Parse expressions: literals, identifiers, calls, binary/unary
+operations, field access, indexing, struct literals, list literals,
+macro calls, postfix try (<code>?</code>), generic instantiation.</li>
+<li>Support both <code>begin</code>/<code>end</code> block syntax and
+indentation-based blocks.</li>
+<li>Report errors with spans for diagnostic rendering.</li>
+</ul>
+<hr />
+<h2 id="design">Design</h2>
+<p>Recursive-descent parser. Implemented in
+<code>vinglish-parser/src/parser.rs</code>.</p>
+<h3 id="entry-point">Entry Point</h3>
+<p><code>parse(tokens: &amp;[Spanned&lt;Token&gt;]) -&gt; (ast::Module, Vec&lt;ParseError&gt;)</code></p>
+<h3 id="error-types">Error Types</h3>
+<p>Defined in <code>vinglish-parser/src/error.rs</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Expected</code></td>
+<td>Expected a specific token, found something else</td>
+</tr>
+<tr>
+<td><code>Custom</code></td>
+<td>Free-form error message with span</td>
+</tr>
+</tbody>
+</table>
+<p>Each <code>ParseError</code> has a <code>span()</code> method
+returning the error location.</p>
+<hr />
+<h2 id="data-flow">Data Flow</h2>
+<p><strong>Input</strong>: <code>&amp;[Spanned&lt;Token&gt;]</code></p>
+<p><strong>Output</strong>:
+<code>(ast::Module, Vec&lt;ParseError&gt;)</code></p>
+<hr />
+<h2 id="public-api-ast-types">Public API: AST Types</h2>
+<p>All defined in <code>vinglish-parser/src/ast.rs</code>.</p>
+<h3 id="top-level-items">Top-Level Items</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Module</code></td>
+<td>Root node; contains <code>Vec&lt;Item&gt;</code></td>
+</tr>
+<tr>
+<td><code>Item</code></td>
+<td><code>Function</code>, <code>Type</code>, <code>Enum</code>,
+<code>Package</code>, <code>Module</code>, <code>Use</code>,
+<code>Route</code>, <code>Statement</code></td>
+</tr>
+<tr>
+<td><code>FunctionDef</code></td>
+<td>Name, visibility, params, return type, body, type params, target
+type (<code>on T</code>), effects, <code>is_foreign</code></td>
+</tr>
+<tr>
+<td><code>TypeDef</code></td>
+<td>Name, visibility, fields, type params, capabilities
+(<code>requires</code>)</td>
+</tr>
+<tr>
+<td><code>EnumDef</code></td>
+<td>Name, visibility, variants, type params</td>
+</tr>
+<tr>
+<td><code>Variant</code></td>
+<td>Name, optional payload type</td>
+</tr>
+<tr>
+<td><code>UseDecl</code></td>
+<td>Dot-separated path</td>
+</tr>
+<tr>
+<td><code>PackageDecl</code></td>
+<td>Package name</td>
+</tr>
+<tr>
+<td><code>ModuleDecl</code></td>
+<td>Module name</td>
+</tr>
+<tr>
+<td><code>RouteDecl</code></td>
+<td>Path string, handler block</td>
+</tr>
+</tbody>
+</table>
+<h3 id="statements">Statements</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LetStmt</code></td>
+<td><code>let name be value</code> with optional type annotation,
+<code>mutable</code> flag</td>
+</tr>
+<tr>
+<td><code>ReturnStmt</code></td>
+<td><code>return</code> with optional expression</td>
+</tr>
+<tr>
+<td><code>IfStmt</code></td>
+<td>Condition, then block, optional otherwise block</td>
+</tr>
+<tr>
+<td><code>WhenStmt</code></td>
+<td>Same structure as <code>IfStmt</code></td>
+</tr>
+<tr>
+<td><code>RepeatStmt</code></td>
+<td><code>ForEvery { var, iterable, body }</code>,
+<code>While { condition, body }</code>,
+<code>Count { times, body }</code></td>
+</tr>
+<tr>
+<td><code>MatchStmt</code></td>
+<td>Subject expression, cases, optional otherwise</td>
+</tr>
+<tr>
+<td><code>AssignStmt</code></td>
+<td>Target, operator (<code>=</code>, <code>+=</code>, <code>-=</code>,
+<code>*=</code>, <code>/=</code>), value</td>
+</tr>
+<tr>
+<td><code>SpawnStmt</code></td>
+<td>Actor identifier</td>
+</tr>
+<tr>
+<td><code>SendStmt</code></td>
+<td>Message expression</td>
+</tr>
+<tr>
+<td><code>ReceiveStmt</code></td>
+<td>Optional binding</td>
+</tr>
+<tr>
+<td><code>TransactionStmt</code></td>
+<td>Body block</td>
+</tr>
+</tbody>
+</table>
+<h3 id="expressions">Expressions</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Lit</code></td>
+<td>Literal value (<code>Int</code>, <code>Float</code>,
+<code>Text</code>, <code>Bool</code>, <code>Unit</code>)</td>
+</tr>
+<tr>
+<td><code>Ident</code></td>
+<td>Identifier reference</td>
+</tr>
+<tr>
+<td><code>GenericInst</code></td>
+<td><code>base&lt;type_args&gt;</code></td>
+</tr>
+<tr>
+<td><code>Call</code></td>
+<td>Callee expression + argument list</td>
+</tr>
+<tr>
+<td><code>BinOp</code></td>
+<td>Left, operator, right. Operators: <code>Add</code>,
+<code>Sub</code>, <code>Mul</code>, <code>Div</code>, <code>Mod</code>,
+<code>Eq</code>, <code>NotEq</code>, <code>Lt</code>, <code>Gt</code>,
+<code>LtEq</code>, <code>GtEq</code>, <code>And</code>, <code>Or</code>,
+<code>IsBelow</code>, <code>IsAbove</code>, <code>Exceeds</code></td>
+</tr>
+<tr>
+<td><code>UnOp</code></td>
+<td>Operator + operand. Operators: <code>Neg</code>, <code>Not</code>,
+<code>Deref</code>, <code>Borrow(mutable)</code></td>
+</tr>
+<tr>
+<td><code>Field</code></td>
+<td><code>object.field</code></td>
+</tr>
+<tr>
+<td><code>Index</code></td>
+<td><code>object[index]</code></td>
+</tr>
+<tr>
+<td><code>StructLit</code></td>
+<td><code>Type { field: value, ... }</code></td>
+</tr>
+<tr>
+<td><code>Block</code></td>
+<td>Block of statements</td>
+</tr>
+<tr>
+<td><code>List</code></td>
+<td><code>[elements]</code></td>
+</tr>
+<tr>
+<td><code>MacroCall</code></td>
+<td><code>name!(args)</code></td>
+</tr>
+<tr>
+<td><code>PostfixTry</code></td>
+<td><code>expr?</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="type-expressions">Type Expressions</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Named(ident)</code></td>
+<td><code>number</code>, <code>text</code>, <code>boolean</code>,
+<code>decimal</code>, or user-defined type</td>
+</tr>
+<tr>
+<td><code>List(inner)</code></td>
+<td><code>List of T</code></td>
+</tr>
+<tr>
+<td><code>Dict { key, val }</code></td>
+<td><code>Dictionary from K to V</code></td>
+</tr>
+<tr>
+<td><code>Optional(inner)</code></td>
+<td><code>T?</code> or <code>Optional T</code></td>
+</tr>
+<tr>
+<td><code>Result(inner)</code></td>
+<td><code>Result of T</code></td>
+</tr>
+<tr>
+<td><code>Generic { base, args }</code></td>
+<td>Generic instantiation</td>
+</tr>
+<tr>
+<td><code>Reference { mutable, inner }</code></td>
+<td><code>borrow T</code> or <code>borrow mutable T</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="visibility">Visibility</h3>
+<p><code>Private</code> (default), <code>Public</code>,
+<code>Internal</code>.</p>
+<hr />
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>No operator precedence climbing; precedence is handled by the
+recursive structure.</li>
+<li>Error recovery is limited to collecting errors and continuing.</li>
+</ul>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="lexer.html">Reference: Lexer</a></li>
+<li><a href="hir.html">Reference: HIR</a></li>
+<li><a href="../explanation/compiler-pipeline.html">Compiler
+Pipeline</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

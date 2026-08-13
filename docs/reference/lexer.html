@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Lexer - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Lexer</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="lexer">Lexer</h1>
+<p>The Vinglish lexer tokenizes source text into a flat sequence of
+<code>Spanned&lt;Token&gt;</code> values.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Convert a <code>.ving</code> source string into tokens for the
+parser. Handle indentation-based block structure.</p>
+<hr />
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Measure leading whitespace per line and emit
+<code>Indent</code>/<code>Dedent</code> tokens.</li>
+<li>Recognize keywords, natural-language aliases, identifiers, and
+literals.</li>
+<li>Recognize operators and punctuation.</li>
+<li>Strip comments (<code>--</code> and <code>#</code> line
+comments).</li>
+<li>Report lexer errors without halting (error recovery).</li>
+</ul>
+<hr />
+<h2 id="design">Design</h2>
+<h3 id="entry-point">Entry Point</h3>
+<p><code>tokenize(src: &amp;str) -&gt; (Vec&lt;Spanned&lt;Token&gt;&gt;, Vec&lt;LexError&gt;)</code></p>
+<p>Implemented in <code>vinglish-lexer/src/lexer.rs</code>.</p>
+<h3 id="algorithm">Algorithm</h3>
+<ol type="1">
+<li>Iterate over each line of <code>src</code>.</li>
+<li>For each non-blank, non-comment line:
+<ul>
+<li>Measure indentation (spaces + tabs, where tab = 4 spaces).</li>
+<li>Compare with the top of <code>indent_stack</code>:
+<ul>
+<li>Greater: push new level, emit <code>Indent</code>.</li>
+<li>Less: pop levels, emit <code>Dedent</code> for each.</li>
+</ul></li>
+<li>Call <code>lex_line()</code> on the trimmed content.</li>
+</ul></li>
+<li>Emit <code>Newline</code> after each physical line.</li>
+<li>At end of input: emit <code>Dedent</code> for all remaining open
+blocks, then <code>EOF</code>.</li>
+</ol>
+<h3 id="lex_line"><code>lex_line()</code></h3>
+<p>Scans a single line for: - <strong>Comments</strong>: <code>#</code>
+or <code>--</code> halts scanning for the rest of the line. -
+<strong>String literals</strong>: Delimited by <code>"</code>. Supports
+escape sequences: <code>\n</code>, <code>\t</code>, <code>\r</code>,
+<code>\0</code>, <code>\"</code>, <code>\'</code>, <code>\\</code>. -
+<strong>Numeric literals</strong>: Integer (<code>i64</code>) and float
+(<code>f64</code>). Underscore <code>_</code> is allowed as a digit
+separator. A <code>.</code> followed by a digit triggers float parsing.
+- <strong>Identifiers and keywords</strong>:
+<code>Token::from_word()</code> maps keywords and aliases. Unrecognized
+words become <code>Token::Ident(word)</code>. -
+<strong>Operators</strong>: Single and multi-character (<code>+=</code>,
+<code>-=</code>, <code>*=</code>, <code>/=</code>, <code>-&gt;</code>,
+<code>=&gt;</code>, <code>==</code>, <code>!=</code>,
+<code>&lt;=</code>, <code>&gt;=</code>). Bare <code>=</code> is treated
+as <code>Token::Be</code>.</p>
+<h3 id="natural-language-aliases">Natural-Language Aliases</h3>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Token</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compute</code>, <code>calculate</code>,
+<code>determine</code></td>
+<td><code>Ident("calculate")</code></td>
+</tr>
+<tr>
+<td><code>modify</code>, <code>mutate</code></td>
+<td><code>Ident("mutate")</code></td>
+</tr>
+<tr>
+<td><code>create</code>, <code>make</code></td>
+<td><code>Ident("create")</code></td>
+</tr>
+<tr>
+<td><code>destroy</code>, <code>delete</code></td>
+<td><code>Ident("delete")</code></td>
+</tr>
+<tr>
+<td><code>show</code>, <code>display</code>, <code>print</code>,
+<code>println</code></td>
+<td><code>Ident(original word)</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="data-flow">Data Flow</h2>
+<p><strong>Input</strong>: <code>&amp;str</code> (source text).</p>
+<p><strong>Output</strong>:
+<code>(Vec&lt;Spanned&lt;Token&gt;&gt;, Vec&lt;LexError&gt;)</code>.</p>
+<hr />
+<h2 id="public-api">Public API</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tokenize(src)</code></td>
+<td>Main entry point</td>
+</tr>
+<tr>
+<td><code>Token</code></td>
+<td>Enum: 70+ variants for keywords, literals, operators, punctuation,
+structural tokens</td>
+</tr>
+<tr>
+<td><code>Token::from_word(s)</code></td>
+<td>Maps a word to a keyword token or <code>None</code></td>
+</tr>
+<tr>
+<td><code>Token::describe(&amp;self)</code></td>
+<td>Human-readable description for error messages</td>
+</tr>
+<tr>
+<td><code>LexError</code></td>
+<td><code>UnexpectedChar</code>, <code>UnterminatedString</code>,
+<code>InvalidNumber</code></td>
+</tr>
+<tr>
+<td><code>Span</code></td>
+<td>Half-open byte range <code>[start, end)</code></td>
+</tr>
+<tr>
+<td><code>Spanned&lt;T&gt;</code></td>
+<td>Value <code>T</code> paired with a <code>Span</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="examples">Examples</h2>
+<p>From <code>vinglish-lexer/src/lexer.rs</code> tests:</p>
+<pre><code>Input: &quot;let age be 25&quot;
+Tokens: [Let, Ident(&quot;age&quot;), Be, Integer(25)]</code></pre>
+<pre><code>Input: &quot;if x\n    return y\n&quot;
+Tokens: [If, Ident(&quot;x&quot;), Newline, Indent, Return, Ident(&quot;y&quot;), Newline, Dedent, ...]</code></pre>
+<hr />
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>Tab width is hardcoded at 4 spaces.</li>
+<li>No multi-line string literals.</li>
+<li>No raw string literals.</li>
+<li><code>//</code> is treated as a C-style comment terminator (breaks
+the rest of the line).</li>
+</ul>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="parser.html">Reference: Parser</a></li>
+<li><a href="../explanation/compiler-pipeline.html">Compiler
+Pipeline</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

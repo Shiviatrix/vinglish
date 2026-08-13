@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Type Healing - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Type Healing</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="type-healing">Type Healing</h1>
+<p>The Vinglish compiler includes a bounded AST repair mechanism called
+“type healing.” When a type mismatch is detected during inference, the
+compiler attempts to automatically transform the AST to satisfy the
+constraint before reporting an error.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Reduce the number of type errors that require manual intervention.
+The compiler inserts well-defined transformations rather than accepting
+unsound programs.</p>
+<hr />
+<h2 id="design">Design</h2>
+<p>The healer is implemented in
+<code>vinglish-types/src/healer.rs</code>. It is invoked by
+<code>TypeInferencePass::run_with_healing()</code>.</p>
+<h3 id="healing-rules">Healing Rules</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Condition</th>
+<th>Transformation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AutoDeref</code></td>
+<td>Expected <code>T</code>, actual <code>Reference(T, _)</code></td>
+<td>Wraps expression in <code>UnOp::Deref</code></td>
+</tr>
+<tr>
+<td><code>ToText</code></td>
+<td>Expected <code>Text</code>, actual is not <code>Text</code></td>
+<td>Wraps expression in
+<code>Call { callee: "to_text", args: [expr] }</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="candidate-search">Candidate Search</h3>
+<p>The <code>Healer::candidates()</code> method generates a list of
+<code>HealingCandidate</code> values. Each candidate has a
+<code>rule</code>, a <code>replacement</code> expression, and a
+<code>cost</code> (always 1 in the current implementation).</p>
+<p><code>attempt_heal()</code> works as follows: 1. Extract the type
+constraint from the <code>TypeError::Mismatch</code> variant. 2. Find
+the failing expression in the AST by matching <code>AstNodeId</code>
+(span-based lookup). 3. Generate candidate repairs and calculate their
+costs. 4. Sort candidates by cost (lowest cost first). 5. For each
+candidate (Greedy + Alpha-Beta Pruning): - Path-clone the AST to the
+failing expression using <code>Arc::make_mut</code> (persistent
+sharing). - Replace the expression with the candidate fix. - Re-run the
+type pass on the modified AST. - If it succeeds, the candidate is
+accepted. Since candidates are sorted, the first success is guaranteed
+to be the optimal lowest-cost fix. - The engine updates its alpha bound
+and prunes all remaining, more expensive permutations without testing
+them. - Emit a <code>HealingWarning</code> and commit the new AST.</p>
+<h3 id="bounds">Bounds</h3>
+<ul>
+<li><code>Healer::MAX_STEPS</code>: 2 (candidates with cost &gt; 2 are
+skipped).</li>
+<li>Budget: Because the engine is completely deterministic and prunes
+sub-optimal paths immediately, there is no arbitrary iteration
+budget.</li>
+</ul>
+<h3 id="diagnostics">Diagnostics</h3>
+<p>Successful healings produce warning <code>T1001</code> which is
+rendered to stderr. The warning includes which rule was applied and the
+span of the affected expression.</p>
+<hr />
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>Only two healing rules exist.</li>
+<li><code>find_expr()</code> and <code>find_expr_mut()</code> perform a
+full AST walk per healing attempt.</li>
+</ul>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="../reference/type-system.html">Reference: Type
+System</a></li>
+<li><a href="compiler-pipeline.html">Compiler Pipeline</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

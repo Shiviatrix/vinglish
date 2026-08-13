@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ownership - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Ownership</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="ownership">Ownership</h1>
+<p>Two crates implement ownership checking at different levels of the
+pipeline.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Enforce ownership rules to prevent use-after-move, double-free, and
+aliasing violations.</p>
+<hr />
+<h2 id="vinglish-ownership-ast-level">vinglish-ownership
+(AST-level)</h2>
+<p>Defined in <code>vinglish-ownership/src/checker.rs</code>.</p>
+<p><code>check_module(ast: &amp;ast::Module) -&gt; Vec&lt;OwnershipError&gt;</code>
+performs ownership checking on the AST. Called after type inference and
+before MIR lowering.</p>
+<p>Each error carries a <code>message: String</code>,
+<code>span: Span</code>, and optional
+<code>note: Option&lt;String&gt;</code>. Errors are reported with code
+<code>O0001</code>.</p>
+<hr />
+<h2 id="vinglish-own-mir-level">vinglish-own (MIR-level)</h2>
+<p>Defined in <code>vinglish-own/src/</code>.</p>
+<h3 id="modules">Modules</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Module</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analysis.rs</code></td>
+<td><code>OwnershipAnalysisPass</code> — builds the ownership graph from
+SSA MIR</td>
+</tr>
+<tr>
+<td><code>graph.rs</code></td>
+<td><code>OwnershipGraph</code> — ownership state graph (implements
+<code>Display</code>)</td>
+</tr>
+<tr>
+<td><code>state.rs</code></td>
+<td><code>OwnershipState</code> — per-value ownership state</td>
+</tr>
+<tr>
+<td><code>validator.rs</code></td>
+<td><code>OwnershipValidator</code> — checks graph for violations,
+returns <code>Vec&lt;Diagnostic&gt;</code></td>
+</tr>
+<tr>
+<td><code>diagnostics.rs</code></td>
+<td>Diagnostic formatting for ownership errors</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pipeline-integration">Pipeline Integration</h3>
+<ol type="1">
+<li><code>OwnershipAnalysisPass::run(&amp;mut ssa_module, &amp;symbol_table)</code>
+→ <code>OwnershipGraph</code></li>
+<li><code>OwnershipValidator::validate(&amp;symbol_table, &amp;ssa_module, &amp;own_graph)</code>
+→ <code>Result&lt;(), Vec&lt;Diagnostic&gt;&gt;</code></li>
+</ol>
+<p>The ownership graph can be printed with
+<code>--emit ownership</code>.</p>
+<h3 id="convenience-function">Convenience Function</h3>
+<p><code>analyze_ownership(module, symbol_table) -&gt; Result&lt;MirModule, Vec&lt;Diagnostic&gt;&gt;</code>
+combines analysis and validation into a single call.</p>
+<hr />
+<h2 id="copy-vs-move">Copy vs Move</h2>
+<p>Types with copy semantics (as defined by
+<code>Type::is_copy()</code>) do not participate in ownership transfer.
+Currently: <code>Int</code>, <code>Float</code>, <code>Bool</code>,
+<code>Text</code>, <code>Unit</code>, <code>Pointer</code>.</p>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="mir.html">Reference: MIR</a></li>
+<li><a href="type-system.html">Reference: Type System</a></li>
+<li><a href="../explanation/compiler-pipeline.html">Compiler
+Pipeline</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

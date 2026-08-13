@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Decompilation - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Decompilation</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="decompilation">Decompilation</h1>
+<p>The Vinglish codegen backend embeds a lossless MIR payload inside the
+generated C source. The <code>vinglish-decompile</code> crate extracts
+and verifies this payload, enabling round-trip between C output and the
+compiler’s internal representation.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Allow recovery of the full MIR from generated C source files,
+enabling debugging, analysis, and verification of generated code.</p>
+<hr />
+<h2 id="design">Design</h2>
+<h3 id="payload-embedding-vinglish-codegen">Payload Embedding
+(vinglish-codegen)</h3>
+<p><code>emit_mir_c()</code> in
+<code>vinglish-codegen/src/mir_codegen.rs</code> appends the payload
+after all C function definitions:</p>
+<ol type="1">
+<li>Compute SHA-256 hash of the C source (everything before the
+payload).</li>
+<li>Serialize the <code>MirModule</code> via <code>bincode</code>.</li>
+<li>Bundle <code>(sha256_hash, module_bytes)</code> and serialize with
+<code>bincode</code>.</li>
+<li>Compress with zlib.</li>
+<li>Encode with base64.</li>
+<li>Write as a C comment:
+<code>/* VINGLISH_MIR_PAYLOAD: &lt;base64&gt; */</code>.</li>
+</ol>
+<h3 id="payload-extraction-vinglish-decompile">Payload Extraction
+(vinglish-decompile)</h3>
+<p><code>extract_mir_payload()</code> in
+<code>vinglish-decompile/src/lib.rs</code>:</p>
+<ol type="1">
+<li>Find the <code>VINGLISH_MIR_PAYLOAD</code> comment marker.</li>
+<li>Extract the base64 string.</li>
+<li>Compute SHA-256 of the C source preceding the payload.</li>
+<li>Decode base64 → decompress zlib → deserialize bincode.</li>
+<li>Compare the stored hash with the computed hash.</li>
+<li>Return <code>DecompileError::Desync</code> if they differ (tamper
+detection).</li>
+<li>Return the raw MIR module bytes on success.</li>
+</ol>
+<h3 id="error-types">Error Types</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MissingPayload</code></td>
+<td>No <code>VINGLISH_MIR_PAYLOAD</code> comment found</td>
+</tr>
+<tr>
+<td><code>Desync</code></td>
+<td>C source was modified after generation</td>
+</tr>
+<tr>
+<td><code>Base64Decode</code></td>
+<td>Base64 decoding failed</td>
+</tr>
+<tr>
+<td><code>Decompress</code></td>
+<td>Zlib decompression failed</td>
+</tr>
+<tr>
+<td><code>Deserialize</code></td>
+<td>Bincode deserialization failed</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dependencies">Dependencies</h2>
+<ul>
+<li><code>sha2</code>: SHA-256 hashing</li>
+<li><code>flate2</code>: Zlib compression/decompression</li>
+<li><code>base64</code>: Base64 encoding/decoding</li>
+<li><code>bincode</code>: Binary serialization</li>
+</ul>
+<hr />
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li>The payload is a C comment and is discarded by the C preprocessor.
+It has zero runtime cost.</li>
+<li>Modifying any byte of the C source before the payload invalidates
+the hash.</li>
+</ul>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="../reference/codegen.html">Reference: Code
+Generation</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

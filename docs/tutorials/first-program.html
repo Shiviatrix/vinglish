@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>First Program - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">First Program</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="first-program">First Program</h1>
+<p>This tutorial walks through writing, compiling, and running a
+Vinglish program.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Rust toolchain (edition 2024).</li>
+<li>A C compiler (<code>cc</code>, <code>gcc</code>, or
+<code>clang</code>).</li>
+<li>Clone the repository and build:</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> build <span class="at">--release</span></span></code></pre></div>
+<hr />
+<h2 id="step-1-create-a-source-file">Step 1: Create a Source File</h2>
+<p>Create <code>hello.ving</code>:</p>
+<pre><code>function main() returns number
+begin
+    println(&quot;Hello, World!&quot;)
+    return 0
+end</code></pre>
+<p>This defines a <code>main</code> function that prints a string and
+returns 0.</p>
+<hr />
+<h2 id="step-2-run-with-the-interpreter">Step 2: Run with the
+Interpreter</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> run hello.ving</span></code></pre></div>
+<p>Expected output:</p>
+<pre><code>Hello, World!</code></pre>
+<hr />
+<h2 id="step-3-compile-to-a-native-binary">Step 3: Compile to a Native
+Binary</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build hello.ving <span class="at">--output</span> hello</span></code></pre></div>
+<p>This generates <code>hello.c</code> and compiles it to a native
+binary <code>hello</code>.</p>
+<p>Run the binary:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./hello</span></span></code></pre></div>
+<hr />
+<h2 id="step-4-type-check">Step 4: Type-Check</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> check hello.ving</span></code></pre></div>
+<p>This runs name resolution, type inference, and ownership checking
+without producing output.</p>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>See <a href="../how-to/build-and-run.html">How-To: Build and Run</a>
+for more build options.</li>
+<li>See <a href="../reference/cli.html">Reference: CLI</a> for all
+available commands.</li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

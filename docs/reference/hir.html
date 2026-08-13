@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hir - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Hir</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="hir">HIR</h1>
+<p>The High-Level Intermediate Representation is a typed, resolved
+version of the AST. Every expression carries a <code>TypeId</code>.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Provide a typed representation of the program after name resolution
+and type inference, suitable for lowering to MIR.</p>
+<hr />
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Represent typed program structure (functions, types, enums,
+statements, expressions).</li>
+<li>Hold the symbol table for name resolution and type interning.</li>
+<li>Provide struct layout computation.</li>
+</ul>
+<hr />
+<h2 id="design">Design</h2>
+<p>Defined in <code>vinglish-hir/src/lib.rs</code>. The HIR mirrors the
+AST structure but replaces names with resolved IDs and adds type
+annotations.</p>
+<h3 id="key-differences-from-ast">Key Differences from AST</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>AST</th>
+<th>HIR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ident</code> (name string)</td>
+<td><code>VariableId</code>, <code>FunctionId</code>,
+<code>TypeId</code></td>
+</tr>
+<tr>
+<td><code>TypeExpr</code> (syntax)</td>
+<td><code>TypeId</code> (interned)</td>
+</tr>
+<tr>
+<td>No type on expressions</td>
+<td>Every <code>Expr</code> variant has a <code>ty: TypeId</code>
+field</td>
+</tr>
+<tr>
+<td><code>UseDecl</code>, <code>PackageDecl</code>,
+<code>ModuleDecl</code></td>
+<td>Removed (resolved during compilation)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hir-nodes">HIR Nodes</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Module</code></td>
+<td><code>items: Vec&lt;Item&gt;</code></td>
+</tr>
+<tr>
+<td><code>Item</code></td>
+<td><code>Function(FunctionDef)</code>, <code>Type(TypeDef)</code>,
+<code>Enum(EnumDef)</code>, <code>Statement(Stmt)</code></td>
+</tr>
+<tr>
+<td><code>FunctionDef</code></td>
+<td><code>id: FunctionId</code>, <code>name</code>,
+<code>params: Vec&lt;Param&gt;</code>, <code>ret_ty: TypeId</code>,
+<code>body: Expr</code></td>
+</tr>
+<tr>
+<td><code>Param</code></td>
+<td><code>id: VariableId</code>, <code>name</code>,
+<code>ty: TypeId</code></td>
+</tr>
+<tr>
+<td><code>TypeDef</code></td>
+<td><code>id: TypeId</code>, <code>name</code>,
+<code>fields: Vec&lt;Param&gt;</code></td>
+</tr>
+<tr>
+<td><code>EnumDef</code></td>
+<td><code>id: TypeId</code>,
+<code>variants: Vec&lt;Variant&gt;</code></td>
+</tr>
+<tr>
+<td><code>Block</code></td>
+<td><code>stmts: Vec&lt;Stmt&gt;</code>,
+<code>expr: Option&lt;Box&lt;Expr&gt;&gt;</code>,
+<code>ty: TypeId</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="hir-statements">HIR Statements</h3>
+<p><code>Let</code>, <code>Assign</code>, <code>If</code>,
+<code>Return</code>, <code>RepeatWhile</code>, <code>Expr</code>.</p>
+<h3 id="hir-expressions">HIR Expressions</h3>
+<p><code>Lit</code>, <code>VarRef</code>, <code>Call</code>,
+<code>BinOp</code>, <code>UnOp</code>, <code>FieldIndex</code>,
+<code>Index</code>, <code>List</code>, <code>StructInit</code>,
+<code>MacroCall</code>, <code>PostfixTry</code>, <code>Block</code>.
+Every variant includes <code>ty: TypeId</code> and
+<code>span: Span</code>.</p>
+<hr />
+<h2 id="symbol-table">Symbol Table</h2>
+<p>Defined in <code>vinglish-hir/src/symbol.rs</code>.</p>
+<h3 id="ids">IDs</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Underlying</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SymbolId</code></td>
+<td><code>u32</code></td>
+</tr>
+<tr>
+<td><code>TypeId</code></td>
+<td><code>SymbolId</code></td>
+</tr>
+<tr>
+<td><code>FunctionId</code></td>
+<td><code>SymbolId</code></td>
+</tr>
+<tr>
+<td><code>VariableId</code></td>
+<td><code>SymbolId</code></td>
+</tr>
+<tr>
+<td><code>SsaValueId</code></td>
+<td><code>u32</code></td>
+</tr>
+<tr>
+<td><code>FieldId</code></td>
+<td><code>usize</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="symboltable"><code>SymbolTable</code></h3>
+<p>Flat <code>Vec&lt;SymbolKind&gt;</code> indexed by
+<code>SymbolId</code>. Supports: -
+<code>intern_type(Type) -&gt; TypeId</code>: Deduplicated type
+interning. - <code>define_type</code>, <code>define_func</code>,
+<code>define_var</code>: Named definitions. -
+<code>define_anon_func</code>, <code>define_anon_var</code>: Anonymous
+definitions (no name lookup). -
+<code>lookup(name) -&gt; Option&lt;SymbolId&gt;</code>: Name-based
+lookup.</p>
+<h3 id="symbol-types">Symbol Types</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TypeSymbol</code></td>
+<td><code>id</code>, <code>name</code>, <code>visibility</code>,
+<code>fields: Vec&lt;FieldSymbol&gt;</code>, <code>methods</code>,
+<code>generic_params</code>, <code>capabilities</code></td>
+</tr>
+<tr>
+<td><code>FunctionSymbol</code></td>
+<td><code>id</code>, <code>name</code>, <code>visibility</code>,
+<code>ty: Type</code>, <code>generic_params</code>,
+<code>is_variant_constructor</code>, <code>is_foreign</code></td>
+</tr>
+<tr>
+<td><code>VariableSymbol</code></td>
+<td><code>id</code>, <code>name</code>, <code>is_mut</code>,
+<code>ty: Type</code>, <code>span</code></td>
+</tr>
+<tr>
+<td><code>FieldSymbol</code></td>
+<td><code>id</code>, <code>name</code>, <code>ty</code>,
+<code>visibility</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="type-system">Type System</h2>
+<p>Defined in <code>vinglish-hir/src/types.rs</code>.</p>
+<h3 id="type-enum">Type Enum</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Int</code></td>
+<td>Integer (displayed as <code>number</code>)</td>
+</tr>
+<tr>
+<td><code>Float</code></td>
+<td>Float (displayed as <code>decimal</code>)</td>
+</tr>
+<tr>
+<td><code>Bool</code></td>
+<td>Boolean</td>
+</tr>
+<tr>
+<td><code>Text</code></td>
+<td>String</td>
+</tr>
+<tr>
+<td><code>Unit</code></td>
+<td>Unit/void</td>
+</tr>
+<tr>
+<td><code>Reference(Box&lt;Type&gt;, bool)</code></td>
+<td>Borrow (mutable if <code>true</code>)</td>
+</tr>
+<tr>
+<td><code>Pointer(Box&lt;Type&gt;)</code></td>
+<td>Raw pointer</td>
+</tr>
+<tr>
+<td><code>List(Box&lt;Type&gt;)</code></td>
+<td>List container</td>
+</tr>
+<tr>
+<td><code>Dict(Box&lt;Type&gt;, Box&lt;Type&gt;)</code></td>
+<td>Dictionary (key, value)</td>
+</tr>
+<tr>
+<td><code>Optional(Box&lt;Type&gt;)</code></td>
+<td>Optional value</td>
+</tr>
+<tr>
+<td><code>Result(Box&lt;Type&gt;, Box&lt;Type&gt;)</code></td>
+<td>Result (ok, err)</td>
+</tr>
+<tr>
+<td><code>Function(Vec&lt;Type&gt;, Box&lt;Type&gt;)</code></td>
+<td>Function type (params, return)</td>
+</tr>
+<tr>
+<td><code>Named(String, Vec&lt;Type&gt;)</code></td>
+<td>User-defined type with optional type arguments</td>
+</tr>
+<tr>
+<td><code>Var(TypeVar)</code></td>
+<td>Inference variable</td>
+</tr>
+</tbody>
+</table>
+<h3 id="typevar"><code>TypeVar</code></h3>
+<p>Fresh type variable IDs are generated from a global
+<code>AtomicU32</code> counter. Displayed as <code>'a</code>,
+<code>'b</code>, etc.</p>
+<h3 id="copy-semantics">Copy Semantics</h3>
+<p><code>Type::is_copy()</code> returns <code>true</code> for:
+<code>Int</code>, <code>Float</code>, <code>Bool</code>,
+<code>Text</code>, <code>Unit</code>, <code>Pointer</code>. All other
+types use move semantics.</p>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="parser.html">Reference: Parser</a></li>
+<li><a href="mir.html">Reference: MIR</a></li>
+<li><a href="type-system.html">Reference: Type System</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>

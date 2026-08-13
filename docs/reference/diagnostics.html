@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Diagnostics - Vinglish</title>
+  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
+</head>
+<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+
+  <center>
+    <h1><marquee width="50%" behavior="alternate">Diagnostics</marquee></h1>
+    <hr width="80%">
+    
+    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
+      <tr>
+        <td align="center">
+          <font color="#000000" face="Arial">
+            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
+          </font>
+        </td>
+      </tr>
+    </table>
+    <br>
+  </center>
+
+  <center>
+    <table border="0" width="80%" cellpadding="10">
+      <tr>
+        <td bgcolor="#C0C0C0" align="left">
+          <font color="#000000" face="Times New Roman">
+<h1 id="diagnostics">Diagnostics</h1>
+<p>The diagnostics crate provides structured error and warning
+reporting.</p>
+<hr />
+<h2 id="purpose">Purpose</h2>
+<p>Format compiler errors and warnings with source context, suggestions,
+and intent resolution.</p>
+<hr />
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Represent diagnostics with severity, error code, message, span, and
+optional context.</li>
+<li>Render diagnostics to terminal output with source line
+excerpts.</li>
+<li>Resolve user intent from failed parse tokens.</li>
+<li>Detect polyglot errors (code from other languages).</li>
+</ul>
+<hr />
+<h2 id="design">Design</h2>
+<p>Defined in <code>vinglish-diagnostics/src/</code>.</p>
+<h3 id="diagnostic-type">Diagnostic Type</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Diagnostic <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> severity<span class="op">:</span> Severity<span class="op">,</span>    <span class="co">// Error, Warning, Info</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> code<span class="op">:</span> <span class="dt">String</span><span class="op">,</span>          <span class="co">// e.g., &quot;P0001&quot;, &quot;T0001&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> message<span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> span<span class="op">:</span> Span<span class="op">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> source_line<span class="op">:</span> <span class="dt">Option</span><span class="op">&lt;</span><span class="dt">String</span><span class="op">&gt;,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> suggestions<span class="op">:</span> <span class="dt">Vec</span><span class="op">&lt;</span>Suggestion<span class="op">&gt;,</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ... additional fields</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="construction">Construction</h3>
+<ul>
+<li><code>Diagnostic::error(code, message, span)</code> — creates an
+error diagnostic.</li>
+<li><code>Diagnostic::warning(code, message, span)</code> — creates a
+warning diagnostic.</li>
+<li><code>diag.with_note(text)</code> — adds a note.</li>
+<li><code>diag.enrich(&amp;src)</code> — populates
+<code>source_line</code> from source text.</li>
+</ul>
+<h3 id="rendering">Rendering</h3>
+<p><code>render(diagnostics: &amp;[Diagnostic], filename: &amp;str) -&gt; String</code>
+formats diagnostics for stderr output, including the file name,
+line/column, error message, and source context.</p>
+<h3 id="intent-resolution">Intent Resolution</h3>
+<p><code>intent::resolve_intent(&amp;mut diag, &amp;found, &amp;line)</code>
+analyzes the failed token and source line to suggest corrections for
+parse errors.</p>
+<h3 id="heuristics">Heuristics</h3>
+<ul>
+<li><code>heuristics::lexical</code> — lexical error heuristics.</li>
+<li><code>heuristics::polyglot</code> — detects code patterns from other
+languages (e.g., Python, JavaScript, C) and suggests Vinglish
+equivalents.</li>
+</ul>
+<hr />
+<h2 id="error-codes">Error Codes</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P0001</code></td>
+<td>Parser</td>
+<td>Parse error</td>
+</tr>
+<tr>
+<td><code>T0001</code></td>
+<td>Type inference</td>
+<td>Type error</td>
+</tr>
+<tr>
+<td><code>T1001</code></td>
+<td>Type healing</td>
+<td>Automatic type repair warning</td>
+</tr>
+<tr>
+<td><code>O0001</code></td>
+<td>Ownership</td>
+<td>Ownership violation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li><a href="lexer.html">Reference: Lexer</a></li>
+<li><a href="parser.html">Reference: Parser</a></li>
+<li><a href="../explanation/compiler-pipeline.html">Compiler
+Pipeline</a></li>
+</ul>
+
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+</body>
+</html>
