@@ -4,20 +4,19 @@
 
 **Vinglish** is a systems programming language with an English-inspired syntax. 
 
-I wrote the compiler in Rust because I didn't want to deal with C++ segfaults. It takes Vinglish code, lowers it to a Static Single Assignment (SSA) MIR, runs standard optimization passes (DCE, GVN, constant folding), and spits out C code.
+The compiler is implemented in Rust to leverage its memory safety guarantees. The compilation pipeline lowers Vinglish source code to a Static Single Assignment (SSA) MIR, executes optimization passes (DCE, GVN, constant folding), and emits C source code.
 
-### A note on the compiler
+### Architectural Decisions
 
-The backend generates C. I looked into LLVM, but the Rust bindings were miserable to set up, so I stuck with emitting C source code that GCC or Clang can compile. 
+**C Backend Integration:** The backend currently emits C source code rather than LLVM IR. While an LLVM backend was considered, emitting C provided a simpler integration path without the complexity of maintaining Rust bindings to LLVM.
 
-One weird decision I made: the compiler takes the optimized MIR payload, compresses it with zlib, signs it with a SHA-256 hash, and dumps it as a massive base64 comment at the very bottom of the generated `.c` file. 
-Why? Because I wanted a `vng decompile` command to work without having to ship a separate metadata artifact alongside the binary. It definitely bloats the C file, but it works.
+**Embedded MIR Payloads:** The compiler takes the optimized MIR payload, compresses it with zlib, signs it with a SHA-256 hash, and embeds it as a base64 comment at the end of the generated `.c` file. This decision was made to allow the `vng decompile` command to function without requiring a separate metadata artifact alongside the binary. While this increases the size of the generated C file, it ensures the decompilation process remains hermetic.
 
-Also, the type system has "type healing." If you pass an `int` where a `string` is expected, instead of immediately failing, the type checker does a bounded search and literally mutates your AST to insert a `to_text()` call. It will also auto-dereference pointers if it thinks it can fix a mismatch. It's a bit of a hack, but it saves keystrokes.
+**Type Healing:** The type system implements a mechanism known as "type healing." If a type mismatch occurs (e.g., passing an `int` where a `string` is expected), the type checker performs a bounded search and mutates the AST to insert a `to_text()` call. It will also auto-dereference pointers to resolve mismatches. This approach prioritizes developer ergonomics by implicitly resolving common type discrepancies.
 
 ### Example
 
-Here's what actual code looks like. 
+The following demonstrates the auto-healing behavior in practice:
 
 ```vinglish
 let entropy be 0.82
@@ -28,36 +27,34 @@ if entropy is above 0.50 {
 }
 ```
 
-### Current state (It's rough)
+### Current Limitations
 
-Do not use this for anything serious yet. 
+The compiler is currently in an experimental state and is not suitable for production use. Known limitations include:
 
-- The C backend currently treats almost everything as an `int64_t` (`long`). 
-- "Stack" allocations actually just call `calloc` under the hood right now.
-- The MIR has a `Drop` instruction for memory management, but the C backend just emits a no-op `(void)0` for it. So yes, it leaks memory.
-- `vng pkg` builds project scaffolding, but there is no package registry. 
+- The C backend currently treats most primitives as `int64_t` (`long`).
+- Stack allocations currently fall back to `calloc` under the hood.
+- The MIR includes a `Drop` instruction for memory management, but the C backend currently emits a no-op `(void)0` for it, resulting in memory leaks.
+- The package manager (`vng pkg`) builds project scaffolding, but a package registry has not yet been implemented.
 
-### Running it
+### Compilation Instructions
 
-If you still want to run it, you need Rust (2024 edition) and a C compiler. I'm not going to explain how to install Rust.
+Using the compiler requires Rust (2024 edition) and a C compiler (GCC or Clang).
 
 ```sh
 cargo install --path crates/vinglish
 vng run path/to/file.ving
 ```
 
-Or just compile it to C:
+To compile to a native binary via the C backend:
 ```sh
 vng build path/to/file.ving --output my_program --backend c
 ```
 
-### Architecture
+### Repository Structure
 
-If you actually want to read the compiler source, it's split across 19 crates to keep things isolated. 
-The pipeline is basically: `Parser -> HIR -> MIR -> SSA -> C backend`. 
+The compiler architecture is modularized across 19 crates. The execution pipeline follows: `Parser -> HIR -> MIR -> SSA -> C backend`. 
 
-Check the [docs/](docs/) folder. Note: I converted all the markdown docs to HTML because I wanted them to match the retro website. You'll have to read the `.html` files or look at the live site. 
-
+Documentation has been exported to HTML. For full technical details on the architecture and passes, please refer to:
 - [Architecture Notes](docs/explanation/architecture.html)
 - [Pipeline details](docs/explanation/compiler-pipeline.html)
 
