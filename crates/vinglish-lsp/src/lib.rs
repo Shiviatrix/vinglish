@@ -4,7 +4,7 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use vinglish_lexer::{tokenize, LexError, Span, Spanned, Token};
-use vinglish_parser::ast::{Item, Module, TypeExpr};
+use vinglish_parser::ast::{Block, Item, LetStmt, Module, Stmt, TypeExpr};
 use vinglish_parser::parse;
 
 fn offset_to_position(src: &str, offset: u32) -> Position {
@@ -92,7 +92,7 @@ impl LanguageServer for Backend {
                 )),
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
-                    trigger_characters: None,
+                    trigger_characters: Some(vec![".".to_string()]),
                     all_commit_characters: None,
                     work_done_progress_options: Default::default(),
                     completion_item: None,
@@ -132,25 +132,173 @@ impl LanguageServer for Backend {
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let uri = params.text_document_position.text_document.uri;
+        let pos = params.text_document_position.position;
         let cache = self.cache.read().await;
-        let Some((_src, _tokens, ast)) = cache.get(&uri) else {
+        let Some((src, tokens, ast)) = cache.get(&uri) else {
             return Ok(None);
         };
 
+        let offset = position_to_offset(src, pos);
+        
+        let mut is_field_access = false;
+        let mut object_ident = None;
+        
+        let mut prev_token_idx = None;
+        for (i, t) in tokens.iter().enumerate() {
+            if t.span.start >= offset {
+                break;
+            }
+            prev_token_idx = Some(i);
+        }
+        
+        if let Some(idx) = prev_token_idx {
+            let t = &tokens[idx];
+            if matches!(t.node, Token::Dot) {
+                is_field_access = true;
+                if idx > 0 {
+                    let prev_t = &tokens[idx - 1];
+                    if let Token::Ident(ref name) = prev_t.node {
+                        object_ident = Some(name.clone());
+                    }
+                }
+            }
+        }
+
         let mut items = vec![];
 
-        let keywords = vec![
-            "let", "be", "function", "returns", "if", "then", "otherwise", "when", "repeat", "for",
-            "every", "while", "match", "case", "parallel", "spawn", "send", "receive",
-            "transaction", "commit", "compile", "use", "package", "module", "public", "private",
-            "internal", "type", "requires", "effects", "foreign", "export", "using", "arena",
-        ];
-        for kw in keywords {
-            items.push(CompletionItem {
-                label: kw.to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                ..Default::default()
-            });
+        fn walk_block(block: &Block, offset: u32, locals: &mut Vec<(String, Option<TypeExpr>)>) {
+            for stmt in &block.stmts {
+                if stmt.span().start >= offset {
+                    break;
+                }
+                match stmt {
+                    Stmt::Let(LetStmt { name, ty, .. }) => {
+                        locals.push((name.name.clone(), ty.clone()));
+                    }
+                    Stmt::If(s) => {
+                        walk_block(&s.then_block, offset, locals);
+                        if let Some(else_b) = &s.otherwise {
+                            walk_block(else_b, offset, locals);
+                        }
+                    }
+                    Stmt::When(s) => {
+                        walk_block(&s.then_block, offset, locals);
+                        if let Some(else_b) = &s.otherwise {
+                            walk_block(else_b, offset, locals);
+                        }
+                    }
+                    Stmt::Repeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
+                        if body.span.start < offset && offset <= body.span.end {
+                            locals.push((var.name.clone(), None));
+                        }
+                        walk_block(body, offset, locals);
+                    }
+                    Stmt::Repeat(vinglish_parser::ast::RepeatStmt::While { body, .. }) => {
+                        walk_block(body, offset, locals);
+                    }
+                    Stmt::Repeat(vinglish_parser::ast::RepeatStmt::Count { body, .. }) => {
+                        walk_block(body, offset, locals);
+                    }
+                    Stmt::ParallelRepeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
+                        if body.span.start < offset && offset <= body.span.end {
+                            locals.push((var.name.clone(), None));
+                        }
+                        walk_block(body, offset, locals);
+                    }
+                    Stmt::Match(s) => {
+                        for case in &s.cases {
+                            walk_block(&case.body, offset, locals);
+                        }
+                        if let Some(else_b) = &s.otherwise {
+                            walk_block(else_b, offset, locals);
+                        }
+                    }
+                    Stmt::Transaction(s) => walk_block(&s.body, offset, locals),
+                    _ => {}
+                }
+            }
+        }
+
+        if is_field_access {
+            if let Some(obj_name) = object_ident {
+                let mut obj_type = None;
+                for item in &ast.items {
+                    if let Item::Function(f) = item {
+                        if offset >= f.span.start && offset <= f.span.end {
+                            let mut locals = vec![];
+                            for p in &f.params {
+                                locals.push((p.name.name.clone(), Some(p.ty.clone())));
+                            }
+                            walk_block(&f.body, offset, &mut locals);
+                            
+                            for (name, ty) in locals.into_iter().rev() {
+                                if name == obj_name {
+                                    obj_type = ty;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if let Some(TypeExpr::Named(type_id)) = obj_type {
+                    for item in &ast.items {
+                        if let Item::Type(t) = item {
+                            if t.name.name == type_id.name {
+                                for field in &t.fields {
+                                    items.push(CompletionItem {
+                                        label: field.name.name.clone(),
+                                        kind: Some(CompletionItemKind::FIELD),
+                                        detail: Some(format_type(&field.ty)),
+                                        ..Default::default()
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Ok(Some(CompletionResponse::Array(items)));
+        }
+
+        let mut in_function = false;
+        for item in &ast.items {
+            if let Item::Function(f) = item {
+                if offset >= f.span.start && offset <= f.span.end {
+                    in_function = true;
+                    let mut locals = vec![];
+                    for p in &f.params {
+                        locals.push((p.name.name.clone(), Some(p.ty.clone())));
+                    }
+                    walk_block(&f.body, offset, &mut locals);
+                    
+                    for (name, ty) in locals {
+                        let detail = ty.map(|t| format_type(&t)).unwrap_or_else(|| "Local".to_string());
+                        items.push(CompletionItem {
+                            label: name,
+                            kind: Some(CompletionItemKind::VARIABLE),
+                            detail: Some(detail),
+                            ..Default::default()
+                        });
+                    }
+                }
+            }
+        }
+
+        if !in_function {
+            let keywords = vec![
+                "let", "be", "function", "returns", "if", "then", "otherwise", "when", "repeat", "for",
+                "every", "while", "match", "case", "parallel", "spawn", "send", "receive",
+                "transaction", "commit", "compile", "use", "package", "module", "public", "private",
+                "internal", "type", "requires", "effects", "foreign", "export", "using", "arena",
+            ];
+            for kw in keywords {
+                items.push(CompletionItem {
+                    label: kw.to_string(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    ..Default::default()
+                });
+            }
         }
 
         for item in &ast.items {
