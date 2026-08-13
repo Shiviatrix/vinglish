@@ -2,86 +2,63 @@
   <img src="logos/vinglish-icon-color.svg" alt="Vinglish Icon" width="128" height="128" />
 </div>
 
-**Vinglish** is a statically-typed programming language with an English-inspired syntax.
+**Vinglish** is a systems programming language with an English-inspired syntax. 
 
-I built this compiler in Rust. It implements a standard compiler pipeline: lexing, parsing, name resolution, type inference, building an SSA-form MIR, optimizing it (DCE, constant folding, GVN), and generating C code.
+I wrote the compiler in Rust because I didn't want to deal with C++ segfaults. It takes Vinglish code, lowers it to a Static Single Assignment (SSA) MIR, runs standard optimization passes (DCE, GVN, constant folding), and spits out C code.
 
----
+### A note on the compiler
 
-## Features
+The backend generates C. I looked into LLVM, but the Rust bindings were miserable to set up, so I stuck with emitting C source code that GCC or Clang can compile. 
 
-- **Frontend:** Custom lexer (indentation-sensitive), recursive descent parser, and a full AST.
-- **Middle-end:** Type inference, symbol resolution, and automatic type healing (e.g., auto-dereferencing or inserting `to_text()` calls when a string is expected).
-- **Optimizer:** Lowers AST to HIR, then to an SSA-form MIR. It runs dead code elimination, constant propagation, copy propagation, and global value numbering.
-- **Backend:** Emits C code. It embeds the MIR payload inside the generated C as a base64 comment with a SHA-256 hash so it can be decompiled later.
-- **Tooling:** Comes with a CLI (`vng`), a formatter, a tree-walk interpreter, and an LSP server for editor support.
+One weird decision I made: the compiler takes the optimized MIR payload, compresses it with zlib, signs it with a SHA-256 hash, and dumps it as a massive base64 comment at the very bottom of the generated `.c` file. 
+Why? Because I wanted a `vng decompile` command to work without having to ship a separate metadata artifact alongside the binary. It definitely bloats the C file, but it works.
 
-## Project Structure
+Also, the type system has "type healing." If you pass an `int` where a `string` is expected, instead of immediately failing, the type checker does a bounded search and literally mutates your AST to insert a `to_text()` call. It will also auto-dereference pointers if it thinks it can fix a mismatch. It's a bit of a hack, but it saves keystrokes.
 
-The compiler is split across multiple crates for modularity:
+### Example
 
-| Crate | Function |
-|---|---|
-| `vinglish-lexer` / `parser` | Turns `.ving` files into an AST. |
-| `vinglish-hir` / `types` | Resolves names, infers types, and lowers to MIR. |
-| `vinglish-mir` / `ssa` / `opt` | Data structures for the IR, SSA conversion, and the optimization passes. |
-| `vinglish-codegen` | The C backend and the tree-walk interpreter. |
-| `vinglish-own` / `ownership` | Memory safety checks (AST and MIR levels). |
-| `vinglish-diagnostics` | Makes the error messages look nice. |
-| `vinglish-lsp` / `fmt` | Language server and source code formatter. |
-| `vinglish-cli` | The main `vng` binary entry point. |
+Here's what actual code looks like. 
 
-The repository also includes the standard library (`std/`), the C runtime (`rt/`), and integration tests (`tests/`).
+```vinglish
+let entropy be 0.82
 
-## Quick Start
+if entropy is above 0.50 {
+    # The compiler auto-heals the float into a string here
+    print("Entropy is " + entropy)
+}
+```
 
-### Installation
+### Current state (It's rough)
 
-To install the Vinglish compiler globally so you can use the `vng` command from anywhere:
+Do not use this for anything serious yet. 
+
+- The C backend currently treats almost everything as an `int64_t` (`long`). 
+- "Stack" allocations actually just call `calloc` under the hood right now.
+- The MIR has a `Drop` instruction for memory management, but the C backend just emits a no-op `(void)0` for it. So yes, it leaks memory.
+- `vng pkg` builds project scaffolding, but there is no package registry. 
+
+### Running it
+
+If you still want to run it, you need Rust (2024 edition) and a C compiler. I'm not going to explain how to install Rust.
 
 ```sh
 cargo install --path crates/vinglish
-```
-
-Requires Rust (edition 2024) and a C compiler (cc, gcc, or clang).
-
-### Run (interpreter)
-
-```sh
 vng run path/to/file.ving
 ```
 
-### Compile to native binary
-
+Or just compile it to C:
 ```sh
 vng build path/to/file.ving --output my_program --backend c
 ```
 
-### Type-check without compiling
+### Architecture
 
-```sh
-vng check path/to/file.ving
-```
+If you actually want to read the compiler source, it's split across 19 crates to keep things isolated. 
+The pipeline is basically: `Parser -> HIR -> MIR -> SSA -> C backend`. 
 
-### Test
+Check the [docs/](docs/) folder. Note: I converted all the markdown docs to HTML because I wanted them to match the retro website. You'll have to read the `.html` files or look at the live site. 
 
-```sh
-cargo test
-```
+- [Architecture Notes](docs/explanation/architecture.html)
+- [Pipeline details](docs/explanation/compiler-pipeline.html)
 
-## Documentation
-
-- [Architecture](docs/explanation/architecture.md)
-- [Compiler Pipeline](docs/explanation/compiler-pipeline.md)
-- [Reference: Lexer](docs/reference/lexer.md)
-- [Reference: Parser](docs/reference/parser.md)
-- [Reference: Type System](docs/reference/type-system.md)
-- [Reference: MIR](docs/reference/mir.md)
-- [Reference: Optimizations](docs/reference/optimizations.md)
-- [Reference: Code Generation](docs/reference/codegen.md)
-- [Reference: CLI](docs/reference/cli.md)
-- [Architecture Decision Records](docs/adr/)
-
-## License
-
-MIT
+License is MIT.
