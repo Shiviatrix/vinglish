@@ -16,7 +16,7 @@
         <td align="center">
           <font color="#000000" face="Times New Roman">
             <h2><img src="logos/vinglish-icon-color.svg" width="32" height="32" alt="Vinglish Logo"> Vinglish</h2>
-            <i>A systems programming language focused on readability and memory safety.</i>
+            <i>A systems programming language implementing keyword-based syntax and MIR-level ownership validation.</i>
           </font>
         </td>
       </tr>
@@ -42,15 +42,15 @@
         <td bgcolor="#C0C0C0" width="50%">
           <font color="#000000" face="Times New Roman">
             <ul>
-              <li><b>Syntax:</b> Uses explicit keywords over cryptic symbols to improve code readability.</li>
-              <li><b>Memory Safety:</b> Enforces strict lifetimes using an ownership graph at the MIR level.</li>
-              <li><b>Code Generation:</b> Compiles directly to C source code or LLVM IR.</li>
+              <li><b>Syntax:</b> Replaces common symbolic operators with alphanumeric keywords.</li>
+              <li><b>Memory Safety:</b> Validates object lifetimes via a Mid-level Intermediate Representation (MIR) ownership graph.</li>
+              <li><b>Code Generation:</b> Emits C source code or LLVM IR.</li>
             </ul>
           </font>
         </td>
         <td bgcolor="#C0C0C0" width="50%" align="center">
           <font color="#000000">
-            <h3>Quick Start (Requires Rust & C Compiler)</h3>
+            <h3>Compilation Instructions (Requires Rust & C Compiler)</h3>
             <pre style="background-color: #000000; color: #00FF00; padding: 10px; border: inset 2px; text-align: left;">
 cargo install --path crates/vinglish
 vng run hello.ving</pre>
