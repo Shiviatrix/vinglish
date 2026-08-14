@@ -535,7 +535,7 @@ mod tests {
                 name: "f".into(),
                 params: vec![],
                 locals: vec![value],
-                blocks: vec![BasicBlock {
+                blocks: vec![BasicBlock { spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Assign(
                         value,

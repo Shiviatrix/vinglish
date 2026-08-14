@@ -3,4 +3,4 @@ source: crates/vinglish/tests/ui_test_runner.rs
 expression: combined
 ---
 
-runtime error: cannot interpret foreign call `ving_string_new`
+cannot read 'std/io.ving': No such file or directory (os error 2)

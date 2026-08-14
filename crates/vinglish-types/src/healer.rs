@@ -112,7 +112,7 @@ pub fn try_heal_in_place<E>(
     // Greedy Phase: Sort candidates to evaluate cheapest transformations first
     candidates.sort_by_key(|c| c.cost);
 
-    let mut best_cost = u8::MAX; // alpha bound
+    let best_cost = u8::MAX; // alpha bound
 
     for candidate in candidates {
         // Pruning: if we've already found a valid fix, we can prune all candidates
@@ -123,7 +123,6 @@ pub fn try_heal_in_place<E>(
 
         *slot = candidate.replacement;
         if recheck().is_ok() {
-            best_cost = candidate.cost;
             return Some(candidate.rule);
         }
         *slot = original.clone();
@@ -161,7 +160,7 @@ pub fn attempt_heal<E>(
     // Greedy Phase: Sort candidates to evaluate cheapest transformations first
     candidates.sort_by_key(|c| c.cost);
 
-    let mut best_cost = u8::MAX; // alpha bound
+    let best_cost = u8::MAX; // alpha bound
 
     for candidate in candidates {
         // Pruning: if we've already found a valid fix, we can prune all candidates
@@ -176,7 +175,6 @@ pub fn attempt_heal<E>(
         };
         *slot = candidate.replacement.clone();
         if recheck(&candidate_ast).is_ok() {
-            best_cost = candidate.cost;
             if mode == HealingMode::ApplyInMemory {
                 *ast = candidate_ast;
             }

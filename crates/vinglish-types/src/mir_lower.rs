@@ -142,7 +142,7 @@ impl<'a> MirLowerer<'a> {
         MirFunction {
             id: f.id,
             is_foreign: f.is_foreign,
-            name: f.name.clone(),
+            name: f.name.to_string(),
             params: f.params.iter().map(|p| p.id).collect(),
             blocks: std::mem::take(&mut self.blocks),
             locals: std::mem::take(&mut self.locals),
@@ -205,7 +205,7 @@ impl<'a> MirLowerer<'a> {
                     .map(|symbol| {
                         if symbol.is_foreign {
                             CallTarget::Foreign {
-                                c_symbol: symbol.name.clone(),
+                                c_symbol: symbol.name.to_string(),
                             }
                         } else {
                             CallTarget::Direct(func_id)

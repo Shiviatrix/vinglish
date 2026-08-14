@@ -316,12 +316,12 @@ impl<'a> ExportBuilder<'a> {
 
     fn function(&self, function: &FunctionDef) -> Function {
         Function {
-            name: function.name.clone(),
+            name: function.name.to_string(),
             parameters: function
                 .params
                 .iter()
                 .map(|parameter| Parameter {
-                    name: parameter.name.clone(),
+                    name: parameter.name.to_string(),
                     ty: self.type_for(parameter.ty),
                     span: parameter.span.into(),
                 })
@@ -519,9 +519,9 @@ impl<'a> ExportBuilder<'a> {
 
     fn name_for(&self, id: VariableId) -> String {
         match self.symbols.get(id.0) {
-            Some(SymbolKind::Variable(symbol)) => symbol.name.clone(),
-            Some(SymbolKind::Function(symbol)) => symbol.name.clone(),
-            Some(SymbolKind::Type(symbol)) => symbol.name.clone(),
+            Some(SymbolKind::Variable(symbol)) => symbol.name.to_string(),
+            Some(SymbolKind::Function(symbol)) => symbol.name.to_string(),
+            Some(SymbolKind::Type(symbol)) => symbol.name.to_string(),
             _ => "<unresolved>".to_owned(),
         }
     }

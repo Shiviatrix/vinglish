@@ -28,7 +28,7 @@ mod codegen_stress {
                 name: "main".into(),
                 params: vec![],
                 locals: vec![v],
-                blocks: vec![BasicBlock {
+                blocks: vec![BasicBlock { spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Assign(v, Operand::Constant(Literal::Int(0)))],
                     terminator: Terminator::Return(Some(Operand::Var(v))),
@@ -72,7 +72,7 @@ mod codegen_stress {
                     name: "main".into(),
                     params: vec![lhs, rhs],
                     locals: vec![lhs, rhs, dst],
-                    blocks: vec![BasicBlock {
+                    blocks: vec![BasicBlock { spans: vec![],
                         id: BlockId(0),
                         instrs: vec![Instruction::BinaryOp(
                             dst,
@@ -106,7 +106,7 @@ mod codegen_stress {
                     name: "helper".into(),
                     params: vec![a],
                     locals: vec![a, b],
-                    blocks: vec![BasicBlock {
+                    blocks: vec![BasicBlock { spans: vec![],
                         id: BlockId(0),
                         instrs: vec![Instruction::BinaryOp(
                             b,
@@ -123,7 +123,7 @@ mod codegen_stress {
                     name: "main".into(),
                     params: vec![],
                     locals: vec![a, c],
-                    blocks: vec![BasicBlock {
+                    blocks: vec![BasicBlock { spans: vec![],
                         id: BlockId(0),
                         instrs: vec![
                             Instruction::Assign(a, Operand::Constant(Literal::Int(21))),
@@ -164,7 +164,7 @@ mod codegen_stress {
                     name: "main".into(),
                     params: vec![],
                     locals: vec![dst],
-                    blocks: vec![BasicBlock {
+                    blocks: vec![BasicBlock { spans: vec![],
                         id: BlockId(0),
                         instrs: vec![Instruction::Assign(
                             dst,
@@ -196,7 +196,7 @@ mod codegen_stress {
                 params: vec![cond],
                 locals: vec![cond, a, b, result],
                 blocks: vec![
-                    BasicBlock {
+                    BasicBlock { spans: vec![],
                         id: BlockId(0),
                         instrs: vec![
                             Instruction::Assign(a, Operand::Constant(Literal::Int(1))),
@@ -204,17 +204,17 @@ mod codegen_stress {
                         ],
                         terminator: Terminator::Branch(Operand::Var(cond), BlockId(1), BlockId(2)),
                     },
-                    BasicBlock {
+                    BasicBlock { spans: vec![],
                         id: BlockId(1),
                         instrs: vec![],
                         terminator: Terminator::Jump(BlockId(3)),
                     },
-                    BasicBlock {
+                    BasicBlock { spans: vec![],
                         id: BlockId(2),
                         instrs: vec![],
                         terminator: Terminator::Jump(BlockId(3)),
                     },
-                    BasicBlock {
+                    BasicBlock { spans: vec![],
                         id: BlockId(3),
                         instrs: vec![Instruction::Phi(
                             result,
@@ -248,7 +248,7 @@ mod codegen_stress {
                 name: format!("fn_{}", i),
                 params: vec![],
                 locals: vec![v],
-                blocks: vec![BasicBlock {
+                blocks: vec![BasicBlock { spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Assign(
                         v,
@@ -280,7 +280,7 @@ mod codegen_stress {
                 name: "main".into(),
                 params: vec![],
                 locals: vec![dst],
-                blocks: vec![BasicBlock {
+                blocks: vec![BasicBlock { spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Call(
                         dst,
@@ -317,7 +317,7 @@ mod codegen_stress {
                 name: "main".into(),
                 params: vec![],
                 locals: vec![v],
-                blocks: vec![BasicBlock {
+                blocks: vec![BasicBlock { spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Assign(v, Operand::Constant(Literal::Int(0)))],
                     terminator: Terminator::Return(Some(Operand::Var(v))),

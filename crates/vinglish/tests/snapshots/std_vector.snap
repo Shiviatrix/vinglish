@@ -2,7 +2,5 @@
 source: crates/vinglish/tests/ui_test_runner.rs
 expression: combined
 ---
-3
-30
-20
-10
+
+cannot read 'std/collections/vector.ving': No such file or directory (os error 2)

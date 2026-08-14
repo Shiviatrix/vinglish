@@ -63,7 +63,7 @@ impl Formatter {
                 let path = u
                     .path
                     .iter()
-                    .map(|id| id.name.as_str())
+                    .map(|id| id.name.as_ref())
                     .collect::<Vec<_>>()
                     .join(".");
                 self.line(&format!("use {}", path));
@@ -112,7 +112,7 @@ impl Formatter {
             self.line(&format!("returns {}", fmt_type(ret)));
         }
         if !f.effects.is_empty() {
-            let effects: Vec<_> = f.effects.iter().map(|e| e.name.as_str()).collect();
+            let effects: Vec<_> = f.effects.iter().map(|e| e.name.as_ref()).collect();
             self.line(&format!("effects {}", effects.join(", ")));
         }
         self.fmt_block_begin_end(&f.body);
@@ -122,7 +122,7 @@ impl Formatter {
         self.line(&format!("type {}", t.name.name));
         if !t.capabilities.is_empty() {
             self.indent();
-            let caps: Vec<_> = t.capabilities.iter().map(|c| c.name.as_str()).collect();
+            let caps: Vec<_> = t.capabilities.iter().map(|c| c.name.as_ref()).collect();
             self.line(&format!("requires {}", caps.join(", ")));
             self.dedent();
         }
@@ -153,7 +153,7 @@ impl Formatter {
                 if l.mutable {
                     parts.push("mutable".into());
                 }
-                parts.push(l.name.name.clone());
+                parts.push(l.name.name.to_string());
                 parts.push("be".into());
                 if let Some(ty) = &l.ty {
                     parts.push(fmt_type(ty));
@@ -283,7 +283,7 @@ pub fn fmt_expr(expr: &Expr) -> String {
             Literal::Text(s) => format!("\"{}\"", s),
             Literal::Unit => "()".into(),
         },
-        Expr::Ident(id) => id.name.clone(),
+        Expr::Ident(id) => id.name.to_string(),
         Expr::GenericInst { base, args, .. } => {
             let args_str = args.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
             format!("{}<{}>", base.name, args_str)
@@ -361,7 +361,7 @@ pub fn fmt_expr(expr: &Expr) -> String {
 
 fn fmt_type(ty: &TypeExpr) -> String {
     match ty {
-        TypeExpr::Named(id) => id.name.clone(),
+        TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(t) => format!("List of {}", fmt_type(t)),
         TypeExpr::Dict { key, val } => {
             format!("Dictionary from {} to {}", fmt_type(key), fmt_type(val))
@@ -384,8 +384,8 @@ fn fmt_type(ty: &TypeExpr) -> String {
 
 fn fmt_pattern(pat: &Pattern) -> String {
     match pat {
-        Pattern::Constructor(id) => id.name.clone(),
-        Pattern::Bind(id) => id.name.clone(),
+        Pattern::Constructor(id) => id.name.to_string(),
+        Pattern::Bind(id) => id.name.to_string(),
         Pattern::Wildcard(_) => "_".into(),
         Pattern::Literal(Literal::Int(i)) => i.to_string(),
         Pattern::Literal(Literal::Bool(b)) => b.to_string(),

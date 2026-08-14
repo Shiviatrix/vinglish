@@ -248,10 +248,8 @@ impl<'a> Interpreter<'a> {
                     "string_concat" => Some(NativeFn {
                         name: "string_concat",
                         f: |args| {
-                            if args.len() == 2 {
-                                if let (Value::Text(a), Value::Text(b)) = (&args[0], &args[1]) {
-                                    return Ok(Value::Text(format!("{}{}", a, b)));
-                                }
+                            if args.len() == 2 && let (Value::Text(a), Value::Text(b)) = (&args[0], &args[1]) {
+                                return Ok(Value::Text(format!("{}{}", a, b)));
                             }
                             Err(InterpError::new("string_concat: expected two strings"))
                         },
@@ -259,10 +257,8 @@ impl<'a> Interpreter<'a> {
                     "string_len" => Some(NativeFn {
                         name: "string_len",
                         f: |args| {
-                            if args.len() == 1 {
-                                if let Value::Text(a) = &args[0] {
-                                    return Ok(Value::Int(a.len() as i64));
-                                }
+                            if args.len() == 1 && let Value::Text(a) = &args[0] {
+                                return Ok(Value::Int(a.len() as i64));
                             }
                             Err(InterpError::new("string_len: expected string"))
                         },

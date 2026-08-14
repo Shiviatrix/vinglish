@@ -1518,8 +1518,8 @@ impl<'t> Parser<'t> {
             .unwrap_or_else(|| Ident::new("_", Span::dummy()));
         while self.eat(&Token::Dot) {
             if let Some(id) = self.expect_ident() {
-                name.name.push('.');
-                name.name.push_str(&id.name);
+                let new_name = format!("{}.{}", name.name, id.name);
+                name.name = new_name.into();
                 name.span = name.span.merge(id.span);
             } else {
                 break;

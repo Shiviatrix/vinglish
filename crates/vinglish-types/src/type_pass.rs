@@ -419,7 +419,7 @@ impl TypeInferencePass {
 
 fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, TypeVar>) -> Type {
     match te {
-        TypeExpr::Named(id) => match id.name.as_str() {
+        TypeExpr::Named(id) => match id.name.as_ref() {
             "number" | "integer" | "int" => Type::Int,
             "decimal" | "float" => Type::Float,
             "text" | "string" => Type::Text,
@@ -443,11 +443,11 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
             Type::Result(Box::new(type_expr_to_type(t, env)), Box::new(Type::Text))
         }
         TypeExpr::Generic { base, args } => {
-            if base.name == "address" && args.len() == 1 {
+            if base.name.as_ref() == "address" && args.len() == 1 {
                 Type::Pointer(Box::new(type_expr_to_type(&args[0], env)))
             } else {
                 Type::Named(
-                    base.name.clone(),
+                    base.name.to_string(),
                     args.iter().map(|a| type_expr_to_type(a, env)).collect(),
                 )
             }
@@ -472,7 +472,7 @@ impl TypeInferencePass {
                     let mut e = std::collections::HashMap::new();
                     for (i, param) in ts.generic_params.iter().enumerate() {
                         if let Some(ident) = t.type_params.get(i) {
-                            e.insert(ident.name.clone(), *param);
+                            e.insert(ident.name.to_string(), *param);
                         }
                     }
                     e
@@ -484,14 +484,14 @@ impl TypeInferencePass {
                 for f in &t.fields {
                     hir_fields.push(HirParam {
                         id: VariableId(SymbolId(0)), // Fields don't currently have their own independent variable IDs in the scope in the same way, but let's give them anonymous ones or 0
-                        name: f.name.name.clone(),
+                        name: f.name.name.to_string(),
                         ty: self.intern(ctx, type_expr_to_type(&f.ty, &env)),
                         span: f.span,
                     });
                 }
 
                 let qualified_name = if ctx.current_module.is_empty() {
-                    t.name.name.clone()
+                    t.name.name.to_string()
                 } else {
                     format!("{}.{}", ctx.current_module, t.name.name)
                 };
@@ -505,7 +505,7 @@ impl TypeInferencePass {
                 if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
                     for f in &t.fields {
                         ts.add_field(
-                            f.name.name.clone(),
+                            f.name.name.to_string(),
                             type_expr_to_type(&f.ty, &env),
                             Visibility::Public,
                         );
@@ -515,7 +515,7 @@ impl TypeInferencePass {
                 Some(HirItem::Type(HirTypeDef {
                     visibility: t.visibility,
                     id,
-                    name: t.name.name.clone(),
+                    name: t.name.name.to_string(),
                     fields: hir_fields,
                     span: t.span,
                 }))
@@ -529,7 +529,7 @@ impl TypeInferencePass {
                     let mut env_map = std::collections::HashMap::new();
                     for (i, param) in ts.generic_params.iter().enumerate() {
                         if let Some(ident) = e.type_params.get(i) {
-                            env_map.insert(ident.name.clone(), *param);
+                            env_map.insert(ident.name.to_string(), *param);
                         }
                     }
                     env_map
@@ -538,7 +538,7 @@ impl TypeInferencePass {
                 };
 
                 let qualified_name = if ctx.current_module.is_empty() {
-                    e.name.name.clone()
+                    e.name.name.to_string()
                 } else {
                     format!("{}.{}", ctx.current_module, e.name.name)
                 };
@@ -561,19 +561,19 @@ impl TypeInferencePass {
                         .unwrap_or(Type::Unit);
 
                     if let Some(ts) = ctx.symbol_table.get_type_mut(id) {
-                        ts.add_field(v.name.name.clone(), ty.clone(), Visibility::Public);
+                        ts.add_field(v.name.name.to_string(), ty.clone(), Visibility::Public);
                     }
 
                     let payload = v.payload.as_ref().map(|_| self.intern(ctx, ty.clone()));
 
                     hir_variants.push(vinglish_hir::Variant {
-                        name: v.name.name.clone(),
+                        name: v.name.name.to_string(),
                         payload,
                     });
 
                     // Set constructor function types
                     let variant_name = if ctx.current_module.is_empty() {
-                        v.name.name.clone()
+                        v.name.name.to_string()
                     } else {
                         format!("{}.{}", ctx.current_module, v.name.name)
                     };
@@ -600,7 +600,7 @@ impl TypeInferencePass {
                 Some(HirItem::Enum(vinglish_hir::EnumDef {
                     visibility: e.visibility,
                     id,
-                    name: e.name.name.clone(),
+                    name: e.name.name.to_string(),
                     variants: hir_variants,
                     span: e.span,
                 }))
@@ -613,7 +613,7 @@ impl TypeInferencePass {
         ctx.push_scope();
 
         let qualified_name = if ctx.current_module.is_empty() {
-            f.name.name.clone()
+            f.name.name.to_string()
         } else {
             format!("{}.{}", ctx.current_module, f.name.name)
         };
@@ -626,7 +626,7 @@ impl TypeInferencePass {
             let mut e = std::collections::HashMap::new();
             for (i, param) in fs.generic_params.iter().enumerate() {
                 if let Some(ident) = f.type_params.get(i) {
-                    e.insert(ident.name.clone(), *param);
+                    e.insert(ident.name.to_string(), *param);
                 }
             }
             e
@@ -638,7 +638,7 @@ impl TypeInferencePass {
         let mut param_types = Vec::new();
 
         if let Some(target) = &f.target_type {
-            let self_ty = Type::Named(target.name.clone(), vec![]);
+            let self_ty = Type::Named(target.name.to_string(), vec![]);
             let self_id = ctx.symbol_table.define_anon_var(VariableSymbol {
                 id: VariableId(SymbolId(0)),
                 name: "self".to_string(),
@@ -664,7 +664,7 @@ impl TypeInferencePass {
             let ty = type_expr_to_type(&param.ty, &env);
             let param_id = ctx.symbol_table.define_anon_var(VariableSymbol {
                 id: VariableId(SymbolId(0)),
-                name: param.name.name.clone(),
+                name: param.name.name.to_string(),
                 is_mut: false,
                 ty: ty.clone(),
                 span: None,
@@ -673,11 +673,11 @@ impl TypeInferencePass {
                 vs.id = param_id;
             }
 
-            ctx.define(param.name.name.clone(), ScopedId::Var(param_id));
+            ctx.define(param.name.name.to_string(), ScopedId::Var(param_id));
             self.record(ctx, param.name.span, ty.clone());
             hir_params.push(HirParam {
                 id: param_id,
-                name: param.name.name.clone(),
+                name: param.name.name.to_string(),
                 ty: self.intern(ctx, ty.clone()),
                 span: param.span,
             });
@@ -721,12 +721,12 @@ impl TypeInferencePass {
         }
 
         ctx.pop_scope();
-        self.record(ctx, f.name.span, Type::Named(f.name.name.clone(), vec![]));
+        self.record(ctx, f.name.span, Type::Named(f.name.name.to_string(), vec![]));
 
         let hir_name = if let Some(target) = &f.target_type {
             format!("{}_{}", target.name, f.name.name) // Lowered name format
         } else {
-            f.name.name.clone()
+            f.name.name.to_string()
         };
 
         let fn_ty = Type::Function(param_types, Box::new(expected_ret.clone()));
@@ -756,7 +756,7 @@ impl TypeInferencePass {
                 && let Some(ty_id) = type_id.as_type()
                 && let Some(ts) = ctx.symbol_table.get_type_mut(ty_id)
             {
-                ts.add_method(f.name.name.clone(), method_id);
+                ts.add_method(f.name.name.to_string(), method_id);
             }
             method_id
         } else {
@@ -837,7 +837,7 @@ impl TypeInferencePass {
 
                 let id = ctx.symbol_table.define_anon_var(VariableSymbol {
                     id: VariableId(SymbolId(0)),
-                    name: let_stmt.name.name.clone(),
+                    name: let_stmt.name.name.to_string(),
                     is_mut: let_stmt.mutable,
                     ty: resolved.clone(),
                     span: None,
@@ -846,14 +846,14 @@ impl TypeInferencePass {
                     vs.id = id;
                 }
 
-                ctx.define(let_stmt.name.name.clone(), ScopedId::Var(id));
+                ctx.define(let_stmt.name.name.to_string(), ScopedId::Var(id));
                 self.record(ctx, let_stmt.name.span, resolved.clone());
 
                 (
                     Type::Unit,
                     HirStmt::Let {
                         id,
-                        name: let_stmt.name.name.clone(),
+                        name: let_stmt.name.name.to_string(),
                         is_mut: let_stmt.mutable,
                         ty: self.intern(ctx, resolved),
                         init: hir_init,
@@ -1160,7 +1160,7 @@ impl TypeInferencePass {
             Expr::Call { callee, args, span } => {
                 // Intercept `Ok` and `Err` as built-in constructors
                 if let Expr::Ident(id) = &**callee
-                    && (id.name == "Ok" || id.name == "Err")
+                    && (id.name.as_ref() == "Ok" || id.name.as_ref() == "Err")
                 {
                     let mut hir_args = Vec::new();
                     let mut arg_tys = Vec::new();
@@ -1170,7 +1170,7 @@ impl TypeInferencePass {
                         hir_args.push(ha);
                     }
                     if arg_tys.len() == 1 {
-                        let result_ty = if id.name == "Ok" {
+                        let result_ty = if id.name.as_ref() == "Ok" {
                             Type::Result(Box::new(arg_tys[0].clone()), Box::new(self.fresh()))
                         } else {
                             Type::Result(Box::new(self.fresh()), Box::new(arg_tys[0].clone()))
@@ -1179,7 +1179,7 @@ impl TypeInferencePass {
                         return (
                             result_ty.clone(),
                             HirExpr::MacroCall {
-                                name: id.name.clone(),
+                                name: id.name.to_string(),
                                 args: hir_args,
                                 ty: self.intern(ctx, result_ty),
                                 span: *span,
@@ -1215,7 +1215,7 @@ impl TypeInferencePass {
                         if let Some(type_id) = type_id_opt {
                             let mut is_field = false;
                             if let Some(SymbolKind::Type(ts)) = ctx.symbol_table.get(type_id) {
-                                is_field = ts.fields.iter().any(|f| f.name == field.name);
+                                is_field = ts.fields.iter().any(|f| f.name == field.name.as_ref());
                             }
 
                             if !is_field {
@@ -1346,7 +1346,7 @@ impl TypeInferencePass {
                             }
                         }
                         ScopedId::Type(id) => {
-                            Type::Named(ctx.symbol_table.get_type(id).unwrap().name.clone(), vec![])
+                            Type::Named(ctx.symbol_table.get_type(id).unwrap().name.to_string(), vec![])
                         }
                         ScopedId::Var(id) => {
                             if let Some(vs) = ctx.symbol_table.get_var(id) {
@@ -1404,7 +1404,7 @@ impl TypeInferencePass {
                                     let dist = levenshtein(&f_sym.name, &field.name);
                                     if dist < 3 && dist < min_dist {
                                         min_dist = dist;
-                                        best_match = Some(f_sym.name.clone());
+                                        best_match = Some(f_sym.name.to_string());
                                     }
                                 }
                             }
@@ -1444,13 +1444,13 @@ impl TypeInferencePass {
             }
             Expr::StructLit { ty, fields, span } => {
                 let (name, mut struct_ty) = match &**ty {
-                    Expr::Ident(ident) => (ident.clone(), Type::Named(ident.name.clone(), vec![])),
+                    Expr::Ident(ident) => (ident.clone(), Type::Named(ident.name.to_string(), vec![])),
                     Expr::GenericInst { base, args, .. } => {
                         let ty_args: Vec<Type> = args
                             .iter()
                             .map(|arg| type_expr_to_type(arg, &HashMap::new()))
                             .collect();
-                        (base.clone(), Type::Named(base.name.clone(), ty_args))
+                        (base.clone(), Type::Named(base.name.to_string(), ty_args))
                     }
                     _ => panic!("Invalid type expression in struct literal"),
                 };
@@ -1480,7 +1480,7 @@ impl TypeInferencePass {
                                     subst.insert(*param, f.clone());
                                     fresh_args.push(f);
                                 }
-                                struct_ty = Type::Named(name.name.clone(), fresh_args);
+                                struct_ty = Type::Named(name.name.to_string(), fresh_args);
                             }
                         }
 
@@ -1503,7 +1503,7 @@ impl TypeInferencePass {
                                     let dist = levenshtein(&f_sym.name, &fname.name);
                                     if dist < 3 && dist < min_dist {
                                         min_dist = dist;
-                                        best_match = Some(f_sym.name.clone());
+                                        best_match = Some(f_sym.name.to_string());
                                     }
                                 }
                                 let msg = if let Some(suggestion) = best_match {
@@ -1641,7 +1641,7 @@ impl TypeInferencePass {
                     hir_args.push(ha);
                 }
 
-                let ret_ty = if name.name == "fmt" {
+                let ret_ty = if name.name.as_ref() == "fmt" {
                     Type::Text
                 } else {
                     ctx.type_errors.push(TypeError::new(
@@ -1655,7 +1655,7 @@ impl TypeInferencePass {
                 (
                     ret_ty.clone(),
                     HirExpr::MacroCall {
-                        name: name.name.clone(),
+                        name: name.name.to_string(),
                         args: hir_args,
                         ty: self.intern(ctx, ret_ty.clone()),
                         span: *span,
@@ -1705,7 +1705,7 @@ impl TypeInferencePass {
 
 fn get_path_string(expr: &Expr) -> Option<String> {
     match expr {
-        Expr::Ident(id) => Some(id.name.clone()),
+        Expr::Ident(id) => Some(id.name.to_string()),
         Expr::Field { object, field, .. } => {
             let obj_str = get_path_string(object)?;
             Some(format!("{}.{}", obj_str, field.name))

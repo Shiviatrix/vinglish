@@ -67,7 +67,7 @@ impl CEmitter {
                 if let Item::Function(f) = item
                     && f.is_foreign
                 {
-                    fns.insert(f.name.name.clone());
+                    fns.insert(f.name.name.to_string());
                 }
             }
         });
@@ -158,7 +158,7 @@ impl CEmitter {
         let has_main = module
             .items
             .iter()
-            .any(|i| matches!(i, Item::Function(f) if f.name.name == "main"));
+            .any(|i| matches!(i, Item::Function(f) if f.name.name.as_ref() == "main"));
         if !has_main {
             let stmts: Vec<&Stmt> = module
                 .items
@@ -228,11 +228,11 @@ impl CEmitter {
                 "max",
                 "abs",
             ];
-            if std_fns.contains(&f.name.name.as_str()) {
+            if std_fns.contains(&f.name.name.as_ref()) {
                 return Ok(());
             }
         }
-        let ret = if f.name.name == "main" {
+        let ret = if f.name.name.as_ref() == "main" {
             "int".to_string()
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
@@ -249,7 +249,7 @@ impl CEmitter {
         } else {
             c_params.join(", ")
         };
-        let name = if f.name.name == "main" {
+        let name = if f.name.name.as_ref() == "main" {
             "main".to_string()
         } else {
             c_ident(&f.name.name)
@@ -266,14 +266,14 @@ impl CEmitter {
         for p in &f.params {
             let is_ptr = match &p.ty {
                 TypeExpr::Reference { .. } => true,
-                TypeExpr::Generic { base, .. } if base.name == "address" => true,
+                TypeExpr::Generic { base, .. } if base.name.as_ref() == "address" => true,
                 _ => false,
             };
             if is_ptr {
                 self.pointer_vars.insert(c_ident(&p.name.name));
             }
         }
-        let ret = if f.name.name == "main" {
+        let ret = if f.name.name.as_ref() == "main" {
             "int".to_string()
         } else {
             f.ret_type.as_ref().map(type_to_c).unwrap_or("void".into())
@@ -293,7 +293,7 @@ impl CEmitter {
         for stmt in &f.body.stmts {
             self.emit_stmt(stmt)?;
         }
-        if f.name.name == "main" {
+        if f.name.name.as_ref() == "main" {
             self.line("return 0;");
         }
         self.dedent();
@@ -309,13 +309,13 @@ impl CEmitter {
 
                 let is_ptr = match &l.ty {
                     Some(TypeExpr::Reference { .. }) => true,
-                    Some(TypeExpr::Generic { base, .. }) if base.name == "address" => true,
+                    Some(TypeExpr::Generic { base, .. }) if base.name.as_ref() == "address" => true,
                     _ => {
                         if let Some(val) = &l.value {
                             match val {
                                 Expr::Call { callee, .. } => {
                                     if let Expr::Ident(id) = &**callee {
-                                        id.name == "ving_alloc"
+                                        id.name.as_ref() == "ving_alloc"
                                     } else {
                                         false
                                     }
@@ -516,7 +516,7 @@ impl CEmitter {
     fn emit_expr(&mut self, expr: &Expr) -> Result<String, CEmitError> {
         match expr {
             Expr::MacroCall { name, args, .. } => {
-                if name.name == "fmt" {
+                if name.name.as_ref() == "fmt" {
                     // For fmt!, we just emit the first argument as a string for now
                     // In a real implementation this would generate snprintf
                     if let Some(arg) = args.first() {
@@ -649,8 +649,8 @@ impl CEmitter {
 
             Expr::StructLit { ty, fields, .. } => {
                 let name = match &**ty {
-                    Expr::Ident(ident) => ident.name.clone(),
-                    Expr::GenericInst { base, .. } => base.name.clone(),
+                    Expr::Ident(ident) => ident.name.to_string(),
+                    Expr::GenericInst { base, .. } => base.name.to_string(),
                     _ => "unknown".to_string(),
                 };
                 let fs: Vec<String> = fields
@@ -682,7 +682,7 @@ impl CEmitter {
 
 fn type_to_c(ty: &TypeExpr) -> String {
     match ty {
-        TypeExpr::Named(id) => match id.name.as_str() {
+        TypeExpr::Named(id) => match id.name.as_ref() {
             "number" | "integer" | "int" => "long".into(),
             "decimal" | "float" => "double".into(),
             "text" | "string" => "const char*".into(),
@@ -700,7 +700,7 @@ fn type_to_c(ty: &TypeExpr) -> String {
         TypeExpr::Dict { .. } => "void*".into(),
         TypeExpr::Optional(t) => type_to_c(t),
         TypeExpr::Result(t) => type_to_c(t),
-        TypeExpr::Generic { base, args } => match base.name.as_str() {
+        TypeExpr::Generic { base, args } => match base.name.as_ref() {
             "List" => "void*".into(),
             "address" => {
                 if let Some(arg) = args.first() {

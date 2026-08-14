@@ -368,7 +368,7 @@ fn load_module_graph(
     let mut module_deps = Vec::new();
     for item in &module.items {
         if let vinglish_parser::ast::Item::Use(u) = item {
-            let path_parts: Vec<String> = u.path.iter().map(|id| id.name.clone()).collect();
+            let path_parts: Vec<String> = u.path.iter().map(|id| id.name.to_string()).collect();
             let dep_name = path_parts.join(".");
             module_deps.push(dep_name.clone());
 
@@ -426,10 +426,8 @@ fn compile_project(
     let entry_path = file.to_path_buf();
     let entry_name = "main".to_string();
 
-    if std::path::Path::new("ving.toml").exists() {
-        if let Err(e) = vinglish_pkg::fetch_dependencies() {
-            println!("Warning: Failed to fetch dependencies: {}", e);
-        }
+    if std::path::Path::new("ving.toml").exists() && let Err(e) = vinglish_pkg::fetch_dependencies() {
+        println!("Warning: Failed to fetch dependencies: {}", e);
     }
 
     let mut parsed = std::collections::HashMap::new();
@@ -478,10 +476,8 @@ fn compile_project(
         for e in &ctx.type_errors {
             let mut diag = Diagnostic::error("T0001", e.message(), e.span());
             
-            if mode == HealingMode::SuggestOnly && !is_fixing {
-                if let Some(warning) = ctx.healing_warnings.iter().find(|w| w.span == e.span()) {
-                    diag.add_help(format!("auto-fixable — wrap in `{}` (run `vng fix` to apply)", vinglish_fmt::format_expr(&warning.replacement)));
-                }
+            if mode == HealingMode::SuggestOnly && !is_fixing && let Some(warning) = ctx.healing_warnings.iter().find(|w| w.span == e.span()) {
+                diag.add_help(format!("auto-fixable — wrap in `{}` (run `vng fix` to apply)", vinglish_fmt::format_expr(&warning.replacement)));
             }
             
             diag.enrich(src);
@@ -707,8 +703,8 @@ impl DebuggerHook for ReplDebugger {
                 }
                 "p" | "print" => {
                     if let Some(var_str) = parts.next() {
-                        if var_str.starts_with("ssa_") {
-                            if let Ok(id_num) = var_str[4..].parse::<u32>() {
+                        if let Some(stripped) = var_str.strip_prefix("ssa_") {
+                            if let Ok(id_num) = stripped.parse::<u32>() {
                                 let id = SsaValueId(id_num);
                                 if let Some(val) = locals.get(&id) {
                                     println!("{} = {}", var_str, val.to_display());

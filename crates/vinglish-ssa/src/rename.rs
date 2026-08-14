@@ -229,7 +229,7 @@ fn rename_block(
                 symbol_table.get(vinglish_hir::symbol::SymbolId(orig.0.0))
             {
                 ty = vs.ty.clone();
-                vs_name = vs.name.clone();
+                vs_name = vs.name.to_string();
                 span = vs.span;
             }
             symbol_table.define_var_with_id(

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::fs;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PackageMeta {

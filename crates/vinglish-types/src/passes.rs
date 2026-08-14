@@ -226,7 +226,7 @@ impl CompilerPass for NameResolutionPass {
                     }
 
                     let qualified_name = if ctx.current_module.is_empty() {
-                        t.name.name.clone()
+                        t.name.name.to_string()
                     } else {
                         format!("{}.{}", ctx.current_module, t.name.name)
                     };
@@ -243,7 +243,7 @@ impl CompilerPass for NameResolutionPass {
                         ts.id = id;
                     }
 
-                    ctx.define(t.name.name.clone(), ScopedId::Type(id));
+                    ctx.define(t.name.name.to_string(), ScopedId::Type(id));
                     if !ctx.current_module.is_empty() {
                         ctx.define(qualified_name, ScopedId::Type(id));
                     }
@@ -255,7 +255,7 @@ impl CompilerPass for NameResolutionPass {
                     }
 
                     let qualified_name = if ctx.current_module.is_empty() {
-                        e.name.name.clone()
+                        e.name.name.to_string()
                     } else {
                         format!("{}.{}", ctx.current_module, e.name.name)
                     };
@@ -273,7 +273,7 @@ impl CompilerPass for NameResolutionPass {
                         ts.id = id;
                     }
 
-                    ctx.define(e.name.name.clone(), ScopedId::Type(id));
+                    ctx.define(e.name.name.to_string(), ScopedId::Type(id));
                     if !ctx.current_module.is_empty() {
                         ctx.define(qualified_name.clone(), ScopedId::Type(id));
                     }
@@ -282,7 +282,7 @@ impl CompilerPass for NameResolutionPass {
                     // E.g., `Ok` is a generic function `T -> Result<T, E>`.
                     for (index, variant) in e.variants.iter().enumerate() {
                         let variant_name = if ctx.current_module.is_empty() {
-                            variant.name.name.clone()
+                            variant.name.name.to_string()
                         } else {
                             format!("{}.{}", ctx.current_module, variant.name.name)
                         };
@@ -302,7 +302,7 @@ impl CompilerPass for NameResolutionPass {
                         if let Some(fs) = ctx.symbol_table.get_func_mut(fn_id) {
                             fs.id = fn_id;
                         }
-                        ctx.define(variant.name.name.clone(), ScopedId::Func(fn_id));
+                        ctx.define(variant.name.name.to_string(), ScopedId::Func(fn_id));
                         if !ctx.current_module.is_empty() {
                             ctx.define(variant_name, ScopedId::Func(fn_id));
                         }
@@ -315,13 +315,13 @@ impl CompilerPass for NameResolutionPass {
                     }
 
                     let qualified_name = if ctx.current_module.is_empty() {
-                        f.name.name.clone()
+                        f.name.name.to_string()
                     } else {
                         format!("{}.{}", ctx.current_module, f.name.name)
                     };
 
                     let linkage_name = if f.is_foreign {
-                        f.name.name.clone()
+                        f.name.name.to_string()
                     } else {
                         qualified_name.clone()
                     };
@@ -342,13 +342,13 @@ impl CompilerPass for NameResolutionPass {
                         fs.id = id;
                     }
 
-                    ctx.define(f.name.name.clone(), ScopedId::Func(id));
+                    ctx.define(f.name.name.to_string(), ScopedId::Func(id));
                     if !ctx.current_module.is_empty() {
                         ctx.define(qualified_name, ScopedId::Func(id));
                     }
                 }
                 AstItem::Use(u) => {
-                    let path_parts: Vec<String> = u.path.iter().map(|id| id.name.clone()).collect();
+                    let path_parts: Vec<String> = u.path.iter().map(|id| id.name.to_string()).collect();
                     let path_str = path_parts.join(".");
                     let prefix = format!("{}.", path_str);
 

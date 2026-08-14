@@ -4,7 +4,7 @@ use vinglish_lexer::Span;
 
 fn get_var_name(symbol_table: &SymbolTable, var: SsaValueId) -> String {
     if let Some(SymbolKind::Variable(v)) = symbol_table.get(vinglish_hir::symbol::SymbolId(var.0)) {
-        v.name.clone()
+        v.name.to_string()
     } else {
         format!("var_{}", var.0)
     }

@@ -53,7 +53,7 @@ fn span_to_range(src: &str, span: Span) -> Range {
 
 fn format_type(ty: &TypeExpr) -> String {
     match ty {
-        TypeExpr::Named(id) => id.name.clone(),
+        TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(inner) => format!("List of {}", format_type(inner)),
         TypeExpr::Dict { key, val } => format!("Dictionary from {} to {}", format_type(key), format_type(val)),
         TypeExpr::Optional(inner) => format!("Optional {}", format_type(inner)),
@@ -73,9 +73,16 @@ fn format_type(ty: &TypeExpr) -> String {
 }
 
 #[derive(Debug)]
+struct DocumentState {
+    source: String,
+    tokens: Vec<Spanned<Token>>,
+    module: Module,
+}
+
+#[derive(Debug)]
 struct Backend {
     client: Client,
-    cache: RwLock<HashMap<Url, (String, Vec<Spanned<Token>>, Module)>>,
+    cache: RwLock<HashMap<Url, DocumentState>>,
 }
 
 #[tower_lsp::async_trait]
@@ -135,9 +142,12 @@ impl LanguageServer for Backend {
         let uri = params.text_document_position.text_document.uri;
         let pos = params.text_document_position.position;
         let cache = self.cache.read().await;
-        let Some((src, tokens, ast)) = cache.get(&uri) else {
+        let Some(state) = cache.get(&uri) else {
             return Ok(None);
         };
+        let src = &state.source;
+        let tokens = &state.tokens;
+        let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
         
@@ -174,7 +184,7 @@ impl LanguageServer for Backend {
                 }
                 match stmt {
                     Stmt::Let(LetStmt { name, ty, .. }) => {
-                        locals.push((name.name.clone(), ty.clone()));
+                        locals.push((name.name.to_string(), ty.clone()));
                     }
                     Stmt::If(s) => {
                         walk_block(&s.then_block, offset, locals);
@@ -190,7 +200,7 @@ impl LanguageServer for Backend {
                     }
                     Stmt::Repeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
                         if body.span.start < offset && offset <= body.span.end {
-                            locals.push((var.name.clone(), None));
+                            locals.push((var.name.to_string(), None));
                         }
                         walk_block(body, offset, locals);
                     }
@@ -202,7 +212,7 @@ impl LanguageServer for Backend {
                     }
                     Stmt::ParallelRepeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
                         if body.span.start < offset && offset <= body.span.end {
-                            locals.push((var.name.clone(), None));
+                            locals.push((var.name.to_string(), None));
                         }
                         walk_block(body, offset, locals);
                     }
@@ -224,19 +234,17 @@ impl LanguageServer for Backend {
             if let Some(obj_name) = object_ident {
                 let mut obj_type = None;
                 for item in &ast.items {
-                    if let Item::Function(f) = item {
-                        if offset >= f.span.start && offset <= f.span.end {
-                            let mut locals = vec![];
-                            for p in &f.params {
-                                locals.push((p.name.name.clone(), Some(p.ty.clone())));
-                            }
-                            walk_block(&f.body, offset, &mut locals);
-                            
-                            for (name, ty) in locals.into_iter().rev() {
-                                if name == obj_name {
-                                    obj_type = ty;
-                                    break;
-                                }
+                    if let Item::Function(f) = item && offset >= f.span.start && offset <= f.span.end {
+                        let mut locals = vec![];
+                        for p in &f.params {
+                            locals.push((p.name.name.to_string(), Some(p.ty.clone())));
+                        }
+                        walk_block(&f.body, offset, &mut locals);
+                        
+                        for (name, ty) in locals.into_iter().rev() {
+                            if name == obj_name {
+                                obj_type = ty;
+                                break;
                             }
                         }
                     }
@@ -244,16 +252,14 @@ impl LanguageServer for Backend {
                 
                 if let Some(TypeExpr::Named(type_id)) = obj_type {
                     for item in &ast.items {
-                        if let Item::Type(t) = item {
-                            if t.name.name == type_id.name {
-                                for field in &t.fields {
-                                    items.push(CompletionItem {
-                                        label: field.name.name.clone(),
-                                        kind: Some(CompletionItemKind::FIELD),
-                                        detail: Some(format_type(&field.ty)),
-                                        ..Default::default()
-                                    });
-                                }
+                        if let Item::Type(t) = item && t.name.name == type_id.name {
+                            for field in &t.fields {
+                                items.push(CompletionItem {
+                                    label: field.name.name.to_string(),
+                                    kind: Some(CompletionItemKind::FIELD),
+                                    detail: Some(format_type(&field.ty)),
+                                    ..Default::default()
+                                });
                             }
                         }
                     }
@@ -269,7 +275,7 @@ impl LanguageServer for Backend {
                     in_function = true;
                     let mut locals = vec![];
                     for p in &f.params {
-                        locals.push((p.name.name.clone(), Some(p.ty.clone())));
+                        locals.push((p.name.name.to_string(), Some(p.ty.clone())));
                     }
                     walk_block(&f.body, offset, &mut locals);
                     
@@ -306,7 +312,7 @@ impl LanguageServer for Backend {
             match item {
                 Item::Function(f) => {
                     items.push(CompletionItem {
-                        label: f.name.name.clone(),
+                        label: f.name.name.to_string(),
                         kind: Some(CompletionItemKind::FUNCTION),
                         detail: Some("Function".to_string()),
                         ..Default::default()
@@ -314,7 +320,7 @@ impl LanguageServer for Backend {
                 }
                 Item::Type(t) => {
                     items.push(CompletionItem {
-                        label: t.name.name.clone(),
+                        label: t.name.name.to_string(),
                         kind: Some(CompletionItemKind::STRUCT),
                         detail: Some("Type".to_string()),
                         ..Default::default()
@@ -322,7 +328,7 @@ impl LanguageServer for Backend {
                 }
                 Item::Enum(e) => {
                     items.push(CompletionItem {
-                        label: e.name.name.clone(),
+                        label: e.name.name.to_string(),
                         kind: Some(CompletionItemKind::ENUM),
                         detail: Some("Enum".to_string()),
                         ..Default::default()
@@ -340,9 +346,12 @@ impl LanguageServer for Backend {
         let pos = params.text_document_position_params.position;
 
         let cache = self.cache.read().await;
-        let Some((src, tokens, ast)) = cache.get(&uri) else {
+        let Some(state) = cache.get(&uri) else {
             return Ok(None);
         };
+        let src = &state.source;
+        let tokens = &state.tokens;
+        let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
         
@@ -378,7 +387,7 @@ impl LanguageServer for Backend {
 
         for item in &ast.items {
             match item {
-                Item::Function(f) if f.name.name == target => {
+                Item::Function(f) if f.name.name.as_ref() == target => {
                     let mut sig = format!("function {}", f.name.name);
                     let params_str: Vec<String> = f.params.iter().map(|p| format!("{}: {}", p.name.name, format_type(&p.ty))).collect();
                     sig.push_str(&format!("({})", params_str.join(", ")));
@@ -391,14 +400,14 @@ impl LanguageServer for Backend {
                         range: None,
                     }));
                 }
-                Item::Type(t) if t.name.name == target => {
+                Item::Type(t) if t.name.name.as_ref() == target => {
                     let markdown = format!("```vinglish\ntype {}\n```", t.name.name);
                     return Ok(Some(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(markdown)),
                         range: None,
                     }));
                 }
-                Item::Enum(e) if e.name.name == target => {
+                Item::Enum(e) if e.name.name.as_ref() == target => {
                     let markdown = format!("```vinglish\nenum {}\n```", e.name.name);
                     return Ok(Some(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(markdown)),
@@ -420,9 +429,12 @@ impl LanguageServer for Backend {
         let pos = params.text_document_position_params.position;
 
         let cache = self.cache.read().await;
-        let Some((src, tokens, ast)) = cache.get(&uri) else {
+        let Some(state) = cache.get(&uri) else {
             return Ok(None);
         };
+        let src = &state.source;
+        let tokens = &state.tokens;
+        let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
         
@@ -448,7 +460,7 @@ impl LanguageServer for Backend {
                 _ => continue,
             };
 
-            if name_ident.name == target {
+            if name_ident.name.as_ref() == target {
                 let range = span_to_range(src, span);
                 return Ok(Some(GotoDefinitionResponse::Scalar(Location {
                     uri: uri.clone(),
@@ -463,9 +475,11 @@ impl LanguageServer for Backend {
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let uri = params.text_document.uri;
         let cache = self.cache.read().await;
-        let Some((src, _tokens, ast)) = cache.get(&uri) else {
+        let Some(state) = cache.get(&uri) else {
             return Ok(None);
         };
+        let src = &state.source;
+        let ast = &state.module;
 
         let formatted = vinglish_fmt::format_module(ast);
         
@@ -545,7 +559,11 @@ impl Backend {
             .publish_diagnostics(uri.clone(), diagnostics, Some(version))
             .await;
 
-        self.cache.write().await.insert(uri, (text, tokens, ast));
+        self.cache.write().await.insert(uri, DocumentState {
+            source: text,
+            tokens,
+            module: ast,
+        });
     }
 }
 
