@@ -32,6 +32,7 @@ pub struct MirFunction<V: Clone + Copy + fmt::Display> {
 pub struct BasicBlock<V: Clone + Copy + fmt::Display> {
     pub id: BlockId,
     pub instrs: Vec<Instruction<V>>,
+    pub spans: Vec<vinglish_lexer::span::Span>,
     pub terminator: Terminator<V>,
 }
 

@@ -1709,6 +1709,7 @@ dependencies = [
 name = "vinglish-lexer"
 version = "0.2.1"
 dependencies = [
+ "serde",
  "thiserror",
 ]
 

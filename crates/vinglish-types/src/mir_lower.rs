@@ -12,7 +12,9 @@ pub struct MirLowerer<'a> {
     current_block: Option<BlockId>,
     blocks: Vec<BasicBlock<VariableId>>,
     current_instrs: Vec<Instruction<VariableId>>,
+    current_spans: Vec<vinglish_lexer::span::Span>,
     locals: Vec<VariableId>,
+    active_span: vinglish_lexer::span::Span,
 }
 
 impl<'a> MirLowerer<'a> {
@@ -23,7 +25,9 @@ impl<'a> MirLowerer<'a> {
             current_block: None,
             blocks: Vec::new(),
             current_instrs: Vec::new(),
+            current_spans: Vec::new(),
             locals: Vec::new(),
+            active_span: vinglish_lexer::span::Span::dummy(),
         }
     }
 
@@ -65,6 +69,7 @@ impl<'a> MirLowerer<'a> {
             self.blocks.push(BasicBlock {
                 id,
                 instrs: std::mem::take(&mut self.current_instrs),
+                spans: std::mem::take(&mut self.current_spans),
                 terminator,
             });
             self.current_block = None;
@@ -73,6 +78,7 @@ impl<'a> MirLowerer<'a> {
 
     fn push_instr(&mut self, instr: Instruction<VariableId>) {
         self.current_instrs.push(instr);
+        self.current_spans.push(self.active_span);
     }
 
     fn allocation_layout(&self, type_id: TypeId) -> AllocationLayout {
@@ -144,7 +150,9 @@ impl<'a> MirLowerer<'a> {
     }
 
     fn lower_expr(&mut self, expr: &HirExpr) -> Operand<VariableId> {
-        match expr {
+        let old_span = self.active_span;
+        self.active_span = expr.span();
+        let result = match expr {
             HirExpr::Lit { value, .. } => Operand::Constant(value.clone()),
             HirExpr::VarRef { id, .. } => Operand::Var(*id),
             HirExpr::Call {
@@ -483,10 +491,14 @@ impl<'a> MirLowerer<'a> {
                 ));
                 Operand::Var(ok_val)
             }
-        }
+        };
+        self.active_span = old_span;
+        result
     }
 
     fn lower_stmt(&mut self, stmt: &HirStmt) {
+        let old_span = self.active_span;
+        self.active_span = stmt.span();
         match stmt {
             HirStmt::Let { id, init, .. } => {
                 self.locals.push(*id);
@@ -657,6 +669,7 @@ impl<'a> MirLowerer<'a> {
 
                 self.switch_to_block(merge_b);
             }
-        }
+        };
+        self.active_span = old_span;
     }
 }

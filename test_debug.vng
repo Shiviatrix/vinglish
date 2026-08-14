@@ -1,0 +1,7 @@
+function main()
+begin
+    let x be 10
+    let y be 20
+    let z be x + y
+    print(z)
+end

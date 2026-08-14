@@ -6,3 +6,4 @@ description = "Vinglish Intent Lexer — tokenizes Vinglish source with indentat
 
 [dependencies]
 thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }

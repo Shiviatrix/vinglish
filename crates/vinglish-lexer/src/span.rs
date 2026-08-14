@@ -1,5 +1,5 @@
 /// A half-open byte-offset range `[start, end)` in a source file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize)]
 pub struct Span {
     pub start: u32,
     pub end: u32,
@@ -45,7 +45,7 @@ impl std::fmt::Display for Span {
 }
 
 /// Any value paired with the source location it came from.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Spanned<T> {
     pub node: T,
     pub span: Span,

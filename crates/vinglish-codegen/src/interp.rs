@@ -122,14 +122,23 @@ impl std::error::Error for InterpError {}
 // ─────────────────────────────────────────────────────────────────────────────
 // Interpreter
 // ─────────────────────────────────────────────────────────────────────────────
+pub trait DebuggerHook {
+    fn on_instruction(
+        &mut self,
+        func: &MirFunction<SsaValueId>,
+        block: &vinglish_mir::BasicBlock<SsaValueId>,
+        instr_idx: usize,
+        locals: &HashMap<SsaValueId, Value>,
+    ) -> Result<(), InterpError>;
+}
+
 pub struct Interpreter<'a> {
     _symbol_table: &'a SymbolTable,
     functions: HashMap<FunctionId, &'a MirFunction<SsaValueId>>,
     native_functions: HashMap<FunctionId, NativeFn>,
     libraries: Vec<libloading::Library>,
+    pub debugger_hook: Option<std::rc::Rc<std::cell::RefCell<dyn DebuggerHook + 'a>>>,
 }
-
-
 
 impl<'a> Interpreter<'a> {
     pub fn new(symbol_table: &'a SymbolTable) -> Self {
@@ -138,6 +147,7 @@ impl<'a> Interpreter<'a> {
             functions: HashMap::new(),
             native_functions: HashMap::new(),
             libraries: Vec::new(),
+            debugger_hook: None,
         };
 
         let builtins: Vec<(&'static str, NativeFnPointer)> = vec![
@@ -314,7 +324,10 @@ impl<'a> Interpreter<'a> {
                     InterpError::new(format!("Block {} not found", current_block_id.0))
                 })?;
 
-            for instr in &block.instrs {
+            for (instr_idx, instr) in block.instrs.iter().enumerate() {
+                if let Some(hook) = &self.debugger_hook {
+                    hook.borrow_mut().on_instruction(func, block, instr_idx, &locals)?;
+                }
                 self.exec_instr(instr, &mut locals, previous_block_id)?;
             }
 

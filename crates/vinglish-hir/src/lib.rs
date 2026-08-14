@@ -100,6 +100,19 @@ pub enum Stmt {
     Expr(Expr),
 }
 
+impl Stmt {
+    pub fn span(&self) -> Span {
+        match self {
+            Stmt::Let { span, .. } => *span,
+            Stmt::Assign { span, .. } => *span,
+            Stmt::If { span, .. } => *span,
+            Stmt::Return { span, .. } => *span,
+            Stmt::RepeatWhile { span, .. } => *span,
+            Stmt::Expr(e) => e.span(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Lit {

@@ -156,6 +156,7 @@ fn convert_to_ssa_types(
         BasicBlock {
             id: block.id,
             instrs: block.instrs.into_iter().map(convert_instr).collect(),
+            spans: block.spans,
             terminator: convert_term(block.terminator),
         }
     };

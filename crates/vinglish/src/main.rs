@@ -85,6 +85,11 @@ enum Commands {
         #[arg(long)]
         lib: Option<PathBuf>,
     },
+    /// Debug a Vinglish file in an interactive REPL
+    Debug {
+        /// Source file to debug
+        file: PathBuf,
+    },
     /// Package management commands
     Pkg {
         #[command(subcommand)]
@@ -169,6 +174,12 @@ async fn main() {
         }
         Some(Commands::Run { file, args: _, lib }) => {
             if let Err(e) = cmd_run(&file, &lib) {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+        }
+        Some(Commands::Debug { file }) => {
+            if let Err(e) = cmd_debug(&file) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
@@ -622,6 +633,194 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
     if let Some(lib_path) = lib {
         interp.load_dynamic_library(lib_path).map_err(|e| format!("Failed to load dynamic library: {}", e))?;
     }
+    interp
+        .run_module(&ssa_module)
+        .map_err(|e| format!("runtime error: {}", e.message))
+}
+
+use std::io::{self, Write};
+use vinglish_codegen::interp::DebuggerHook;
+use vinglish_mir::{MirFunction, BasicBlock};
+use vinglish_hir::symbol::SsaValueId;
+use vinglish_codegen::interp::Value;
+use std::collections::HashMap;
+
+struct ReplDebugger {
+    source: String,
+    stepping: bool,
+}
+
+impl DebuggerHook for ReplDebugger {
+    fn on_instruction(
+        &mut self,
+        _func: &MirFunction<SsaValueId>,
+        block: &BasicBlock<SsaValueId>,
+        instr_idx: usize,
+        locals: &HashMap<SsaValueId, Value>,
+    ) -> Result<(), vinglish_codegen::interp::InterpError> {
+        if !self.stepping {
+            return Ok(());
+        }
+
+        let span = &block.spans[instr_idx];
+        let start = span.start as usize;
+        let end = span.end as usize;
+
+        // Naively extract the line containing the span
+        let mut line_start = start;
+        while line_start > 0 && self.source.as_bytes()[line_start - 1] != b'\n' {
+            line_start -= 1;
+        }
+        let mut line_end = end;
+        while line_end < self.source.len() && self.source.as_bytes()[line_end] != b'\n' {
+            line_end += 1;
+        }
+
+        let line_text = &self.source[line_start..line_end];
+        let line_num = self.source[..start].chars().filter(|&c| c == '\n').count() + 1;
+
+        println!("=> [Line {}]: {}", line_num, line_text.trim());
+        println!("   [MIR] {:?}", block.instrs[instr_idx]);
+
+        loop {
+            print!("(vdb) ");
+            io::stdout().flush().unwrap();
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).unwrap();
+            let input = input.trim();
+
+            if input.is_empty() {
+                continue;
+            }
+
+            let mut parts = input.split_whitespace();
+            let cmd = parts.next().unwrap();
+
+            match cmd {
+                "n" | "next" | "s" | "step" => {
+                    self.stepping = true;
+                    break;
+                }
+                "c" | "continue" => {
+                    self.stepping = false;
+                    break;
+                }
+                "p" | "print" => {
+                    if let Some(var_str) = parts.next() {
+                        if var_str.starts_with("ssa_") {
+                            if let Ok(id_num) = var_str[4..].parse::<u32>() {
+                                let id = SsaValueId(id_num);
+                                if let Some(val) = locals.get(&id) {
+                                    println!("{} = {}", var_str, val.to_display());
+                                } else {
+                                    println!("Variable not found in current locals");
+                                }
+                            } else {
+                                println!("Invalid SSA ID format (expected ssa_<num>)");
+                            }
+                        } else {
+                            println!("Printing original variable names is not yet fully supported. Use MIR SSA IDs (e.g. ssa_0).");
+                        }
+                    } else {
+                        println!("Usage: p <var>");
+                    }
+                }
+                "l" | "locals" => {
+                    for (id, val) in locals.iter() {
+                        println!("ssa_{} = {}", id.0, val.to_display());
+                    }
+                }
+                "q" | "quit" => {
+                    std::process::exit(0);
+                }
+                "h" | "help" => {
+                    println!("vdb commands:");
+                    println!("  n, next, s, step  : Execute next instruction");
+                    println!("  c, continue       : Continue execution");
+                    println!("  p <var>, print    : Print variable value");
+                    println!("  l, locals         : Print all local variables");
+                    println!("  q, quit           : Exit debugger");
+                }
+                _ => {
+                    println!("Unknown command: {}", cmd);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn cmd_debug(file: &Path) -> Result<(), String> {
+    let compile_res = compile_project(file, HealingMode::Deny, None)?;
+    let mut symbol_table = compile_res.symbol_table;
+    let mut mir_module = compile_res.mir_module;
+
+    let validator = MirValidatorPass::new();
+    if let Err(errors) = validator.validate(&symbol_table, &mir_module) {
+        for e in &errors {
+            eprintln!("MIR validation error: {}", e.message);
+        }
+        return Err("MIR validation failed".into());
+    }
+
+    let mut pre_pm = vinglish_opt::pre_ssa_pipeline();
+    if let Err(errors) = pre_pm.run_all(&mut mir_module, &symbol_table) {
+        for e in &errors {
+            eprintln!(
+                "MIR validation error after pre-SSA optimization: {}",
+                e.message
+            );
+        }
+        return Err("Pre-SSA optimization validation failed".into());
+    }
+
+    let mut ssa_pass = vinglish_ssa::SSAConversionPass::new();
+    let mut ssa_module = ssa_pass.run(mir_module, &mut symbol_table);
+
+    let ssa_validator = vinglish_ssa::SSAValidator::new();
+    if let Err(errors) = ssa_validator.validate(&ssa_module) {
+        for e in &errors {
+            eprintln!("SSA validation error: {}", e.message);
+        }
+        return Err("SSA validation failed".into());
+    }
+
+    let mut post_pm = vinglish_opt::post_ssa_pipeline();
+    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
+        for e in &errors {
+            eprintln!(
+                "MIR validation error after post-SSA optimization: {}",
+                e.message
+            );
+        }
+        return Err("Post-SSA optimization validation failed".into());
+    }
+
+    let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
+    let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
+
+    let own_validator = vinglish_own::OwnershipValidator::new();
+    if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
+        for e in &errors {
+            let mut diag = e.clone();
+            diag.enrich(&compile_res.entry_src);
+            let rendered = render(&[diag], &compile_res.entry_filename);
+            eprint!("{}", rendered);
+        }
+        return Err("Ownership validation failed".into());
+    }
+
+    let mut interp = Interpreter::new(&symbol_table);
+    
+    let debugger = ReplDebugger {
+        source: compile_res.entry_src,
+        stepping: true,
+    };
+    
+    let debugger_ref = std::rc::Rc::new(std::cell::RefCell::new(debugger));
+    interp.debugger_hook = Some(debugger_ref);
+
     interp
         .run_module(&ssa_module)
         .map_err(|e| format!("runtime error: {}", e.message))
