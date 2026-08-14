@@ -53,4 +53,4 @@ Documentation has been exported to HTML. For full technical details on the archi
 - [Architecture Notes](docs/explanation/architecture.html)
 - [Pipeline details](docs/explanation/compiler-pipeline.html)
 
-License is MIT.
+MIT license
