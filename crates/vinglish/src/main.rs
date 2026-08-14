@@ -81,6 +81,9 @@ enum Commands {
         file: PathBuf,
         /// Arguments passed to the program
         args: Vec<String>,
+        /// Optional path to a dynamic library containing FFI bindings to load
+        #[arg(long)]
+        lib: Option<PathBuf>,
     },
     /// Package management commands
     Pkg {
@@ -164,8 +167,8 @@ async fn main() {
                 std::process::exit(1);
             }
         }
-        Some(Commands::Run { file, args: _ }) => {
-            if let Err(e) = cmd_run(&file) {
+        Some(Commands::Run { file, args: _, lib }) => {
+            if let Err(e) = cmd_run(&file, &lib) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
@@ -551,7 +554,7 @@ fn cmd_emit_ir(file: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_run(file: &Path) -> Result<(), String> {
+fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
     let compile_res = compile_project(file, HealingMode::Deny, None)?;
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
@@ -612,6 +615,9 @@ fn cmd_run(file: &Path) -> Result<(), String> {
     }
 
     let mut interp = Interpreter::new(&symbol_table);
+    if let Some(lib_path) = lib {
+        interp.load_dynamic_library(lib_path).map_err(|e| format!("Failed to load dynamic library: {}", e))?;
+    }
     interp
         .run_module(&ssa_module)
         .map_err(|e| format!("runtime error: {}", e.message))

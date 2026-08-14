@@ -1,0 +1,12 @@
+public foreign function string_concat(a: text, b: text) returns text
+public foreign function string_len(a: text) returns number
+
+function main()
+begin
+    let s be string_concat("Hello, ", "World!")
+    print(s)
+    println("")
+    let len be string_len(s)
+    print(len)
+    println("")
+end

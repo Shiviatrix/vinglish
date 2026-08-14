@@ -106,7 +106,7 @@ pub struct InterpError {
 }
 
 impl InterpError {
-    fn new(msg: impl Into<String>) -> Self {
+    pub fn new(msg: impl Into<String>) -> Self {
         Self {
             message: msg.into(),
         }
@@ -128,6 +128,7 @@ pub struct Interpreter<'a> {
     _symbol_table: &'a SymbolTable,
     functions: HashMap<FunctionId, &'a MirFunction<SsaValueId>>,
     native_functions: HashMap<FunctionId, NativeFn>,
+    libraries: Vec<libloading::Library>,
 }
 
 use std::sync::Mutex;
@@ -156,6 +157,7 @@ impl<'a> Interpreter<'a> {
             _symbol_table: symbol_table,
             functions: HashMap::new(),
             native_functions: HashMap::new(),
+            libraries: Vec::new(),
         };
 
         let builtins: Vec<(&'static str, NativeFnPointer)> = vec![
@@ -223,6 +225,14 @@ impl<'a> Interpreter<'a> {
         }
 
         interp
+    }
+
+    pub fn load_dynamic_library(&mut self, path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+        unsafe {
+            let lib = libloading::Library::new(path)?;
+            self.libraries.push(lib);
+        }
+        Ok(())
     }
 
     pub fn run_module(
@@ -506,20 +516,36 @@ impl<'a> Interpreter<'a> {
                 let func_id = match func_id {
                     vinglish_mir::CallTarget::Direct(id) => *id,
                     vinglish_mir::CallTarget::Foreign { c_symbol } => {
-                        let mut matched_id = None;
-                        for (id, nf) in &self.native_functions {
-                            if nf.name == c_symbol {
-                                matched_id = Some(*id);
-                                break;
+                    let mut matched_id = None;
+                    for (id, nf) in &self.native_functions {
+                        if nf.name == c_symbol {
+                            matched_id = Some(*id);
+                            break;
+                        }
+                    }
+                    if let Some(id) = matched_id {
+                        id
+                    } else {
+                        // Try dynamically loaded libraries
+                        let mut dynamic_fn: Option<NativeFnPointer> = None;
+                        for lib in &self.libraries {
+                            unsafe {
+                                let symbol_name = format!("ving_{}\0", c_symbol);
+                                if let Ok(sym) = lib.get::<NativeFnPointer>(symbol_name.as_bytes()) {
+                                    dynamic_fn = Some(*sym);
+                                    break;
+                                }
                             }
                         }
-                        if let Some(id) = matched_id {
-                            id
-                        } else {
-                            return Err(InterpError {
-                                message: format!("cannot interpret foreign call `{c_symbol}`"),
-                            });
+                        if let Some(f) = dynamic_fn {
+                            let ret = (f)(args)?;
+                            locals.insert(*dest, ret);
+                            return Ok(());
                         }
+                        return Err(InterpError::new(format!(
+                            "cannot interpret foreign call `{c_symbol}`"
+                        )));
+                    }
                     }
                 };
                 let ret = self.call_function(func_id, args)?;

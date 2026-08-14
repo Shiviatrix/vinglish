@@ -1,0 +1,11 @@
+public foreign function string_concat(a: text, b: text) returns String
+public foreign function string_len(a: text) returns number
+
+function main() {
+    let s = string_concat("Hello, ", "World!");
+    print(s);
+    println("");
+    let len = string_len(s);
+    print(len);
+    println("");
+}
