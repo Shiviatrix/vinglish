@@ -220,34 +220,10 @@ async fn main() {
 fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
     match command {
         PkgCommands::Init => {
-            println!("Initializing new Vinglish package...");
-            fs::write(
-                "ving.toml",
-                "[package]\nname = \"my_pkg\"\nversion = \"0.1.0\"\n",
-            )
-            .map_err(|e| e.to_string())?;
-            fs::create_dir_all("src").map_err(|e| e.to_string())?;
-            fs::write(
-                "src/main.ving",
-                "function main() returns number\nbegin\n    return 0\nend\n",
-            )
-            .map_err(|e| e.to_string())?;
-            println!("Created package `my_pkg`");
-            Ok(())
+            vinglish_pkg::cmd_init()
         }
         PkgCommands::Add { package, url } => {
-            println!("Adding package '{}'...", package);
-            let target_dir = Path::new(".ving_modules").join(&package);
-            fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
-            if let Some(url) = url {
-                println!("Fetching from {}...", url);
-                // In a real implementation this would git clone or download
-            }
-            // Create a dummy module file to satisfy the compiler dependency
-            let dummy_path = target_dir.join(format!("{}.ving", package));
-            fs::write(&dummy_path, format!("package {}\nmodule {}\n\npublic function hello() returns number\nbegin\n    return 0\nend\n", package, package)).map_err(|e| e.to_string())?;
-            println!("Successfully added `{}`", package);
-            Ok(())
+            vinglish_pkg::cmd_add(&package, url.as_deref())
         }
     }
 }
