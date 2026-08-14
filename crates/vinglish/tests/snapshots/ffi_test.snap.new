@@ -1,0 +1,7 @@
+---
+source: crates/vinglish/tests/ui_test_runner.rs
+assertion_line: 48
+expression: combined
+---
+
+runtime error: cannot interpret foreign call `string_concat`
