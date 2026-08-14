@@ -382,6 +382,11 @@ fn binop(op: BinOp) -> &'static str {
         BinOp::GtEq => ">=",
         BinOp::And => "&&",
         BinOp::Or => "||",
+        BinOp::BitXor => "^",
+        BinOp::BitAnd => "&",
+        BinOp::BitOr => "|",
+        BinOp::Shl => "<<",
+        BinOp::Shr => ">>",
     }
 }
 fn unop(op: UnOp) -> &'static str {

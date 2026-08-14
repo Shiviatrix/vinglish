@@ -104,11 +104,11 @@ mod healer_stress {
     }
 
     #[test]
-    fn no_heal_float_expected_int_actual() {
+    fn heals_float_expected_int_actual_with_autowiden() {
         let mut expr = int_expr(5);
         let c = constraint(Type::Float, Type::Int);
         let rule = try_heal_in_place(&Healer, &mut expr, &c, || Ok::<_, ()>(()));
-        assert_eq!(rule, None);
+        assert_eq!(rule, Some(HealingRule::AutoWiden));
     }
 
     // ─── 4. Rollback: recheck always fails → AST must be identical to original

@@ -834,11 +834,11 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_and_expr(&mut self) -> Option<Expr> {
-        let mut left = self.parse_comparison()?;
+        let mut left = self.parse_bitor_expr()?;
         while self.check(&Token::And) {
             let op_span = self.current_span();
             self.advance();
-            let right = self.parse_comparison()?;
+            let right = self.parse_bitor_expr()?;
             let span = left.span().merge(right.span()).merge(op_span);
             left = Expr::BinOp {
                 left: Arc::new(left),
@@ -850,8 +850,59 @@ impl<'t> Parser<'t> {
         Some(left)
     }
 
+    fn parse_bitor_expr(&mut self) -> Option<Expr> {
+        let mut left = self.parse_bitxor_expr()?;
+        while self.check(&Token::BitOr) {
+            let op_span = self.current_span();
+            self.advance();
+            let right = self.parse_bitxor_expr()?;
+            let span = left.span().merge(right.span()).merge(op_span);
+            left = Expr::BinOp {
+                left: Arc::new(left),
+                op: BinOp::BitOr,
+                right: Arc::new(right),
+                span,
+            };
+        }
+        Some(left)
+    }
+
+    fn parse_bitxor_expr(&mut self) -> Option<Expr> {
+        let mut left = self.parse_bitand_expr()?;
+        while self.check(&Token::BitXor) {
+            let op_span = self.current_span();
+            self.advance();
+            let right = self.parse_bitand_expr()?;
+            let span = left.span().merge(right.span()).merge(op_span);
+            left = Expr::BinOp {
+                left: Arc::new(left),
+                op: BinOp::BitXor,
+                right: Arc::new(right),
+                span,
+            };
+        }
+        Some(left)
+    }
+
+    fn parse_bitand_expr(&mut self) -> Option<Expr> {
+        let mut left = self.parse_comparison()?;
+        while self.check(&Token::BitAnd) {
+            let op_span = self.current_span();
+            self.advance();
+            let right = self.parse_comparison()?;
+            let span = left.span().merge(right.span()).merge(op_span);
+            left = Expr::BinOp {
+                left: Arc::new(left),
+                op: BinOp::BitAnd,
+                right: Arc::new(right),
+                span,
+            };
+        }
+        Some(left)
+    }
+
     fn parse_comparison(&mut self) -> Option<Expr> {
-        let mut left = self.parse_add_expr()?;
+        let mut left = self.parse_shift_expr()?;
         loop {
             let op = match self.current() {
                 Token::Eq => BinOp::Eq,
@@ -867,7 +918,7 @@ impl<'t> Parser<'t> {
                     match self.current() {
                         Token::Below => {
                             self.advance();
-                            let right = self.parse_add_expr()?;
+                            let right = self.parse_shift_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
                                 left: Arc::new(left),
@@ -879,7 +930,7 @@ impl<'t> Parser<'t> {
                         }
                         Token::Above => {
                             self.advance();
-                            let right = self.parse_add_expr()?;
+                            let right = self.parse_shift_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
                                 left: Arc::new(left),
@@ -891,7 +942,7 @@ impl<'t> Parser<'t> {
                         }
                         _ => {
                             // just `is` — equality
-                            let right = self.parse_add_expr()?;
+                            let right = self.parse_shift_expr()?;
                             let span = left.span().merge(right.span());
                             left = Expr::BinOp {
                                 left: Arc::new(left),
@@ -903,6 +954,28 @@ impl<'t> Parser<'t> {
                         }
                     }
                 }
+                _ => break,
+            };
+            let op_span = self.current_span();
+            self.advance();
+            let right = self.parse_shift_expr()?;
+            let span = left.span().merge(right.span()).merge(op_span);
+            left = Expr::BinOp {
+                left: Arc::new(left),
+                op,
+                right: Arc::new(right),
+                span,
+            };
+        }
+        Some(left)
+    }
+
+    fn parse_shift_expr(&mut self) -> Option<Expr> {
+        let mut left = self.parse_add_expr()?;
+        loop {
+            let op = match self.current() {
+                Token::Shl => BinOp::Shl,
+                Token::Shr => BinOp::Shr,
                 _ => break,
             };
             let op_span = self.current_span();

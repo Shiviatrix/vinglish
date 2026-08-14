@@ -312,6 +312,11 @@ pub fn fmt_expr(expr: &Expr) -> String {
                 BinOp::IsBelow => "is below",
                 BinOp::IsAbove => "is above",
                 BinOp::Exceeds => "exceeds",
+                BinOp::BitXor => "^",
+                BinOp::BitAnd => "&",
+                BinOp::BitOr => "|",
+                BinOp::Shl => "<<",
+                BinOp::Shr => ">>",
             };
             format!("{} {} {}", fmt_expr(left), op_str, fmt_expr(right))
         }

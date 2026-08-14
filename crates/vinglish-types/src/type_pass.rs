@@ -1286,7 +1286,16 @@ impl TypeInferencePass {
                 let (lt, hl) = self.infer_expr(ctx, left);
                 let (rt, hr) = self.infer_expr(ctx, right);
                 let result = match op {
-                    BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Mod => {
+                    BinOp::Add 
+                    | BinOp::Sub 
+                    | BinOp::Mul 
+                    | BinOp::Div 
+                    | BinOp::Mod 
+                    | BinOp::BitXor 
+                    | BinOp::BitAnd 
+                    | BinOp::BitOr 
+                    | BinOp::Shl 
+                    | BinOp::Shr => {
                         self.unify(ctx, lt.clone(), rt, right.span());
                         lt
                     }

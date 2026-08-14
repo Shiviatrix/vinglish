@@ -251,6 +251,11 @@ pub enum BinaryOperation {
     GreaterThanOrEqual,
     And,
     Or,
+    BitwiseXor,
+    BitwiseAnd,
+    BitwiseOr,
+    ShiftLeft,
+    ShiftRight,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -583,6 +588,11 @@ impl<'a> ExportBuilder<'a> {
             BinOp::GtEq => BinaryOperation::GreaterThanOrEqual,
             BinOp::And => BinaryOperation::And,
             BinOp::Or => BinaryOperation::Or,
+            BinOp::BitXor => BinaryOperation::BitwiseXor,
+            BinOp::BitAnd => BinaryOperation::BitwiseAnd,
+            BinOp::BitOr => BinaryOperation::BitwiseOr,
+            BinOp::Shl => BinaryOperation::ShiftLeft,
+            BinOp::Shr => BinaryOperation::ShiftRight,
         }
     }
 

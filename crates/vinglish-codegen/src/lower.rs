@@ -602,6 +602,11 @@ impl CEmitter {
                     BinOp::GtEq => ">=",
                     BinOp::And => "&&",
                     BinOp::Or => "||",
+                    BinOp::BitXor => "^",
+                    BinOp::BitAnd => "&",
+                    BinOp::BitOr => "|",
+                    BinOp::Shl => "<<",
+                    BinOp::Shr => ">>",
                 };
                 Ok(format!("({} {} {})", l, op_str, r))
             }

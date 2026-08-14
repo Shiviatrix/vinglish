@@ -45,6 +45,22 @@ begin
     return ving_read(vec.data, index)
 end
 
+public function set<T>(borrow mutable Vector<T> vec, number index, T val)
+begin
+    ving_write(vec.data, index, val)
+end
+
+public function pop<T>(borrow mutable Vector<T> vec) returns T
+begin
+    vec.len be vec.len - 1
+    return ving_read(vec.data, vec.len)
+end
+
+public function length<T>(borrow Vector<T> vec) returns number
+begin
+    return vec.len
+end
+
 public function vector_free<T>(borrow mutable Vector<T> vec)
 begin
     ving_free(vec.data)

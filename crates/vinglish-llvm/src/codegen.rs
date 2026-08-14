@@ -642,6 +642,26 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                     .builder
                     .build_or(l, r, name)
                     .map_err(|e| e.to_string())?,
+                BinOp::BitAnd => self
+                    .builder
+                    .build_and(l, r, name)
+                    .map_err(|e| e.to_string())?,
+                BinOp::BitOr => self
+                    .builder
+                    .build_or(l, r, name)
+                    .map_err(|e| e.to_string())?,
+                BinOp::BitXor => self
+                    .builder
+                    .build_xor(l, r, name)
+                    .map_err(|e| e.to_string())?,
+                BinOp::Shl => self
+                    .builder
+                    .build_left_shift(l, r, name)
+                    .map_err(|e| e.to_string())?,
+                BinOp::Shr => self
+                    .builder
+                    .build_right_shift(l, r, false, name)
+                    .map_err(|e| e.to_string())?,
                 BinOp::IsBelow => self
                     .builder
                     .build_int_compare(IntPredicate::SLT, l, r, name)

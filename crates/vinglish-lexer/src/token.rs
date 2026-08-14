@@ -94,6 +94,11 @@ pub enum Token {
     MinusEq,  // -=
     StarEq,   // *=
     SlashEq,  // /=
+    BitXor,   // ^
+    BitAnd,   // &
+    BitOr,    // |
+    Shl,      // <<
+    Shr,      // >>
     Arrow,    // ->
     FatArrow, // =>
 
@@ -289,6 +294,11 @@ impl Token {
             Token::MinusEq => "`-=`",
             Token::StarEq => "`*=`",
             Token::SlashEq => "`/=`",
+            Token::BitXor => "`^`",
+            Token::BitAnd => "`&`",
+            Token::BitOr => "`|`",
+            Token::Shl => "`<<`",
+            Token::Shr => "`>>`",
             Token::Arrow => "`->`",
             Token::FatArrow => "`=>`",
             Token::Dot => "`.`",

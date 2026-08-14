@@ -289,12 +289,17 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                     Token::Bang
                 }
             }
-            '|' => Token::Pipe,
+            '^' => Token::BitXor,
+            '&' => Token::BitAnd,
+            '|' => Token::BitOr,
             '?' => Token::QuestionMark,
             '<' => {
                 if next == Some('=') {
                     pos += 1;
                     Token::LtEq
+                } else if next == Some('<') {
+                    pos += 1;
+                    Token::Shl
                 } else {
                     Token::Lt
                 }
@@ -303,6 +308,9 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                 if next == Some('=') {
                     pos += 1;
                     Token::GtEq
+                } else if next == Some('>') {
+                    pos += 1;
+                    Token::Shr
                 } else {
                     Token::Gt
                 }
