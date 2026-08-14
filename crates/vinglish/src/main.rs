@@ -256,7 +256,15 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
             let pkg_dir = PathBuf::from(".ving_modules").join(pkg_name);
             if pkg_dir.exists() {
                 let mut pkg_path = pkg_dir.clone();
+                if pkg_dir.join("src").exists() {
+                    pkg_path.push("src");
+                }
+                
                 if path_parts.len() == 1 {
+                    let maybe_main = pkg_path.join("main").with_extension("ving");
+                    if maybe_main.exists() {
+                        return Ok(maybe_main);
+                    }
                     pkg_path.push(pkg_name);
                 } else {
                     for part in &path_parts[1..] {
@@ -266,6 +274,20 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
                 pkg_path.set_extension("ving");
                 if pkg_path.exists() {
                     return Ok(pkg_path);
+                }
+                
+                // Fallback for single file dummy module
+                let mut fallback = pkg_dir.clone();
+                if path_parts.len() == 1 {
+                    fallback.push(pkg_name);
+                } else {
+                    for part in &path_parts[1..] {
+                        fallback.push(part);
+                    }
+                }
+                fallback.set_extension("ving");
+                if fallback.exists() {
+                    return Ok(fallback);
                 }
             }
         }
@@ -392,6 +414,12 @@ fn compile_project(
 ) -> Result<CompileResult, String> {
     let entry_path = file.to_path_buf();
     let entry_name = "main".to_string();
+
+    if std::path::Path::new("ving.toml").exists() {
+        if let Err(e) = vinglish_pkg::fetch_dependencies() {
+            println!("Warning: Failed to fetch dependencies: {}", e);
+        }
+    }
 
     let mut parsed = std::collections::HashMap::new();
     let mut deps = std::collections::HashMap::new();

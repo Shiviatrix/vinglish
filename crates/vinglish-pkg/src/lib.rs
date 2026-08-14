@@ -123,3 +123,55 @@ end
     println!("Successfully added `{}` to ving.toml", package);
     Ok(())
 }
+
+
+use std::process::Command;
+
+pub fn fetch_dependencies() -> Result<(), String> {
+    let manifest = match VinglishManifest::load("ving.toml") {
+        Ok(m) => m,
+        Err(_) => return Ok(()), // Not a package, nothing to fetch
+    };
+
+    let modules_dir = Path::new(".ving_modules");
+    if !modules_dir.exists() {
+        fs::create_dir_all(modules_dir).map_err(|e| e.to_string())?;
+    }
+
+    for (name, dep) in manifest.dependencies {
+        let target_dir = modules_dir.join(&name);
+        if target_dir.exists() {
+            // Already fetched
+            continue;
+        }
+
+        match dep {
+            DependencyMeta::Detailed { git: Some(git_url), branch, .. } => {
+                println!("Fetching {} from {}...", name, git_url);
+                let mut cmd = Command::new("git");
+                cmd.arg("clone");
+                if let Some(b) = branch {
+                    cmd.arg("--branch").arg(b);
+                }
+                cmd.arg(&git_url).arg(&target_dir);
+                
+                let status = cmd.status().map_err(|e| format!("Failed to execute git clone: {}", e))?;
+                if !status.success() {
+                    return Err(format!("Failed to clone repository for {}", name));
+                }
+            }
+            DependencyMeta::Detailed { path: Some(local_path), .. } => {
+                // For local path dependencies, we could symlink or copy. For now, symlink on unix or just copy.
+                // Let's do a simple copy for robustness across platforms (or just note it's local and expect the compiler to find it).
+                println!("Local dependency {} at {} (skipping fetch)", name, local_path);
+            }
+            _ => {
+                // If it's just a version string, we'd normally query a registry. 
+                // For now, if we don't have a git url, we'll just skip or error.
+                println!("Warning: Registry fetching not yet implemented for {}", name);
+            }
+        }
+    }
+    
+    Ok(())
+}
