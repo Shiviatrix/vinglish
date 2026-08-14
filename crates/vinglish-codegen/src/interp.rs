@@ -555,11 +555,8 @@ impl<'a> Interpreter<'a> {
             }
             Instruction::<SsaValueId>::Borrow(dest, op)
             | Instruction::<SsaValueId>::BorrowMut(dest, op) => {
-                if let Operand::Var(var) = op {
-                    locals.insert(*dest, Value::Reference(ReferenceLoc::Local(*var)));
-                } else {
-                    return Err(InterpError::new("Cannot borrow a constant"));
-                }
+                let val = self.eval_operand(op, locals)?;
+                locals.insert(*dest, val);
             }
             Instruction::<SsaValueId>::Deref(dest, op, _) => {
                 let val = self.eval_operand(op, locals)?;

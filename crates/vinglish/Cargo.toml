@@ -27,3 +27,8 @@ vinglish-llvm = { path = "../vinglish-llvm" }
 vinglish-lsp = { path = "../vinglish-lsp" }
 vinglish-ir-export = { path = "../vinglish-ir-export" }
 tokio = { version = "1.52.3", features = ["full"] }
+
+[dev-dependencies]
+insta = "1.39.0"
+walkdir = "2.4.0"
+assert_cmd = "2.0"

@@ -10,5 +10,7 @@ description.workspace = true
 vinglish-diagnostics = { path = "../vinglish-diagnostics" }
 vinglish-lexer = { path = "../vinglish-lexer" }
 vinglish-parser = { path = "../vinglish-parser" }
+vinglish-types = { path = "../vinglish-types" }
+vinglish-fmt = { path = "../vinglish-fmt" }
 tokio = { version = "1.52.3", features = ["full"] }
 tower-lsp = "0.20.0"

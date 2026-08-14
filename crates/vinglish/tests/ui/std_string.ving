@@ -1,0 +1,10 @@
+use std.io
+use std.string
+
+function main() returns number
+begin
+    let s be string_new("hello world")
+    println(length(borrow s))
+    string_free(borrow s)
+    return 0
+end

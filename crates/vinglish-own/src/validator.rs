@@ -52,6 +52,7 @@ impl OwnershipValidator {
         for func in &module.functions {
             let mut moved = HashMap::new();
             let mut mutably_borrowed = HashMap::new();
+            let mut borrow_sources = HashMap::new();
 
             for block in &func.blocks {
                 for instr in &block.instrs {
@@ -69,6 +70,9 @@ impl OwnershipValidator {
                                     ));
                                 } else if is_val && is_move(*src) {
                                     moved.insert(*src, get_span(dest));
+                                    if let Some(underlying) = borrow_sources.get(src) {
+                                        mutably_borrowed.remove(underlying);
+                                    }
                                 }
                             }
                         };
@@ -114,6 +118,7 @@ impl OwnershipValidator {
                                 ));
                             } else {
                                 mutably_borrowed.insert(*src, get_span(*dest));
+                                borrow_sources.insert(*dest, *src);
                             }
                         }
                         Instruction::<SsaValueId>::ListNew(dest, cap) => {
@@ -166,6 +171,11 @@ impl OwnershipValidator {
                         }
                         Instruction::<SsaValueId>::ListLen(dest, list) => {
                             check_op(list, false, *dest);
+                        }
+                        Instruction::<SsaValueId>::Drop(var) => {
+                            if let Some(src) = borrow_sources.get(var) {
+                                mutably_borrowed.remove(src);
+                            }
                         }
                         _ => {}
                     }

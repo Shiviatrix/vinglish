@@ -99,6 +99,7 @@ impl LanguageServer for Backend {
                 }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
+                document_formatting_provider: Some(OneOf::Left(true)),
                 ..ServerCapabilities::default()
             },
         })
@@ -458,6 +459,30 @@ impl LanguageServer for Backend {
 
         Ok(None)
     }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = params.text_document.uri;
+        let cache = self.cache.read().await;
+        let Some((src, _tokens, ast)) = cache.get(&uri) else {
+            return Ok(None);
+        };
+
+        let formatted = vinglish_fmt::format_module(ast);
+        
+        let lines: Vec<&str> = src.lines().collect();
+        let end_line = if lines.is_empty() { 0 } else { (lines.len() - 1) as u32 };
+        let end_char = if lines.is_empty() { 0 } else { lines.last().unwrap().len() as u32 };
+
+        let range = Range {
+            start: Position { line: 0, character: 0 },
+            end: Position { line: end_line, character: end_char },
+        };
+
+        Ok(Some(vec![TextEdit {
+            range,
+            new_text: formatted,
+        }]))
+    }
 }
 
 impl Backend {
@@ -498,6 +523,22 @@ impl Backend {
                 message: err.to_string(),
                 ..Default::default()
             });
+        }
+
+        if parse_errors.is_empty() {
+            let (_, type_errors, _) = vinglish_types::infer_module(&ast);
+            for err in type_errors {
+                let span = err.span();
+                diagnostics.push(Diagnostic {
+                    range: Range {
+                        start: offset_to_position(&text, span.start),
+                        end: offset_to_position(&text, span.end),
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    message: err.message(),
+                    ..Default::default()
+                });
+            }
         }
 
         self.client

@@ -12,6 +12,7 @@ members = [
     "crates/vinglish-ir-export",
     "crates/vinglish-decompile",
 ]
+exclude = ["fuzz"]
 resolver = "3"
 
 [workspace.package]

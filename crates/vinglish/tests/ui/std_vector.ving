@@ -1,0 +1,13 @@
+use std.collections.vector
+function main()
+begin
+    let mutable v be vector_new<number>()
+    push(borrow mutable v, 10)
+    push(borrow mutable v, 20)
+    push(borrow mutable v, 30)
+
+    println(length(borrow v))
+    println(pop(borrow mutable v))
+    println(pop(borrow mutable v))
+    println(pop(borrow mutable v))
+end
