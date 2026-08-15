@@ -18,3 +18,4 @@ pub use vinglish_hir::symbol;
 pub use vinglish_hir::types::{Type, TypeVar};
 
 pub use type_pass::infer_module;
+pub mod foreign;

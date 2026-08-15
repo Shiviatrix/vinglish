@@ -379,9 +379,90 @@ impl CompilerPass for NameResolutionPass {
                         ctx.define(fq_name, scoped_id);
                     }
                 }
+                AstItem::ForeignImport(f) => {
+                    // Extract functions using bindgen and syn
+                    if f.lang.name.as_ref() == "c" {
+                        let bindings_str = match bindgen::builder()
+                            .header(&f.path)
+                            .generate()
+                        {
+                            Ok(b) => b.to_string(),
+                            Err(_) => {
+                                // For now, silently ignore or perhaps print a warning
+                                continue;
+                            }
+                        };
+
+                        if let Ok(ast) = syn::parse_file(&bindings_str) {
+                            for item in ast.items {
+                                if let syn::Item::ForeignMod(foreign_mod) = item {
+                                    for foreign_item in foreign_mod.items {
+                                        if let syn::ForeignItem::Fn(foreign_fn) = foreign_item {
+                                            let name = foreign_fn.sig.ident.to_string();
+                                            // Map syn type to Vinglish type
+                                            let mut params_types = Vec::new();
+                                            for input in foreign_fn.sig.inputs.iter() {
+                                                if let syn::FnArg::Typed(pat_type) = input {
+                                                    params_types.push(syn_type_to_hir(&pat_type.ty));
+                                                }
+                                            }
+                                            let ret_type = match &foreign_fn.sig.output {
+                                                syn::ReturnType::Default => Type::Unit,
+                                                syn::ReturnType::Type(_, ty) => syn_type_to_hir(ty),
+                                            };
+
+                                            let generic_params = Vec::new(); // C has no generics
+                                            
+                                            let id = ctx.symbol_table.define_func(
+                                                name.clone(),
+                                                FunctionSymbol {
+                                                    id: vinglish_hir::symbol::FunctionId(SymbolId(0)),
+                                                    name: name.clone(),
+                                                    visibility: Visibility::Public,
+                                                    ty: Type::Function(params_types, Box::new(ret_type)),
+                                                    generic_params,
+                                                    is_variant_constructor: None,
+                                                    is_foreign: true,
+                                                },
+                                            );
+                                            if let Some(fs) = ctx.symbol_table.get_func_mut(id) {
+                                                fs.id = id;
+                                            }
+                                            ctx.define(name.clone(), ScopedId::Func(id));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 _ => {}
             }
         }
         None // Name resolution doesn't produce HIR, it just populates SymbolTable
+    }
+}
+
+fn syn_type_to_hir(ty: &syn::Type) -> Type {
+    match ty {
+        syn::Type::Path(type_path) => {
+            if let Some(segment) = type_path.path.segments.last() {
+                let ident = segment.ident.to_string();
+                match ident.as_str() {
+                    "i32" | "i64" | "u32" | "u64" | "isize" | "usize" | "c_int" | "c_long" | "c_longlong" => Type::Int,
+                    "f32" | "f64" | "c_float" | "c_double" => Type::Float,
+                    "bool" => Type::Bool,
+                    "c_char" => Type::Int, // maybe?
+                    _ => Type::Unit, // Unknown type fallback
+                }
+            } else {
+                Type::Unit
+            }
+        }
+        syn::Type::Ptr(ptr) => {
+            // Treat as Pointer
+            Type::Pointer(Box::new(syn_type_to_hir(&ptr.elem)))
+        }
+        _ => Type::Unit,
     }
 }

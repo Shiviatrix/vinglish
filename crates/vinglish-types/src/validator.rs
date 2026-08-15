@@ -74,6 +74,7 @@ impl HirValidatorPass {
             HirItem::Enum(_) => {
                 // Not much to validate on EnumDef internally right now
             }
+            HirItem::ForeignImport { .. } => {}
             HirItem::Statement(s) => {
                 self.validate_stmt(ctx, s);
             }

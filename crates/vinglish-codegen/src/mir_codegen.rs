@@ -46,6 +46,10 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
     let mut out = String::from(
         "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\n#define print(x) _Generic((x), const char*: printf(\"%s\", x), char*: printf(\"%s\", x), double: printf(\"%g\", x), bool: printf(\"%s\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\", (long)(x)))\n#define println(x) _Generic((x), const char*: printf(\"%s\\n\", x), char*: printf(\"%s\\n\", x), double: printf(\"%g\\n\", x), bool: printf(\"%s\\n\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\\n\", (long)(x)))\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
     );
+    for inc in &module.foreign_includes {
+        writeln!(out, "#include \"{}\"", inc)?;
+    }
+    out.push('\n');
     for (text, index) in &pool.entries {
         writeln!(
             out,
@@ -283,7 +287,13 @@ fn instruction_to_c<V: CValueId>(
         ),
         Instruction::Borrow(d, v) | Instruction::BorrowMut(d, v) => {
             if let vinglish_mir::Operand::Var(var) = v {
-                format!("v_{} = (uintptr_t)&v_{}", d.raw(), var.raw())
+                let ty = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))).map(|s| &s.ty);
+                match ty {
+                    Some(Type::Named(_, _)) | Some(Type::List(_)) | Some(Type::Dict(_, _)) | Some(Type::Pointer(_)) | Some(Type::Reference(_, _)) => {
+                        format!("v_{} = v_{}", d.raw(), var.raw())
+                    }
+                    _ => format!("v_{} = (uintptr_t)&v_{}", d.raw(), var.raw())
+                }
             } else {
                 unreachable!("Cannot borrow constant");
             }
@@ -334,7 +344,18 @@ fn instruction_to_c<V: CValueId>(
         Instruction::ListPop(d, list) => {
             format!("v_{} = rt_list_pop({})", d.raw(), operand(list, pool))
         }
-        Instruction::Drop(var) => format!("free((void *)(uintptr_t)v_{})", var.raw()),
+        Instruction::Drop(var) => {
+            if let Some(symbol) = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))) {
+                match &symbol.ty {
+                    Type::Reference(_, _) | Type::Pointer(_) | Type::Int | Type::Float | Type::Bool | Type::Unit => {
+                        format!("/* skip free v_{} */", var.raw())
+                    }
+                    _ => format!("free((void *)(uintptr_t)v_{})", var.raw()),
+                }
+            } else {
+                format!("free((void *)(uintptr_t)v_{})", var.raw())
+            }
+        }
     }
 }
 fn emit_terminator<V: CValueId>(

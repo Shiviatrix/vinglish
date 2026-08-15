@@ -112,12 +112,19 @@ impl<'a> MirLowerer<'a> {
 
     pub fn lower_module(&mut self, hir: &HirModule) -> MirModule<vinglish_hir::symbol::VariableId> {
         let mut functions = Vec::new();
+        let mut foreign_includes = Vec::new();
         for item in &hir.items {
             if let HirItem::Function(f) = item {
                 functions.push(self.lower_function(f));
+            } else if let HirItem::ForeignImport { lang: _, path } = item {
+                // Currently assuming C language
+                foreign_includes.push(path.clone());
             }
         }
-        MirModule { functions }
+        MirModule {
+            functions,
+            foreign_includes,
+        }
     }
 
     fn lower_function(&mut self, f: &vinglish_hir::FunctionDef) -> MirFunction<VariableId> {

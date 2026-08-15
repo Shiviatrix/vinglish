@@ -303,7 +303,7 @@ impl<'a> ExportBuilder<'a> {
                         statements.push(statement);
                     }
                 }
-                Item::Type(_) | Item::Enum(_) => {}
+                Item::Type(_) | Item::Enum(_) | Item::ForeignImport { .. } => {}
             }
         }
 

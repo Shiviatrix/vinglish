@@ -181,6 +181,7 @@ impl<'t> Parser<'t> {
             Token::Package => Some(Item::Package(self.parse_package())),
             Token::Module => Some(Item::Module(self.parse_module_decl())),
             Token::Use => Some(Item::Use(self.parse_use())),
+            Token::Import => Some(Item::ForeignImport(self.parse_foreign_import())),
             Token::Route => Some(Item::Route(self.parse_route())),
             Token::EOF => None,
             _ => {
@@ -1542,6 +1543,24 @@ impl<'t> Parser<'t> {
             }
         }
         UseDecl {
+            path,
+            span: start.merge(self.current_span()),
+        }
+    }
+
+    fn parse_foreign_import(&mut self) -> ForeignImportDecl {
+        let start = self.current_span();
+        self.expect(&Token::Import);
+        self.expect(&Token::Foreign);
+        let lang = self.expect_ident().unwrap_or_else(|| Ident::new("c", Span::dummy()));
+        let path = if let Token::StringLit(s) = self.current().clone() {
+            self.advance();
+            s
+        } else {
+            String::new()
+        };
+        ForeignImportDecl {
+            lang,
             path,
             span: start.merge(self.current_span()),
         }

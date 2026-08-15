@@ -177,8 +177,16 @@ impl UnionFind {
                 }
                 self.unify(*a_inner, *b_inner, span)
             }
-            (Type::Pointer(a_inner), Type::Pointer(b_inner)) => {
+            (Type::Pointer(a_inner), Type::Pointer(b_inner))
+            | (Type::Reference(a_inner, _), Type::Pointer(b_inner))
+            | (Type::Pointer(a_inner), Type::Reference(b_inner, _)) => {
                 self.unify(*a_inner, *b_inner, span)
+            }
+            (Type::Pointer(a_inner), b @ Type::Named(_, _)) | (b @ Type::Named(_, _), Type::Pointer(a_inner)) => {
+                self.unify(*a_inner, b.clone(), span)
+            }
+            (Type::Pointer(_), Type::Int) | (Type::Int, Type::Pointer(_)) => {
+                Ok(())
             }
             (Type::Named(na, arga), Type::Named(nb, argb)) => {
                 if na != nb || arga.len() != argb.len() {
@@ -604,6 +612,15 @@ impl TypeInferencePass {
                     variants: hir_variants,
                     span: e.span,
                 }))
+            }
+            Item::ForeignImport(f) => {
+                if f.lang.name.as_ref() == "c" {
+                    crate::foreign::import_c_header(&f.path, ctx);
+                }
+                Some(HirItem::ForeignImport {
+                    lang: f.lang.name.to_string(),
+                    path: f.path.clone(),
+                })
             }
             _ => None,
         }

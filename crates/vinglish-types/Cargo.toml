@@ -13,3 +13,5 @@ thiserror.workspace = true
 strsim.workspace = true
 indexmap.workspace  = true
 rand = "0.10.2"
+bindgen = "0.71.1"
+syn = { version = "3.0.3", features = ["full"] }

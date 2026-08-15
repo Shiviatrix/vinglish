@@ -174,5 +174,6 @@ fn convert_to_ssa_types(
 
     MirModule {
         functions: module.functions.into_iter().map(convert_func).collect(),
+        foreign_includes: module.foreign_includes,
     }
 }

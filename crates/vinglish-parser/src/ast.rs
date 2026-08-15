@@ -462,6 +462,13 @@ pub struct RouteDecl {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ForeignImportDecl {
+    pub lang: Ident,
+    pub path: String,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Variant {
     pub name: Ident,
     pub payload: Option<TypeExpr>,
@@ -486,6 +493,7 @@ pub enum Item {
     Module(ModuleDecl),
     Use(UseDecl),
     Route(RouteDecl),
+    ForeignImport(ForeignImportDecl),
     /// Top-level statement (script mode)
     Statement(Stmt),
 }
@@ -500,6 +508,7 @@ impl Item {
             Item::Module(m) => m.span,
             Item::Use(u) => u.span,
             Item::Route(r) => r.span,
+            Item::ForeignImport(f) => f.span,
             Item::Statement(s) => s.span(),
         }
     }

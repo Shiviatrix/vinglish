@@ -2,7 +2,7 @@ use vinglish_bindgen::vinglish_bindgen;
 use sled::Db;
 use std::sync::OnceLock;
 
-fn get_db(collection: &str) -> Db {
+fn get_db(_collection: &str) -> Db {
     static DB_CACHE: OnceLock<sled::Db> = OnceLock::new();
     // In a real scenario, we'd want collections. Sled uses Trees for this.
     // For simplicity, we just open a `.vinglish_db` folder and use `open_tree`.

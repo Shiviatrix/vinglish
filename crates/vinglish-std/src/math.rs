@@ -1,5 +1,4 @@
 use vinglish_bindgen::vinglish_bindgen;
-use rand::Rng;
 
 #[vinglish_bindgen]
 pub fn math_sin(a: f64) -> f64 {

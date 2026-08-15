@@ -19,6 +19,7 @@ pub enum Item {
     Function(FunctionDef),
     Type(TypeDef),
     Enum(EnumDef),
+    ForeignImport { lang: String, path: String },
     Statement(Stmt),
 }
 

@@ -439,6 +439,7 @@ fn compile_project(
 
     let mut symbol_table = SymbolTable::new();
     let mut mir_functions = Vec::new();
+    let mut foreign_includes = Vec::new();
     let mut hir_modules = Vec::new();
     let mut entry_src = String::new();
     let mut entry_filename = String::new();
@@ -535,6 +536,7 @@ fn compile_project(
         let mut mir_lower = MirLowerer::new(&mut symbol_table);
         let mir_mod = mir_lower.lower_module(&hir);
         mir_functions.extend(mir_mod.functions);
+        foreign_includes.extend(mir_mod.foreign_includes);
     }
 
     Ok(CompileResult {
@@ -542,6 +544,7 @@ fn compile_project(
         hir_modules,
         mir_module: MirModule {
             functions: mir_functions,
+            foreign_includes,
         },
         entry_src,
         entry_filename,

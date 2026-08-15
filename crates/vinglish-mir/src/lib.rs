@@ -16,6 +16,7 @@ impl fmt::Display for BlockId {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MirModule<V: Clone + Copy + fmt::Display> {
     pub functions: Vec<MirFunction<V>>,
+    pub foreign_includes: Vec<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

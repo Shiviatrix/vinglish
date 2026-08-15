@@ -91,6 +91,9 @@ impl Formatter {
                 self.dedent();
                 self.line("}");
             }
+            Item::ForeignImport(f) => {
+                self.line(&format!("import foreign {} \"{}\"", f.lang.name, f.path));
+            }
         }
     }
 
