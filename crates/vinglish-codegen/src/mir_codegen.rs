@@ -72,22 +72,21 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
             }
         }
     }
-    let foreign_symbols: BTreeMap<String, usize> = module
-        .functions
-        .iter()
-        .flat_map(|function| function.blocks.iter())
-        .flat_map(|block| block.instrs.iter())
-        .filter_map(|instruction| match instruction {
-            Instruction::Call(_, vinglish_mir::CallTarget::Foreign { c_symbol }, args) => {
-                Some((c_ident(c_symbol), args.len()))
+    for function in &module.functions {
+        if function.is_foreign {
+            if let Some(fn_sym) = symbols.get_func(function.id) {
+                let symbol = c_ident(&fn_sym.name);
+                if symbol != "print" && symbol != "println" && symbol != "abs" {
+                    if let vinglish_hir::types::Type::Function(params, ret) = &fn_sym.ty {
+                        let mut arg_types = Vec::new();
+                        for p in params {
+                            arg_types.push(to_c_type(p));
+                        }
+                        let args_decl = if arg_types.is_empty() { "void".to_string() } else { arg_types.join(", ") };
+                        writeln!(out, "extern {} {}({});", to_c_type(ret), symbol, args_decl)?;
+                    }
+                }
             }
-            _ => None,
-        })
-        .collect();
-    for (symbol, arg_count) in foreign_symbols {
-        if symbol != "print" && symbol != "println" && symbol != "abs" {
-            let args_decl = vec!["long"; arg_count].join(", ");
-            writeln!(out, "extern long {}({});", symbol, args_decl)?;
         }
     }
     out.push('\n');
@@ -128,7 +127,16 @@ fn emit_function<V: CValueId>(
     if function.name == "main" {
         out.push_str("int main(");
     } else {
-        write!(out, "static long fn_{}(", function.id.0.0)?;
+        let ret_c_type = if let Some(fn_sym) = symbols.get_func(function.id) {
+            if let vinglish_hir::types::Type::Function(_, ret) = &fn_sym.ty {
+                to_c_type(ret)
+            } else {
+                "int64_t"
+            }
+        } else {
+            "int64_t"
+        };
+        write!(out, "static {} fn_{}(", ret_c_type, function.id.0.0)?;
     }
     for (index, param) in function.params.iter().enumerate() {
         if index != 0 {
@@ -200,7 +208,7 @@ fn instruction_to_c<V: CValueId>(
             };
             if is_string && *op == vinglish_parser::ast::BinOp::Add {
                 format!(
-                    "v_{} = (long)(uintptr_t)ving_str_concat({}, {})",
+                    "v_{} = ving_str_concat({}, {})",
                     d.raw(),
                     operand(l, pool),
                     operand(r, pool)
@@ -241,30 +249,41 @@ fn instruction_to_c<V: CValueId>(
         ),
         Instruction::Phi(_, _) => unreachable!("Phi handled in block loop"),
         Instruction::LoadField(d, object, access) => format!(
-            "v_{} = *(long *)((unsigned char *)(uintptr_t){} + {})",
+            "v_{} = *({} *)((unsigned char *)(uintptr_t){} + {})",
             d.raw(),
+            c_value_type(*d, symbols),
             operand(object, pool),
             access.byte_offset
         ),
-        Instruction::StoreField(object, access, value) => format!(
-            "*(long *)((unsigned char *)(uintptr_t)v_{} + {}) = {}",
-            object.raw(),
-            access.byte_offset,
-            operand(value, pool)
-        ),
+        Instruction::StoreField(object, access, value) => {
+            let ty = match value {
+                vinglish_mir::Operand::Var(v) => c_value_type(*v, symbols),
+                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Float(_)) => "double",
+                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Bool(_)) => "bool",
+                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Text(_)) => "const char *",
+                _ => "int64_t",
+            };
+            format!(
+                "*({} *)((unsigned char *)(uintptr_t)v_{} + {}) = {}",
+                ty,
+                object.raw(),
+                access.byte_offset,
+                operand(value, pool)
+            )
+        }
         Instruction::HeapAllocate(d, layout) => format!(
-            "v_{} = (long)(uintptr_t)calloc(1, {})",
+            "v_{} = (uintptr_t)calloc(1, {})",
             d.raw(),
             layout.size
         ),
         Instruction::StackAllocate(d, layout) => format!(
-            "v_{} = (long)(uintptr_t)calloc(1, {})",
+            "v_{} = (uintptr_t)calloc(1, {})",
             d.raw(),
             layout.size
         ),
         Instruction::Borrow(d, v) | Instruction::BorrowMut(d, v) => {
-            if let Operand::Var(var) = v {
-                format!("v_{} = (long)(uintptr_t)&v_{}", d.raw(), var.raw())
+            if let vinglish_mir::Operand::Var(var) = v {
+                format!("v_{} = (uintptr_t)&v_{}", d.raw(), var.raw())
             } else {
                 unreachable!("Cannot borrow constant");
             }
@@ -315,7 +334,7 @@ fn instruction_to_c<V: CValueId>(
         Instruction::ListPop(d, list) => {
             format!("v_{} = rt_list_pop({})", d.raw(), operand(list, pool))
         }
-        Instruction::Drop(..) => "(void)0".into(),
+        Instruction::Drop(var) => format!("free((void *)(uintptr_t)v_{})", var.raw()),
     }
 }
 fn emit_terminator<V: CValueId>(
