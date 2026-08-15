@@ -52,6 +52,30 @@ pub fn vinglish_bindgen(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     call_args.push(quote! { #arg_name });
                     ving_args.push(format!("{}: number", arg_name));
                     continue;
+                } else if type_path.path.is_ident("f64") {
+                    extraction_code.push(quote! {
+                        let #arg_name = if let Some(vinglish_codegen::interp::Value::Float(f)) = args.get(#i) {
+                            *f
+                        } else if let Some(vinglish_codegen::interp::Value::Int(i)) = args.get(#i) {
+                            *i as f64
+                        } else {
+                            return Err(vinglish_codegen::interp::InterpError::new("Expected decimal argument"));
+                        };
+                    });
+                    call_args.push(quote! { #arg_name });
+                    ving_args.push(format!("{}: decimal", arg_name));
+                    continue;
+                } else if type_path.path.is_ident("bool") {
+                    extraction_code.push(quote! {
+                        let #arg_name = if let Some(vinglish_codegen::interp::Value::Bool(b)) = args.get(#i) {
+                            *b
+                        } else {
+                            return Err(vinglish_codegen::interp::InterpError::new("Expected boolean argument"));
+                        };
+                    });
+                    call_args.push(quote! { #arg_name });
+                    ving_args.push(format!("{}: bool", arg_name));
+                    continue;
                 }
             }
             panic!("Unsupported argument type");
@@ -81,6 +105,20 @@ pub fn vinglish_bindgen(_attr: TokenStream, item: TokenStream) -> TokenStream {
                             Ok(vinglish_codegen::interp::Value::Int(#original_name(#(#call_args),*)))
                         },
                         "returns number".to_string(),
+                    )
+                } else if type_path.path.is_ident("f64") {
+                    (
+                        quote! { 
+                            Ok(vinglish_codegen::interp::Value::Float(#original_name(#(#call_args),*)))
+                        },
+                        "returns decimal".to_string(),
+                    )
+                } else if type_path.path.is_ident("bool") {
+                    (
+                        quote! { 
+                            Ok(vinglish_codegen::interp::Value::Bool(#original_name(#(#call_args),*)))
+                        },
+                        "returns bool".to_string(),
                     )
                 } else {
                     panic!("Unsupported return type");

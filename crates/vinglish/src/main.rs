@@ -628,6 +628,18 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
     let mut interp = Interpreter::new(&symbol_table);
     if let Some(lib_path) = lib {
         interp.load_dynamic_library(lib_path).map_err(|e| format!("Failed to load dynamic library: {}", e))?;
+    } else {
+        let std_lib_names = ["libvinglish_std.dylib", "libvinglish_std.so", "vinglish_std.dll"];
+        for ext in std_lib_names {
+            let mut p = std::env::current_dir().unwrap_or_default();
+            p.push("target");
+            p.push("debug");
+            p.push(ext);
+            if p.exists() {
+                let _ = interp.load_dynamic_library(&p);
+                break;
+            }
+        }
     }
     interp
         .run_module(&ssa_module)

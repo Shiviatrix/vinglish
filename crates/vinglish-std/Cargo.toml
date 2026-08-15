@@ -11,5 +11,14 @@ description.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+rand = "0.10.2"
+readability = "0.3.0"
+regex = "1.13.1"
+reqwest = { version = "0.13.4", features = ["blocking", "json"] }
+scraper = "0.27.0"
+serde_json.workspace = true
+sled = "0.34.7"
+strsim.workspace = true
+url = "2.5.8"
 vinglish-bindgen = { path = "../vinglish-bindgen" }
 vinglish-codegen = { path = "../vinglish-codegen" }
