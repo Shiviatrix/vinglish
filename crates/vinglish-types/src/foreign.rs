@@ -5,7 +5,7 @@ use vinglish_hir::types::Type;
 
 pub fn import_c_header(path: &str, ctx: &mut CompilerContext) {
     let bindings_res = bindgen::Builder::default()
-        .header_contents("wrapper.h", &format!("#include <{}>", path))
+        .header_contents("wrapper.h", &format!("#include \"{}\"", path))
         .generate();
 
     let bindings = match bindings_res {

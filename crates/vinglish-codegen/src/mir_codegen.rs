@@ -65,7 +65,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
             if function.name == "main" {
                 out.push_str("int main(void);\n");
             } else {
-                write!(out, "static long fn_{}(", function.id.0.0)?;
+                write!(out, "static int64_t fn_{}(", function.id.0.0)?;
                 for (index, param) in function.params.iter().enumerate() {
                     if index != 0 {
                         out.push_str(", ");

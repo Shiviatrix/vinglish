@@ -98,30 +98,66 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
             }
         );
     } else {
-        manifest.dependencies.insert(
-            package.to_string(), 
-            DependencyMeta::Version("*".to_string())
-        );
+        // Query the mock registry
+        match RegistryClient::query_package(package) {
+            Ok(info) => {
+                println!("Found '{}' version {} in registry", package, info.version);
+                manifest.dependencies.insert(
+                    package.to_string(), 
+                    DependencyMeta::Detailed {
+                        version: Some(info.version),
+                        path: info.path,
+                        git: info.git,
+                        branch: None,
+                    }
+                );
+            }
+            Err(e) => {
+                return Err(format!("Failed to resolve '{}' in registry: {}", package, e));
+            }
+        }
     }
     
     manifest.save("ving.toml")?;
     
-    // Create local stub for now (will be replaced by actual fetcher)
-    let target_dir = Path::new(".ving_modules").join(package);
-    fs::create_dir_all(&target_dir).map_err(|e| e.to_string())?;
-    
-    let dummy_path = target_dir.join(format!("{}.ving", package));
-    fs::write(&dummy_path, format!("package {}
-module {}
-
-public function hello() returns number
-begin
-    return 0
-end
-", package, package)).map_err(|e| e.to_string())?;
+    // We now just call fetch_dependencies to actually download the package
+    fetch_dependencies()?;
     
     println!("Successfully added `{}` to ving.toml", package);
     Ok(())
+}
+
+pub struct RegistryClient;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegistryResponse {
+    pub version: String,
+    pub git: Option<String>,
+    pub path: Option<String>,
+}
+
+impl RegistryClient {
+    pub fn query_package(name: &str) -> Result<RegistryResponse, String> {
+        // Mock registry implementation for the sandbox environment.
+        // In a real environment, this would use reqwest to fetch from registry.vinglish.org
+        let mock_registry_file = PathBuf::from("/tmp/mock_vinglish_registry/index.json");
+        if !mock_registry_file.exists() {
+            return Err("Registry index not found. Are you connected to the internet?".to_string());
+        }
+        
+        let content = fs::read_to_string(mock_registry_file).map_err(|e| e.to_string())?;
+        let index: HashMap<String, RegistryResponse> = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        
+        if let Some(pkg) = index.get(name) {
+            Ok(RegistryResponse {
+                version: pkg.version.clone(),
+                git: pkg.git.clone(),
+                path: pkg.path.clone(),
+            })
+        } else {
+            Err(format!("Package '{}' not found in registry", name))
+        }
+    }
 }
 
 
@@ -161,9 +197,18 @@ pub fn fetch_dependencies() -> Result<(), String> {
                 }
             }
             DependencyMeta::Detailed { path: Some(local_path), .. } => {
-                // For local path dependencies, we could symlink or copy. For now, symlink on unix or just copy.
-                // Let's do a simple copy for robustness across platforms (or just note it's local and expect the compiler to find it).
-                println!("Local dependency {} at {} (skipping fetch)", name, local_path);
+                println!("Copying local dependency {} from {}...", name, local_path);
+                
+                // Recursively copy directory
+                let mut cmd = Command::new("cp");
+                cmd.arg("-r");
+                cmd.arg(&local_path);
+                cmd.arg(&target_dir);
+                
+                let status = cmd.status().map_err(|e| format!("Failed to copy local path: {}", e))?;
+                if !status.success() {
+                    return Err(format!("Failed to copy local path {} for {}", local_path, name));
+                }
             }
             _ => {
                 // If it's just a version string, we'd normally query a registry. 

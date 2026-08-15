@@ -74,6 +74,9 @@ enum Commands {
         /// Disable all type healing suggestions (useful for strict CI pipelines)
         #[arg(long)]
         deny_heal: bool,
+        /// Optional paths to dynamic libraries to link against
+        #[arg(long)]
+        lib: Vec<PathBuf>,
     },
     /// Compile and immediately run an Vinglish file (interpreted)
     Run {
@@ -165,9 +168,10 @@ async fn main() {
             emit,
             heal,
             deny_heal,
+            lib,
         }) => {
             let mode = get_healing_mode(heal, deny_heal);
-            if let Err(e) = cmd_build(&file, &output, &backend, emit, mode) {
+            if let Err(e) = cmd_build(&file, &output, &backend, emit, mode, &lib) {
                 eprintln!("{}", e);
                 std::process::exit(1);
             }
@@ -843,6 +847,7 @@ fn cmd_build(
     backend: &str,
     emit: Option<String>,
     mode: HealingMode,
+    extra_libs: &[PathBuf],
 ) -> Result<(), String> {
     let compile_res = compile_project(file, mode, None)?;
     let mut symbol_table = compile_res.symbol_table;
@@ -1074,6 +1079,19 @@ fn cmd_build(
             }
         }
 
+        // Link user-specified external libraries
+        for lib_path in extra_libs {
+            if let Some(parent) = lib_path.parent() {
+                cmd.arg(format!("-L{}", parent.display()));
+            }
+            if let Some(stem) = lib_path.file_stem() {
+                let name = stem.to_string_lossy();
+                // Strip "lib" prefix if present (libfoo.dylib -> -lfoo)
+                let lib_name = name.strip_prefix("lib").unwrap_or(&name);
+                cmd.arg(format!("-l{}", lib_name));
+            }
+        }
+
         cmd.arg("-lm");
 
         let status = cmd
@@ -1257,7 +1275,7 @@ fn cmd_benchmark(directory: &Path, runs: u32) -> Result<(), String> {
 
         // Compile phase
         if ext == "ving" {
-            cmd_build(&file, &output, "c", None, HealingMode::Deny)?;
+            cmd_build(&file, &output, "c", None, HealingMode::Deny, &[])?;
         } else if ext == "c" {
             let status = Command::new("gcc")
                 .arg("-O3")

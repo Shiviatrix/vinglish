@@ -422,8 +422,15 @@ impl<'a> Interpreter<'a> {
                         let mut dynamic_fn: Option<NativeFnPointer> = None;
                         for lib in &self.libraries {
                             unsafe {
+                                // First try ving_<name> (Vinglish std library convention)
                                 let symbol_name = format!("ving_{}\0", c_symbol);
                                 if let Ok(sym) = lib.get::<NativeFnPointer>(symbol_name.as_bytes()) {
+                                    dynamic_fn = Some(*sym);
+                                    break;
+                                }
+                                // Fallback: try raw symbol name (for external C/Rust/Zig libraries)
+                                let raw_name = format!("{}\0", c_symbol);
+                                if let Ok(sym) = lib.get::<NativeFnPointer>(raw_name.as_bytes()) {
                                     dynamic_fn = Some(*sym);
                                     break;
                                 }

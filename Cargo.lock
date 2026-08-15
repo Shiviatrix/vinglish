@@ -3457,7 +3457,9 @@ dependencies = [
 name = "vinglish-pkg"
 version = "0.2.1"
 dependencies = [
+ "reqwest 0.11.27",
  "serde",
+ "serde_json",
  "tempfile",
  "toml",
 ]
