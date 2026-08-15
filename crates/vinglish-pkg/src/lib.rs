@@ -138,9 +138,12 @@ pub struct RegistryResponse {
 
 impl RegistryClient {
     pub fn query_package(name: &str) -> Result<RegistryResponse, String> {
-        // Mock registry implementation for the sandbox environment.
-        // In a real environment, this would use reqwest to fetch from registry.vinglish.org
-        let mock_registry_file = PathBuf::from("/tmp/mock_vinglish_registry/index.json");
+        // A configurable local index keeps registry resolution testable and
+        // allows offline development. The default preserves the existing
+        // sandbox registry location.
+        let mock_registry_file = std::env::var_os("VINGLISH_REGISTRY_INDEX")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("/tmp/mock_vinglish_registry/index.json"));
         if !mock_registry_file.exists() {
             return Err("Registry index not found. Are you connected to the internet?".to_string());
         }

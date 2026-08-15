@@ -3,22 +3,22 @@ source: crates/vinglish/tests/ui_test_runner.rs
 expression: combined
 ---
 
-[1m[31merror[P0001][0m[1m: expected `be`, found `:` at 31..32[0m
-  [34m-->[0m [2m$DIR/type_error.ving:3:10[0m
-[34m  |[0m
-[34m3 |[0m     let x: number be "this is a string"
-[34m  |[0m          [31m[1m^[0m
+error[P0001]: expected `be`, found `:` at 31..32
+  --> $DIR/type_error.ving:3:10
+  |
+3 |     let x: number be "this is a string"
+  |          ^
 
-[1m[31merror[P0001][0m[1m: invalid expression at 31..32[0m
-  [34m-->[0m [2m$DIR/type_error.ving:3:10[0m
-[34m  |[0m
-[34m3 |[0m     let x: number be "this is a string"
-[34m  |[0m          [31m[1m^[0m
+error[P0001]: invalid expression at 31..32
+  --> $DIR/type_error.ving:3:10
+  |
+3 |     let x: number be "this is a string"
+  |          ^
 
-[1m[31merror[P0001][0m[1m: invalid expression at 31..32[0m
-  [34m-->[0m [2m$DIR/type_error.ving:3:10[0m
-[34m  |[0m
-[34m3 |[0m     let x: number be "this is a string"
-[34m  |[0m          [31m[1m^[0m
+error[P0001]: invalid expression at 31..32
+  --> $DIR/type_error.ving:3:10
+  |
+3 |     let x: number be "this is a string"
+  |          ^
 
 Parse errors in module 'main'

@@ -29,7 +29,7 @@ if entropy is above 0.50 {
 
 ### Current Limitations
 
-The compiler is currently in an experimental state and is not suitable for production use. The C backend currently treats most primitives as `int64_t` (`long`). Additionally, stack allocations currently fall back to `calloc` under the hood. While the MIR includes a `Drop` instruction for memory management, the C backend currently emits a no-op `(void)0` for it, resulting in memory leaks across all compiled programs. Finally, the package manager (`vng pkg`) builds project scaffolding, but a package registry has not yet been implemented.
+The compiler is currently experimental and is not suitable for production use. The C backend has concrete C representations for numbers, decimals, booleans, and text, but it still represents composite and user-defined values as pointer-sized handles; its destructor support is not yet recursive for every runtime-owned value. The interpreter and LLVM backend do not yet cover every operation supported by the C backend. Package resolution supports a local registry index (configurable with `VINGLISH_REGISTRY_INDEX`) and local or Git dependencies, but there is not yet a hosted public registry or compatibility guarantee.
 
 ### Compilation Instructions
 

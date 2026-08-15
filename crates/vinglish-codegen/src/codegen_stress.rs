@@ -34,6 +34,7 @@ mod codegen_stress {
                     terminator: Terminator::Return(Some(Operand::Var(v))),
                 }],
             }],
+            foreign_includes: vec![],
         };
         let c = emit_mir_c(&module, &SymbolTable::new()).expect("emit must succeed");
         let bytes = vinglish_decompile::extract_mir_payload(&c).expect("roundtrip must succeed");
@@ -83,6 +84,7 @@ mod codegen_stress {
                         terminator: Terminator::Return(Some(Operand::Var(dst))),
                     }],
                 }],
+                foreign_includes: vec![],
             };
             let c = emit_mir_c(&module, &SymbolTable::new())
                 .unwrap_or_else(|_| panic!("emit failed for {:?}", op));
@@ -133,6 +135,7 @@ mod codegen_stress {
                     }],
                 },
             ],
+            foreign_includes: vec![],
         };
         let out = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         let bytes = vinglish_decompile::extract_mir_payload(&out).unwrap();
@@ -173,6 +176,7 @@ mod codegen_stress {
                         terminator: Terminator::Return(None),
                     }],
                 }],
+                foreign_includes: vec![],
             };
             let c = emit_mir_c(&module, &SymbolTable::new())
                 .unwrap_or_else(|_| panic!("emit failed for text {:?}", text));
@@ -224,6 +228,7 @@ mod codegen_stress {
                     },
                 ],
             }],
+            foreign_includes: vec![],
         };
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         let bytes = vinglish_decompile::extract_mir_payload(&c).unwrap();
@@ -258,7 +263,10 @@ mod codegen_stress {
                 }],
             })
             .collect();
-        let module = MirModule { functions };
+        let module = MirModule {
+            functions,
+            foreign_includes: vec![],
+        };
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         let bytes = vinglish_decompile::extract_mir_payload(&c).unwrap();
         let restored: MirModule<VariableId> = bincode::deserialize(&bytes).unwrap();
@@ -292,6 +300,7 @@ mod codegen_stress {
                     terminator: Terminator::Return(Some(Operand::Var(dst))),
                 }],
             }],
+            foreign_includes: vec![],
         };
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         let bytes = vinglish_decompile::extract_mir_payload(&c).unwrap();
@@ -323,6 +332,7 @@ mod codegen_stress {
                     terminator: Terminator::Return(Some(Operand::Var(v))),
                 }],
             }],
+            foreign_includes: vec![],
         };
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         assert!(c.contains("#include <stdint.h>"), "must include stdint.h");

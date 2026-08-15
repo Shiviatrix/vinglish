@@ -44,7 +44,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
 ) -> Result<String, MirCEmitError> {
     let pool = StringPool::collect(module);
     let mut out = String::from(
-        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\n#define print(x) _Generic((x), const char*: printf(\"%s\", x), char*: printf(\"%s\", x), double: printf(\"%g\", x), bool: printf(\"%s\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\", (long)(x)))\n#define println(x) _Generic((x), const char*: printf(\"%s\\n\", x), char*: printf(\"%s\\n\", x), double: printf(\"%g\\n\", x), bool: printf(\"%s\\n\", (x) ? \"true\" : \"false\"), default: printf(\"%ld\\n\", (long)(x)))\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
+        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stddef.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\nstatic int64_t ving_print_text(const char *value) { return fputs(value, stdout); }\nstatic int64_t ving_print_double(double value) { return printf(\"%g\", value); }\nstatic int64_t ving_print_bool(bool value) { return fputs(value ? \"true\" : \"false\", stdout); }\nstatic int64_t ving_print_i64(int64_t value) { return printf(\"%\" PRId64, value); }\nstatic int64_t ving_println_text(const char *value) { return printf(\"%s\\n\", value); }\nstatic int64_t ving_println_double(double value) { return printf(\"%g\\n\", value); }\nstatic int64_t ving_println_bool(bool value) { return fputs(value ? \"true\\n\" : \"false\\n\", stdout); }\nstatic int64_t ving_println_i64(int64_t value) { return printf(\"%\" PRId64 \"\\n\", value); }\n#define print(x) _Generic((x), const char*: ving_print_text, char*: ving_print_text, double: ving_print_double, bool: ving_print_bool, default: ving_print_i64)(x)\n#define println(x) _Generic((x), const char*: ving_println_text, char*: ving_println_text, double: ving_println_double, bool: ving_println_bool, default: ving_println_i64)(x)\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern int64_t rt_list_borrow_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
     );
     for inc in &module.foreign_includes {
         writeln!(out, "#include \"{}\"", inc)?;
@@ -65,7 +65,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
             if function.name == "main" {
                 out.push_str("int main(void);\n");
             } else {
-                write!(out, "static int64_t fn_{}(", function.id.0.0)?;
+                write!(out, "static {} fn_{}(", function_c_return_type(function, symbols), function.id.0.0)?;
                 for (index, param) in function.params.iter().enumerate() {
                     if index != 0 {
                         out.push_str(", ");
@@ -131,15 +131,7 @@ fn emit_function<V: CValueId>(
     if function.name == "main" {
         out.push_str("int main(");
     } else {
-        let ret_c_type = if let Some(fn_sym) = symbols.get_func(function.id) {
-            if let vinglish_hir::types::Type::Function(_, ret) = &fn_sym.ty {
-                to_c_type(ret)
-            } else {
-                "int64_t"
-            }
-        } else {
-            "int64_t"
-        };
+        let ret_c_type = function_c_return_type(function, symbols);
         write!(out, "static {} fn_{}(", ret_c_type, function.id.0.0)?;
     }
     for (index, param) in function.params.iter().enumerate() {
@@ -149,6 +141,14 @@ fn emit_function<V: CValueId>(
         write!(out, "{} v_{}", c_value_type(*param, symbols), param.raw())?;
     }
     out.push_str(") {\n");
+    let stack_allocations = stack_allocations(function);
+    for (value, size) in &stack_allocations {
+        writeln!(
+            out,
+            "    union {{ max_align_t align; unsigned char bytes[{}]; }} stack_storage_{};",
+            size, value
+        )?;
+    }
     for local in &function.locals {
         if !function.params.contains(local) {
             writeln!(
@@ -182,7 +182,7 @@ fn emit_function<V: CValueId>(
             writeln!(
                 out,
                 "    {};",
-                instruction_to_c(instruction, symbols, module, pool)
+                instruction_to_c(instruction, symbols, module, pool, &stack_allocations)
             )?;
         }
         if let Some(assignments) = phi_assignments.get(&block.id) {
@@ -201,6 +201,7 @@ fn instruction_to_c<V: CValueId>(
     symbols: &SymbolTable,
     module: &MirModule<V>,
     pool: &StringPool,
+    stack_allocations: &BTreeMap<u32, u32>,
 ) -> String {
     match i {
         Instruction::Assign(d, v) => format!("v_{} = {}", d.raw(), operand(v, pool)),
@@ -280,10 +281,10 @@ fn instruction_to_c<V: CValueId>(
             d.raw(),
             layout.size
         ),
-        Instruction::StackAllocate(d, layout) => format!(
-            "v_{} = (uintptr_t)calloc(1, {})",
+        Instruction::StackAllocate(d, _) => format!(
+            "v_{} = (uintptr_t)stack_storage_{}.bytes",
             d.raw(),
-            layout.size
+            d.raw()
         ),
         Instruction::Borrow(d, v) | Instruction::BorrowMut(d, v) => {
             if let vinglish_mir::Operand::Var(var) = v {
@@ -345,6 +346,9 @@ fn instruction_to_c<V: CValueId>(
             format!("v_{} = rt_list_pop({})", d.raw(), operand(list, pool))
         }
         Instruction::Drop(var) => {
+            if stack_allocations.contains_key(&var.raw()) {
+                return format!("/* stack storage v_{} expires automatically */", var.raw());
+            }
             if let Some(symbol) = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))) {
                 match &symbol.ty {
                     Type::Reference(_, _) | Type::Pointer(_) | Type::Int | Type::Float | Type::Bool | Type::Unit => {
@@ -357,6 +361,24 @@ fn instruction_to_c<V: CValueId>(
             }
         }
     }
+}
+
+/// Stack allocations have function scope in generated C. Keeping their storage
+/// automatic preserves the MIR distinction from heap allocations and makes a
+/// subsequent `Drop` a no-op rather than an invalid `free`.
+fn stack_allocations<V: CValueId>(function: &MirFunction<V>) -> BTreeMap<u32, u32> {
+    let mut allocations = BTreeMap::new();
+    for block in &function.blocks {
+        for instruction in &block.instrs {
+            if let Instruction::StackAllocate(value, layout) = instruction {
+                allocations
+                    .entry(value.raw())
+                    .and_modify(|size: &mut u32| *size = (*size).max(layout.size.max(1)))
+                    .or_insert(layout.size.max(1));
+            }
+        }
+    }
+    allocations
 }
 fn emit_terminator<V: CValueId>(
     out: &mut String,
@@ -445,6 +467,16 @@ fn call_name<V: CValueId>(id: FunctionId, symbols: &SymbolTable, module: &MirMod
             .map(|f| c_ident(&f.name))
             .unwrap_or_else(|| format!("fn_{}", id.0.0))
     }
+}
+
+fn function_c_return_type<V: CValueId>(function: &MirFunction<V>, symbols: &SymbolTable) -> &'static str {
+    symbols
+        .get_func(function.id)
+        .and_then(|symbol| match &symbol.ty {
+            Type::Function(_, ret) => Some(to_c_type(ret)),
+            _ => None,
+        })
+        .unwrap_or("int64_t")
 }
 fn c_ident(name: &str) -> String {
     name.chars()
@@ -563,8 +595,8 @@ fn escape_c_string(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vinglish_hir::symbol::{FunctionId, SymbolId};
-    use vinglish_mir::{BasicBlock, BlockId};
+    use vinglish_hir::symbol::{FunctionId, SymbolId, TypeId};
+    use vinglish_mir::{AllocationLayout, BasicBlock, BlockId};
     #[test]
     fn metadata_preserves_instruction_ids() {
         let value = VariableId(SymbolId(1));
@@ -584,9 +616,47 @@ mod tests {
                     terminator: Terminator::Return(Some(Operand::Var(value))),
                 }],
             }],
+            foreign_includes: vec![],
         };
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
         let bytes = vinglish_decompile::extract_mir_payload(&c).unwrap();
         assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn stack_allocations_use_automatic_storage_and_are_not_freed() {
+        let value = VariableId(SymbolId(1));
+        let module = MirModule {
+            functions: vec![MirFunction {
+                id: FunctionId(SymbolId(9)),
+                is_foreign: false,
+                name: "main".into(),
+                params: vec![],
+                locals: vec![value],
+                blocks: vec![BasicBlock {
+                    spans: vec![],
+                    id: BlockId(0),
+                    instrs: vec![
+                        Instruction::StackAllocate(
+                            value,
+                            AllocationLayout {
+                                layout: TypeId(SymbolId(2)),
+                                size: 8,
+                                align: 8,
+                            },
+                        ),
+                        Instruction::Drop(value),
+                    ],
+                    terminator: Terminator::Return(None),
+                }],
+            }],
+            foreign_includes: vec![],
+        };
+
+        let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
+        assert!(c.contains("union { max_align_t align; unsigned char bytes[8]; } stack_storage_1;"));
+        assert!(c.contains("v_1 = (uintptr_t)stack_storage_1.bytes;"));
+        assert!(c.contains("stack storage v_1 expires automatically"));
+        assert!(!c.contains("free((void *)(uintptr_t)v_1)"));
     }
 }

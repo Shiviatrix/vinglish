@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -24,7 +23,9 @@ fn run_ui_tests() {
         let test_name = test_path.file_stem().unwrap().to_str().unwrap();
         
         let mut cmd = Command::cargo_bin("vng").unwrap();
-        cmd.arg("run").arg(&test_path);
+        // Snapshots must not depend on whether the test runner has a TTY or
+        // terminal color settings.
+        cmd.env("NO_COLOR", "1").arg("run").arg(&test_path);
 
         let output = cmd.output().unwrap();
         let stdout = String::from_utf8_lossy(&output.stdout).replace("\r\n", "\n");
