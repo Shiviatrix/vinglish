@@ -1,0 +1,22 @@
+// Test unknown identifier healing with typos
+function main()
+begin
+    let x = 42
+    let y = x + 1
+
+    // These should trigger unknown identifier healing with suggestions
+    let zz = x + y  // Should suggest 'xx' or 'yy' or similar
+    let xx = 100    // Define xx to make it a valid suggestion
+
+    // Test with a keyword-like typo
+    let funtion_value = "test"  // Should suggest 'function' as a correction? No, this is a valid identifier
+
+    // Test actual unknown identifier
+    let unkwn_ident = 999  // Should suggest 'unknown_identifier' or similar if we had such a var
+
+    // Define some similar variables to test suggestion quality
+    let unknown_identifier = 0
+    let unknown_value = 1
+
+    print unkwn_ident
+end

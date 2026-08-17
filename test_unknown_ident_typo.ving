@@ -1,0 +1,16 @@
+// Test unknown identifier healing with typos
+function main()
+begin
+    let x = 42
+    let y = x + 1
+
+    // This should trigger unknown identifier healing - 'misstyped' is not defined
+    let result = x + misstyped  // Should suggest 'mistent', 'mistyped', etc. if we had similar vars
+
+    // Define some similar variables to test suggestion quality
+    let mistyped = 0
+    let mistyped_value = 1
+    let mistaken = 2
+
+    print result
+end

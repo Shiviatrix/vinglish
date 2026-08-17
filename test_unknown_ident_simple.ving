@@ -1,0 +1,12 @@
+// Simple test for unknown identifier healing
+function main()
+begin
+    let x = 42
+    let xwerty = 100  // This should suggest 'x' if we had similar naming
+
+    // Actually, let's test with a clear typo
+    let miistyped = 999  // Should suggest 'mistyped' if we had that variable
+    let mistyped = 888   // Define the target variable
+
+    print mistyped
+end

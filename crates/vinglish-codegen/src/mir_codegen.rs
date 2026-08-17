@@ -44,7 +44,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
 ) -> Result<String, MirCEmitError> {
     let pool = StringPool::collect(module);
     let mut out = String::from(
-        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stddef.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\nstatic int64_t ving_print_text(const char *value) { return fputs(value, stdout); }\nstatic int64_t ving_print_double(double value) { return printf(\"%g\", value); }\nstatic int64_t ving_print_bool(bool value) { return fputs(value ? \"true\" : \"false\", stdout); }\nstatic int64_t ving_print_i64(int64_t value) { return printf(\"%\" PRId64, value); }\nstatic int64_t ving_println_text(const char *value) { return printf(\"%s\\n\", value); }\nstatic int64_t ving_println_double(double value) { return printf(\"%g\\n\", value); }\nstatic int64_t ving_println_bool(bool value) { return fputs(value ? \"true\\n\" : \"false\\n\", stdout); }\nstatic int64_t ving_println_i64(int64_t value) { return printf(\"%\" PRId64 \"\\n\", value); }\n#define print(x) _Generic((x), const char*: ving_print_text, char*: ving_print_text, double: ving_print_double, bool: ving_print_bool, default: ving_print_i64)(x)\n#define println(x) _Generic((x), const char*: ving_println_text, char*: ving_println_text, double: ving_println_double, bool: ving_println_bool, default: ving_println_i64)(x)\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern int64_t rt_list_borrow_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\n\n",
+        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stddef.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\nstatic int64_t ving_print_text(const char *value) { return fputs(value, stdout); }\nstatic int64_t ving_print_double(double value) { return printf(\"%g\", value); }\nstatic int64_t ving_print_bool(bool value) { return fputs(value ? \"true\" : \"false\", stdout); }\nstatic int64_t ving_print_i64(int64_t value) { return printf(\"%\" PRId64, value); }\nstatic int64_t ving_println_text(const char *value) { return printf(\"%s\\n\", value); }\nstatic int64_t ving_println_double(double value) { return printf(\"%g\\n\", value); }\nstatic int64_t ving_println_bool(bool value) { return fputs(value ? \"true\\n\" : \"false\\n\", stdout); }\nstatic int64_t ving_println_i64(int64_t value) { return printf(\"%\" PRId64 \"\\n\", value); }\n#define print(x) _Generic((x), const char*: ving_print_text, char*: ving_print_text, double: ving_print_double, bool: ving_print_bool, default: ving_print_i64)(x)\n#define println(x) _Generic((x), const char*: ving_println_text, char*: ving_println_text, double: ving_println_double, bool: ving_println_bool, default: ving_println_i64)(x)\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern int64_t rt_list_borrow_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\nextern void rt_list_free(int64_t);\nextern uintptr_t ving_map_free(uintptr_t);\n\n",
     );
     for inc in &module.foreign_includes {
         writeln!(out, "#include \"{}\"", inc)?;
@@ -351,9 +351,11 @@ fn instruction_to_c<V: CValueId>(
             }
             if let Some(symbol) = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))) {
                 match &symbol.ty {
-                    Type::Reference(_, _) | Type::Pointer(_) | Type::Int | Type::Float | Type::Bool | Type::Unit => {
+                    Type::Reference(_, _) | Type::Pointer(_) | Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit => {
                         format!("/* skip free v_{} */", var.raw())
                     }
+                    Type::List(_) => format!("rt_list_free((int64_t)v_{})", var.raw()),
+                    Type::Dict(_, _) => format!("ving_map_free((uintptr_t)v_{})", var.raw()),
                     _ => format!("free((void *)(uintptr_t)v_{})", var.raw()),
                 }
             } else {
@@ -595,7 +597,10 @@ fn escape_c_string(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vinglish_hir::symbol::{FunctionId, SymbolId, TypeId};
+    use vinglish_hir::{
+        symbol::{FunctionId, SymbolId, TypeId, VariableSymbol},
+        types::Type,
+    };
     use vinglish_mir::{AllocationLayout, BasicBlock, BlockId};
     #[test]
     fn metadata_preserves_instruction_ids() {
@@ -657,6 +662,42 @@ mod tests {
         assert!(c.contains("union { max_align_t align; unsigned char bytes[8]; } stack_storage_1;"));
         assert!(c.contains("v_1 = (uintptr_t)stack_storage_1.bytes;"));
         assert!(c.contains("stack storage v_1 expires automatically"));
+        assert!(!c.contains("free((void *)(uintptr_t)v_1)"));
+    }
+
+    #[test]
+    fn collection_drops_use_runtime_destructors() {
+        let value = VariableId(SymbolId(1));
+        let module = MirModule {
+            functions: vec![MirFunction {
+                id: FunctionId(SymbolId(9)),
+                is_foreign: false,
+                name: "main".into(),
+                params: vec![],
+                locals: vec![value],
+                blocks: vec![BasicBlock {
+                    spans: vec![],
+                    id: BlockId(0),
+                    instrs: vec![Instruction::Drop(value)],
+                    terminator: Terminator::Return(None),
+                }],
+            }],
+            foreign_includes: vec![],
+        };
+        let mut symbols = SymbolTable::new();
+        symbols.define_var_with_id(
+            SymbolId(1),
+            VariableSymbol {
+                id: value,
+                name: "items".into(),
+                is_mut: false,
+                ty: Type::List(Box::new(Type::Int)),
+                span: None,
+            },
+        );
+
+        let c = emit_mir_c(&module, &symbols).unwrap();
+        assert!(c.contains("rt_list_free((int64_t)v_1)"));
         assert!(!c.contains("free((void *)(uintptr_t)v_1)"));
     }
 }

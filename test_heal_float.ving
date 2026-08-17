@@ -1,0 +1,5 @@
+function main()
+begin
+    let f be 3.14
+    print("Value: " + f)
+end

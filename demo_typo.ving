@@ -1,0 +1,8 @@
+funtion main()
+begin
+    let x = 42
+    ifff x > 0
+    begin
+        return x
+    end
+end

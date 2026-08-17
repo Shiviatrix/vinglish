@@ -1,0 +1,31 @@
+let x = 5
+let y = 10
+let z = 15
+
+// Test logical AND
+if x > 0 and y < 20 begin
+    print "both true"
+end
+
+// Test logical OR
+if x > 0 or y < 0 begin
+    print "at least one true"
+end
+
+// Test logical NOT
+if not (x == y) begin
+    print "not equal"
+end
+
+// Test bitwise operators (these should trigger healing suggestions in conditional contexts)
+if x > 0 & y < 20 begin  // Should suggest 'and'
+    print "bitwise AND"
+end
+
+if x > 0 | y < 20 begin  // Should suggest 'or'
+    print "bitwise OR"
+end
+
+if ! (x == y) begin  // Should suggest 'not'
+    print "logical NOT with !"
+end

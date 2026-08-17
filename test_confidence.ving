@@ -1,0 +1,21 @@
+// Test various scenarios for confidence scoring
+function main()
+begin
+    // Test case sensitivity
+    let TEST = 42
+
+    // Test transposition
+    let funtion_test = "hello"  // Should suggest function with good confidence
+
+    // Test missing char
+    let fction_test = "world"   // Should suggest function
+
+    // Test duplicated char
+    let funcction_test = "test" // Should suggest function
+
+    // Test case error
+    let FUNCTION_test = 123     // Should suggest function
+
+    // Test completely unrelated word (should not suggest)
+    let banana = "fruit"
+end

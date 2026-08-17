@@ -129,7 +129,7 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
 
 pub struct RegistryClient;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RegistryResponse {
     pub version: String,
     pub git: Option<String>,
@@ -138,29 +138,46 @@ pub struct RegistryResponse {
 
 impl RegistryClient {
     pub fn query_package(name: &str) -> Result<RegistryResponse, String> {
-        // A configurable local index keeps registry resolution testable and
-        // allows offline development. The default preserves the existing
-        // sandbox registry location.
-        let mock_registry_file = std::env::var_os("VINGLISH_REGISTRY_INDEX")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("/tmp/mock_vinglish_registry/index.json"));
-        if !mock_registry_file.exists() {
-            return Err("Registry index not found. Are you connected to the internet?".to_string());
+        if !name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+        {
+            return Err(format!("invalid package name `{name}`"));
         }
-        
-        let content = fs::read_to_string(mock_registry_file).map_err(|e| e.to_string())?;
-        let index: HashMap<String, RegistryResponse> = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-        
-        if let Some(pkg) = index.get(name) {
-            Ok(RegistryResponse {
-                version: pkg.version.clone(),
-                git: pkg.git.clone(),
-                path: pkg.path.clone(),
-            })
-        } else {
-            Err(format!("Package '{}' not found in registry", name))
+
+        // Local indices make offline development and integration tests
+        // deterministic. A configured index always takes precedence over HTTP.
+        if let Some(index_path) = std::env::var_os("VINGLISH_REGISTRY_INDEX") {
+            let content = fs::read_to_string(&index_path)
+                .map_err(|error| format!("cannot read registry index {:?}: {error}", index_path))?;
+            let index: HashMap<String, RegistryResponse> = serde_json::from_str(&content)
+                .map_err(|error| format!("invalid registry index: {error}"))?;
+            return index
+                .get(name)
+                .cloned()
+                .ok_or_else(|| format!("package `{name}` was not found in the local registry index"));
         }
+
+        let endpoint = registry_endpoint(name)?;
+        reqwest::blocking::Client::new()
+            .get(&endpoint)
+            .send()
+            .map_err(|error| format!("cannot contact Vinglish registry at {endpoint}: {error}"))?
+            .error_for_status()
+            .map_err(|error| format!("registry request for `{name}` failed: {error}"))?
+            .json::<RegistryResponse>()
+            .map_err(|error| format!("registry returned an invalid response for `{name}`: {error}"))
     }
+}
+
+fn registry_endpoint(name: &str) -> Result<String, String> {
+    let base = std::env::var("VINGLISH_REGISTRY_URL")
+        .unwrap_or_else(|_| "https://registry.vinglish.org/v1".to_string());
+    let base = base.trim_end_matches('/');
+    if !(base.starts_with("https://") || base.starts_with("http://")) {
+        return Err("VINGLISH_REGISTRY_URL must be an http(s) URL".to_string());
+    }
+    Ok(format!("{base}/packages/{name}"))
 }
 
 

@@ -5,7 +5,6 @@ use vinglish_lexer::Span;
 use vinglish_parser::ast::*;
 
 use crate::passes::{CompilerContext, CompilerPass, ScopedId};
-// use vinglish_diagnostics::{Diagnostic, Suggestion};
 use vinglish_hir::Block as HirBlock;
 use vinglish_hir::Expr as HirExpr;
 use vinglish_hir::FunctionDef as HirFunctionDef;
@@ -1101,13 +1100,10 @@ impl TypeInferencePass {
                     )
                 } else {
                     let fresh = self.fresh();
-                    // Get all known symbol names for typo suggestions
-                    let symbol_names: Vec<String> = ctx.symbol_table.names().keys().cloned().collect();
-                    let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(&id.name, id.span, &symbol_names.iter().map(|s| s.as_str()).collect::<Vec<&str>>());
-                    ctx.type_errors.push(TypeError::Message {
-                        message: diag.message,
-                        span: diag.span,
-                    });
+                    ctx.type_errors.push(TypeError::new(
+                        format!("unknown identifier `{}`", id.name),
+                        id.span,
+                    ));
                     (
                         fresh.clone(),
                         HirExpr::VarRef {
@@ -1150,15 +1146,7 @@ impl TypeInferencePass {
                         }
                     } else {
                         // Types or vars with generics not supported in expressions yet
-                        let fresh = self.fresh();
-                        // Get all known symbol names for typo suggestions
-                        let symbol_names: Vec<String> = ctx.symbol_table.names().keys().cloned().collect();
-                        let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(&base.name, *span, &symbol_names.iter().map(|s| s.as_str()).collect::<Vec<&str>>());
-                        ctx.type_errors.push(TypeError::Message {
-                            message: diag.message,
-                            span: diag.span,
-                        });
-                        ty = fresh;
+                        ty = self.fresh();
                     }
 
                     self.record(ctx, *span, ty.clone());

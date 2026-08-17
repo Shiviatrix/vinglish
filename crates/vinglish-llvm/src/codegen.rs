@@ -779,14 +779,16 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             }
             UnOp::Deref => {
                 if val.is_pointer_value() {
-                    // We need to know the type we are loading!
-                    // Unfortunately, `UnOp` doesn't know the return type directly without context.
-                    // But wait! compile_unop doesn't have the type.
-                    // This is why deref might need to be handled differently, or we can use an opaque type if we use opaque pointers.
-                    // Actually, Inkwell requires the type to load.
-                    // If we pass the type into compile_unop, we can load it.
-                    // For now, let's just return an error because it's hard.
-                    Err("Deref unimplemented in LLVM codegen without type info".into())
+                    let pointer_type = val.get_type().into_pointer_type();
+                    let element_type = pointer_type.get_element_type();
+                    // Convert AnyTypeEnum to BasicTypeEnum for build_load
+                    let basic_type = element_type.into_basic_type()
+                        .map_err(|e| format!("Cannot convert element type to basic type for deref: {}", e))?;
+                    let loaded = self
+                        .builder
+                        .build_load(basic_type, val.into_pointer_value(), name)
+                        .map_err(|e| e.to_string())?;
+                    Ok(loaded.into())
                 } else {
                     Err("Cannot dereference non-pointer".into())
                 }

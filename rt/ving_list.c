@@ -78,3 +78,10 @@ int64_t rt_list_pop(int64_t list_ptr) {
     }
     return list->data[--list->len];
 }
+
+void rt_list_free(int64_t list_ptr) {
+    rt_list_t* list = (rt_list_t*)list_ptr;
+    if (!list) return;
+    free(list->data);
+    free(list);
+}

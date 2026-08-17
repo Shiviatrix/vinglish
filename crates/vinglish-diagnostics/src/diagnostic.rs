@@ -1,4 +1,5 @@
 use vinglish_lexer::Span;
+use strsim::damerau_levenshtein;
 
 /// Severity level for a diagnostic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -158,22 +159,76 @@ impl Diagnostic {
     }
 }
 
+/// Calculate similarity score using multiple algorithms for better typo detection
+fn similarity_score(s1: &str, s2: &str) -> f64 {
+    // Use Damerau-Levenshtein which handles transpositions well
+    let distance = damerau_levenshtein(s1, s2);
+    let max_len = s1.len().max(s2.len()) as f64;
+
+    if max_len == 0.0 {
+        return 1.0;
+    }
+
+    // Convert distance to similarity (0-1 range, higher is better)
+    let similarity = 1.0 - (distance as f64 / max_len);
+
+    // Boost score for exact case-insensitive matches
+    if s1.eq_ignore_ascii_case(s2) && s1.len() == s2.len() {
+        return similarity.max(0.95);
+    }
+
+    similarity
+}
+
+/// Calculate calibrated confidence score for healing suggestions
+/// This function maps raw similarity scores to more meaningful confidence percentages
+/// based on empirical observations of typo patterns in programming languages
+fn calibrated_confidence(raw_similarity: f64) -> f32 {
+    // Apply a calibration curve to make confidence scores more meaningful
+    // This prevents overconfidence in low-similarity matches while preserving
+    // high confidence for clear typos
+
+    // For very high similarity (>0.95), we're very confident
+    if raw_similarity > 0.95 {
+        return (95.0 + (raw_similarity - 0.95) * 100.0 * 0.5) as f32; // 95-100 range
+    }
+
+    // For high similarity (0.85-0.95), good confidence
+    if raw_similarity > 0.85 {
+        return (85.0 + (raw_similarity - 0.85) * 100.0 * 0.666) as f32; // 85-95 range
+    }
+
+    // For moderate similarity (0.7-0.85), lower confidence
+    if raw_similarity > 0.7 {
+        return (70.0 + (raw_similarity - 0.7) * 100.0) as f32; // 70-85 range
+    }
+
+    // For low similarity (<0.7), very low confidence (likely not a typo)
+    return (raw_similarity * 50.0) as f32; // 0-35 range
+}
+
 /// Convert lex/parse/type errors into diagnostics, and enrich with intent suggestions.
 /// `symbol_table` is a list of known symbol names for typo detection.
 pub fn from_unknown_ident(name: &str, span: Span, symbol_table: &[&str]) -> Diagnostic {
-    use strsim::jaro_winkler;
-
     let mut scored: Vec<(&str, f64)> = symbol_table
         .iter()
-        .map(|s| (*s, jaro_winkler(name, s)))
+        .map(|s| {
+            let score = similarity_score(name, *s);
+            (*s, score)
+        })
         .collect();
+
     scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut diag = Diagnostic::error("E0001", format!("unknown identifier `{}`", name), span);
 
     for (candidate, score) in scored.iter().take(3) {
-        if *score > 0.8 {
-            let confidence = (score * 100.0) as f32;
+        // Use calibrated confidence with safety threshold
+        let confidence = calibrated_confidence(*score);
+
+        // Safety mechanism: Only suggest if confidence is above minimum threshold
+        // This prevents suggesting corrections for completely unrelated words
+        if confidence > 60.0 {
             diag.suggestions.push(
                 Suggestion::new(format!("did you mean `{}`?", candidate))
                     .with_replacement(candidate.to_string())

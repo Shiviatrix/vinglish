@@ -1,0 +1,6 @@
+function main()
+begin
+    funtion test() begin  # missing 'u' in function
+        prin("hello")     # missing 't' in print
+    end
+end

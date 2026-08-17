@@ -3499,6 +3499,7 @@ dependencies = [
  "strsim",
  "syn 3.0.3",
  "thiserror",
+ "vinglish-diagnostics",
  "vinglish-hir",
  "vinglish-lexer",
  "vinglish-mir",

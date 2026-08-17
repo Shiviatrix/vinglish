@@ -84,5 +84,42 @@ pub fn check_polyglot_interference(
         return true;
     }
 
+    // Check for bitwise AND (&, &&) used where logical 'and' expected
+    if (bad_token_text == "&" || bad_token_text == "&&") &&
+       (context.contains("if ") || context.contains("while ") || context.contains("repeat")) {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish uses 'and' for logical conjunction.")
+                .with_replacement("and")
+                .with_confidence(90.0),
+        );
+        diag.message = format!("Unexpected bitwise operator '{}'.", bad_token_text);
+        return true;
+    }
+
+    // Check for bitwise OR (|, ||) used where logical 'or' expected
+    if (bad_token_text == "|" || bad_token_text == "||") &&
+       (context.contains("if ") || context.contains("while ") || context.contains("repeat")) {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish uses 'or' for logical disjunction.")
+                .with_replacement("or")
+                .with_confidence(90.0),
+        );
+        diag.message = format!("Unexpected bitwise operator '{}'.", bad_token_text);
+        return true;
+    }
+
+    // Check for logical NOT (!) used where keyword 'not' expected
+    if bad_token_text == "!" &&
+       (context.contains("if ") || context.contains("while ") || context.contains("repeat") ||
+        context.contains("not ")) {
+        diag.suggestions.push(
+            Suggestion::new("Vinglish uses 'not' for logical negation.")
+                .with_replacement("not")
+                .with_confidence(90.0),
+        );
+        diag.message = "Unexpected C-style logical negation '!'. ".to_string();
+        return true;
+    }
+
     false
 }

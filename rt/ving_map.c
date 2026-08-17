@@ -25,15 +25,15 @@ static uint64_t hash_string(const char* str) {
     return hash;
 }
 
-void* ving_map_new() {
+uintptr_t ving_map_new(void) {
     Map* map = (Map*)malloc(sizeof(Map));
     map->capacity = INITIAL_CAPACITY;
     map->size = 0;
     map->buckets = (Entry**)calloc(INITIAL_CAPACITY, sizeof(Entry*));
-    return map;
+    return (uintptr_t)map;
 }
 
-void ving_map_insert(void* map_ptr, const char* key, int64_t value) {
+uintptr_t ving_map_insert(uintptr_t map_ptr, const char* key, int64_t value) {
     Map* map = (Map*)map_ptr;
     uint64_t hash = hash_string(key);
     int64_t index = hash % map->capacity;
@@ -42,7 +42,7 @@ void ving_map_insert(void* map_ptr, const char* key, int64_t value) {
     while (current) {
         if (strcmp(current->key, key) == 0) {
             current->value = value; // update
-            return;
+            return 0;
         }
         current = current->next;
     }
@@ -54,10 +54,11 @@ void ving_map_insert(void* map_ptr, const char* key, int64_t value) {
     map->buckets[index] = new_entry;
     map->size++;
 
-    // For simplicity, we skip rehashing in this minimal runtime
+    // For simplicity, we skip rehashing in this minimal runtime.
+    return 0;
 }
 
-int64_t ving_map_get(void* map_ptr, const char* key) {
+int64_t ving_map_get(uintptr_t map_ptr, const char* key) {
     Map* map = (Map*)map_ptr;
     uint64_t hash = hash_string(key);
     int64_t index = hash % map->capacity;
@@ -72,8 +73,9 @@ int64_t ving_map_get(void* map_ptr, const char* key) {
     return 0; // return 0 if not found
 }
 
-void ving_map_free(void* map_ptr) {
+uintptr_t ving_map_free(uintptr_t map_ptr) {
     Map* map = (Map*)map_ptr;
+    if (!map) return 0;
     for (int64_t i = 0; i < map->capacity; i++) {
         Entry* current = map->buckets[i];
         while (current) {
@@ -85,4 +87,5 @@ void ving_map_free(void* map_ptr) {
     }
     free(map->buckets);
     free(map);
+    return 0;
 }
