@@ -4,17 +4,17 @@
 
 # Vinglish
 
-Vinglish is an English-inspired systems programming language with a Rust implementation and a compiler pipeline that lowers source code through parser, HIR, MIR, SSA, and backend stages.
+Vinglish is a systems programming language with English-like syntax that compiles through a multi-stage pipeline: lexing, parsing, type inference, and intermediate representations (HIR → MIR → SSA) before lowering to C or LLVM. The compiler is implemented in Rust.
 
-## What is in this repo
+## Contents
 
-This repository contains the compiler, runtime, standard library, examples, and public validation flow for Vinglish.
+This repository contains the compiler toolchain, runtime, standard library, examples, and the validation procedures used in CI.
 
-## Install
+## Installation
 
 Requirements:
 - Rust 1.96+ (2024 edition)
-- A C compiler such as GCC or Clang
+- GCC or Clang
 
 ```sh
 cargo install --path crates/vinglish
@@ -30,56 +30,53 @@ vng build examples/basics/hello.ving --output hello
 ```
 
 Expected output:
-
 ```text
 Hello from Vinglish!
 ```
 
-## Package ecosystem and registry support
+## Package management
 
-The repo ships with a public-first package workflow:
+The language includes a package manager with dependency tracking:
 
 ```sh
 vng pkg init
 vng pkg add core
 ```
 
-This creates a `ving.toml` manifest and a reproducible `ving.lock` file for dependency tracking. Local registry index lookups and Git/path dependencies are already supported via environment variables and package metadata.
+This creates a `ving.toml` manifest and `ving.lock` file for reproducible builds. The package manager supports local registry indices, Git-based dependencies, and path-based dependencies through environment variables.
 
-A reference registry index is included at `registry/index.json` and can be used like this:
+A reference registry index is provided at `registry/index.json`:
 
 ```sh
 VINGLISH_REGISTRY_INDEX=./registry/index.json vng pkg add core
 ```
 
-This gives the language a realistic dependency story, which is one of the biggest gaps between a research compiler and a world-class language platform.
+## Validation and testing
 
-## Public validation and release expectations
-
-The project now includes a public validation path that is exercised in CI:
+The project includes automated validation checks run in CI:
 
 ```sh
 ./tests/run_public_checks.sh
 ```
 
-This script checks:
-- the workspace builds cleanly
-- the compiler accepts a public example
-- a compiled binary runs successfully
+These checks verify:
+- The workspace builds successfully
+- The compiler handles public examples correctly
+- Compiled binaries execute as expected
 
 ## Repository structure
 
-- `crates/` — compiler and runtime crates
-- `std/` — public standard library modules
-- `examples/` — end-user examples
+- `crates/` — compiler and runtime implementation
+- `std/` — standard library modules
+- `examples/` — usage examples
 - `docs/` — architecture and language documentation
 - `.github/workflows/` — CI and release automation
-- `tests/` — canonical public validation shell checks
+- `tests/` — validation procedures
 
-## Known status
+## Status
 
-Vinglish is still experimental, but the public-facing toolchain and validation flow are now structured to support a more reliable release process.
+Vinglish is experimental. The public toolchain and validation framework are structured to support reliable releases.
 
 ## License
 
-MIT license
+MIT
