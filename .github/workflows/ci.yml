@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   workspace:
@@ -20,12 +24,23 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Configure Rust cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Format check
-        run: cargo fmt --check
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Workspace test suite
         run: cargo test --workspace --quiet
 
       - name: Public smoke test
-        run: ./tests/run_public_checks.sh
+        run: chmod +x tests/run_public_checks.sh && ./tests/run_public_checks.sh
+
+      - name: Release build smoke test
+        run: cargo build --release --bin vng

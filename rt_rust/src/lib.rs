@@ -45,20 +45,20 @@ pub fn ui_create_window(title: String, width: i32, height: i32) -> i32 {
 
 #[vinglish_export]
 pub fn ui_window_is_open(id: i32) -> i32 {
-    if let Some(wrapper) = WINDOWS.lock().unwrap().get(&id) {
-        if wrapper.0.is_open() && !wrapper.0.is_key_down(Key::Escape) {
-            return 1;
-        }
+    if let Some(wrapper) = WINDOWS.lock().unwrap().get(&id)
+        && wrapper.0.is_open() && !wrapper.0.is_key_down(Key::Escape)
+    {
+        return 1;
     }
     0
 }
 
 #[vinglish_export]
 pub fn ui_space_pressed(id: i32) -> i32 {
-    if let Some(wrapper) = WINDOWS.lock().unwrap().get(&id) {
-        if wrapper.0.is_key_down(Key::Space) {
-            return 1;
-        }
+    if let Some(wrapper) = WINDOWS.lock().unwrap().get(&id)
+        && wrapper.0.is_key_down(Key::Space)
+    {
+        return 1;
     }
     0
 }
@@ -76,11 +76,11 @@ pub fn ui_create_buffer(width: i32, height: i32) -> i32 {
 
 #[vinglish_export]
 pub fn ui_set_pixel(buf_id: i32, x: i32, y: i32, color: i32) {
-    if let Some(wrapper) = BUFFERS.lock().unwrap().get_mut(&buf_id) {
-        if x >= 0 && (x as usize) < wrapper.1 && y >= 0 && (y as usize) < wrapper.2 {
-            let idx = (y as usize) * wrapper.1 + (x as usize);
-            wrapper.0[idx] = color as u32;
-        }
+    if let Some(wrapper) = BUFFERS.lock().unwrap().get_mut(&buf_id)
+        && x >= 0 && (x as usize) < wrapper.1 && y >= 0 && (y as usize) < wrapper.2
+    {
+        let idx = (y as usize) * wrapper.1 + (x as usize);
+        wrapper.0[idx] = color as u32;
     }
 }
 

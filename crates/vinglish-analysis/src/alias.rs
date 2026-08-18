@@ -167,14 +167,14 @@ impl AliasAnalysisPass {
                         graph.assign_alias(*dest, id);
 
                         for (op, _) in args {
-                            if let Operand::Var(src) = op {
-                                if let Some(mut src_alias) = graph.get_alias(*src) {
-                                    while let Some(&mapped) = alias_replacements.get(&src_alias) {
-                                        src_alias = mapped;
-                                    }
-                                    if src_alias != id {
-                                        alias_replacements.insert(src_alias, id);
-                                    }
+                            if let Operand::Var(src) = op
+                                && let Some(mut src_alias) = graph.get_alias(*src)
+                            {
+                                while let Some(&mapped) = alias_replacements.get(&src_alias) {
+                                    src_alias = mapped;
+                                }
+                                if src_alias != id {
+                                    alias_replacements.insert(src_alias, id);
                                 }
                             }
                         }

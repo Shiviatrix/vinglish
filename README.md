@@ -1,20 +1,23 @@
-<div align="center">
-  <img src="logos/vinglish-icon-color.svg" alt="Vinglish Icon" width="128" height="128" />
-</div>
-
 # Vinglish
 
-Vinglish is a systems programming language with English-like syntax that compiles through a multi-stage pipeline: lexing, parsing, type inference, and intermediate representations (HIR → MIR → SSA) before lowering to C or LLVM. The compiler is implemented in Rust.
+Vinglish is a systems programming language with English-like syntax, ownership-aware checks, and a multi-stage compiler pipeline. It aims to be readable for novices while still supporting low-level runtime and compiler-level work.
 
-## Contents
+## What is in this repo
 
-This repository contains the compiler toolchain, runtime, standard library, examples, and the validation procedures used in CI.
+- `crates/` — compiler, runtime, and standard-library toolchain
+- `std/` — public runtime modules
+- `examples/` — end-user and teaching examples
+- `docs/` — user documentation and compiler reference material
+- `registry/` — sample package registry metadata
+- `.github/workflows/` — CI and release automation
+- `tests/` — validation scripts and smoke checks
 
 ## Installation
 
 Requirements:
-- Rust 1.96+ (2024 edition)
-- GCC or Clang
+
+- Rust toolchain (stable)
+- C toolchain (GCC or Clang)
 
 ```sh
 cargo install --path crates/vinglish
@@ -30,66 +33,46 @@ vng build examples/basics/hello.ving --output hello
 ```
 
 Expected output:
+
 ```text
 Hello from Vinglish!
 ```
 
-## Package management
+## Documentation map
 
-The language includes a package manager with dependency tracking:
+Start here and then move deeper:
+
+- [docs/README.md](docs/README.md)
+- [docs/getting-started.md](docs/getting-started.md)
+- [docs/language-tour.md](docs/language-tour.md)
+- [docs/compiler-pipeline.md](docs/compiler-pipeline.md)
+- [docs/standard-library.md](docs/standard-library.md)
+- [docs/package-management.md](docs/package-management.md)
+- [docs/examples-guide.md](docs/examples-guide.md)
+- [docs/troubleshooting.md](docs/troubleshooting.md)
+
+## Package management
 
 ```sh
 vng pkg init
 vng pkg add core
 ```
 
-This creates a `ving.toml` manifest and `ving.lock` file for reproducible builds. The package manager supports local registry indices, Git-based dependencies, and path-based dependencies through environment variables.
+The package manager creates a `ving.toml` manifest and a `ving.lock` file, resolves semver-aware versions, and validates dependency integrity before building.
 
-A reference registry index is provided at `registry/index.json`:
+## Validation
 
-```sh
-VINGLISH_REGISTRY_INDEX=./registry/index.json vng pkg add core
-```
-
-The standard library now also includes richer public modules for common runtime tasks, including `std.time`, `std.random`, and `std.collections.list` for timestamps, RNGs, and resizable generic lists.
-
-The package registry is now semver-aware: dependency ranges are resolved against versioned registry metadata and `ving.lock` records the installed version plus integrity data so lockfile drift is detected immediately.
-
-## Example library
-
-The repository keeps examples organized by use case:
-
-- `examples/basics/` — syntax and compiler basics
-- `examples/apps/` — practical end-user programs
-- `examples/games/` — lightweight entertainment demos
-- `examples/tools/` — automation and utility scripts
-- `examples/advanced/` — larger experiments and edge cases
-
-## Validation and testing
-
-The project includes automated validation checks run in CI:
+The canonical public validation path is:
 
 ```sh
 ./tests/run_public_checks.sh
 ```
 
-These checks verify:
-- The workspace builds successfully
-- The compiler handles public examples correctly
-- Compiled binaries execute as expected
-
-## Repository structure
-
-- `crates/` — compiler and runtime implementation
-- `std/` — standard library modules
-- `examples/` — usage examples
-- `docs/` — architecture and language documentation
-- `.github/workflows/` — CI and release automation
-- `tests/` — validation procedures
+It verifies the workspace builds and that the main public example executes successfully.
 
 ## Status
 
-Vinglish is experimental. The public toolchain and validation framework are structured to support reliable releases.
+The project is structured for public-facing use, but it still carries an experimental label in some areas. The compiler, runtime, standard library, package manager, and docs are all publicly testable and documented.
 
 ## License
 

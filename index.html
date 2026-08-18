@@ -1,82 +1,167 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Vinglish - Readable Systems Programming</title>
-  <link rel="stylesheet" type="text/css" href="site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vinglish</title>
+    <style>
+      :root {
+        --bg: #081821;
+        --panel: #122c38;
+        --text: #edf7fb;
+        --muted: #c5d8df;
+        --accent: #7ae1ff;
+        --accent-2: #ffc857;
+        --border: rgba(122, 225, 255, 0.3);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #081821 0%, #122c38 100%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 24px 64px;
+      }
+      .hero {
+        background: linear-gradient(135deg, rgba(18,44,56,0.96), rgba(17,38,48,0.96));
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 30px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2.4rem, 5vw, 4rem);
+      }
+      .lead {
+        color: var(--muted);
+        line-height: 1.7;
+        max-width: 70ch;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      nav a {
+        text-decoration: none;
+        background: rgba(122, 225, 255, 0.08);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 9px 14px;
+      }
+      nav a:hover { text-decoration: underline; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+        margin-top: 28px;
+      }
+      .card {
+        background: rgba(17,38,48,0.8);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+      }
+      .card h2 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+      .card p, li {
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      a { color: var(--accent); }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: rgba(255,255,255,0.04);
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+      pre {
+        overflow-x: auto;
+        background: rgba(7,12,16,0.9);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        line-height: 1.5;
+      }
+      .meta { margin-top: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <div class="tag" style="color: var(--accent-2); letter-spacing: .08em; font-size: .8rem; text-transform: uppercase; font-weight: 700;">Vinglish</div>
+        <h1>Readable systems programming</h1>
+        <p class="lead">
+          Vinglish is a systems programming language with English-like keywords, ownership-aware analysis, and a compiler pipeline that lowers source through lexing, parsing, type inference, HIR, MIR, SSA, and final C or LLVM code generation.
+        </p>
+        <nav>
+          <a href="docs/index.html">Docs hub</a>
+          <a href="language_guide.html">Language guide</a>
+          <a href="architecture.html">Architecture</a>
+          <a href="standard_library.html">Standard library</a>
+          <a href="https://github.com/Shiviatrix/vinglish">GitHub</a>
+        </nav>
+      </header>
 
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Vinglish Compiler Project</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Times New Roman">
-            <h2><img src="logos/vinglish-icon-color.svg" width="32" height="32" alt="Vinglish Logo"> Vinglish</h2>
-            <i>A systems programming language implementing keyword-based syntax and MIR-level ownership validation.</i>
-          </font>
-        </td>
-      </tr>
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="index.html">Home</a> ] | [ <a href="language_guide.html">Language Guide</a> ] | [ <a href="architecture.html">Architecture</a> ] | [ <a href="standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
+      <section class="grid">
+        <article class="card">
+          <h2>Install</h2>
+          <p>Requires a Rust toolchain and a C toolchain. Install the compiler from the workspace and verify the CLI works.</p>
+          <pre><code>cargo install --path crates/vinglish
+vng --help</code></pre>
+        </article>
+        <article class="card">
+          <h2>Quick start</h2>
+          <p>Compile and run a basic program using the public example set.</p>
+          <pre><code>vng check examples/basics/hello.ving
+vng build examples/basics/hello.ving --output hello
+./hello</code></pre>
+        </article>
+        <article class="card">
+          <h2>Package system</h2>
+          <p>The project includes a manifest and lockfile flow for reproducible builds, semver-aware dependencies, and registry metadata.</p>
+          <pre><code>vng pkg init
+vng pkg add core</code></pre>
+        </article>
+      </section>
 
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#000080" colspan="2">
-          <font size="+2" face="Courier New" color="#FFFFFF"><b>Features</b></font>
-        </td>
-      </tr>
-      <tr>
-        <td bgcolor="#C0C0C0" width="50%">
-          <font color="#000000" face="Times New Roman">
-            <ul>
-              <li><b>Syntax:</b> Replaces common symbolic operators with alphanumeric keywords.</li>
-              <li><b>Memory Safety:</b> Validates object lifetimes via a Mid-level Intermediate Representation (MIR) ownership graph.</li>
-              <li><b>Code Generation:</b> Emits C source code or LLVM IR.</li>
-            </ul>
-          </font>
-        </td>
-        <td bgcolor="#C0C0C0" width="50%" align="center">
-          <font color="#000000">
-            <h3>Compilation Instructions (Requires Rust & C Compiler)</h3>
-            <pre style="background-color: #000000; color: #00FF00; padding: 10px; border: inset 2px; text-align: left;">
-cargo install --path crates/vinglish
-vng run hello.ving</pre>
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-  <center>
-    <br><br>
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <h3>Documentation & Downloads</h3>
-            <p>
-              <a href="language_guide.html">Read the Tutorial</a><br><br>
-              <a href="https://marketplace.visualstudio.com/items?itemName=Shiviatrix.vinglish" target="_blank">Download VS Code Extension</a>
-            </p>
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
+      <div class="grid" style="margin-top: 24px;">
+        <article class="card">
+          <h2>Documentation map</h2>
+          <ul>
+            <li><a href="docs/getting-started.md">Getting started</a></li>
+            <li><a href="docs/language-tour.md">Language tour</a></li>
+            <li><a href="docs/compiler-pipeline.md">Compiler pipeline</a></li>
+            <li><a href="docs/standard-library.md">Standard library</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Advanced docs</h2>
+          <ul>
+            <li><a href="docs/package-management.md">Package management</a></li>
+            <li><a href="docs/examples-guide.md">Examples guide</a></li>
+            <li><a href="docs/troubleshooting.md">Troubleshooting</a></li>
+            <li><a href="docs/reference/standard-library.html">Reference pages</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Project layout</h2>
+          <ul>
+            <li><code>crates/</code> — compiler and runtime implementation</li>
+            <li><code>std/</code> — public standard library modules</li>
+            <li><code>examples/</code> — user-facing examples</li>
+            <li><code>docs/</code> — docs and architecture reference</li>
+          </ul>
+        </article>
+      </div>
+    </div>
   </body>
 </html>

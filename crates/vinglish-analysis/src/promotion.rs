@@ -25,13 +25,12 @@ impl StackPromotionPass {
         for func in &mut module.functions {
             for block in &mut func.blocks {
                 for instr in &mut block.instrs {
-                    if let Instruction::HeapAllocate(dest, ty) = instr {
-                        if let Some(alias) = alias_graph.get_alias(*dest) {
-                            if !escape_analysis.is_escaped(alias) {
-                                // Safe to promote to stack allocation
-                                *instr = Instruction::StackAllocate(*dest, *ty);
-                            }
-                        }
+                    if let Instruction::HeapAllocate(dest, ty) = instr
+                        && let Some(alias) = alias_graph.get_alias(*dest)
+                        && !escape_analysis.is_escaped(alias)
+                    {
+                        // Safe to promote to stack allocation
+                        *instr = Instruction::StackAllocate(*dest, *ty);
                     }
                 }
             }

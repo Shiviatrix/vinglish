@@ -3,7 +3,7 @@
 //! A repair is never guessed: each rule is explicit, has a bounded cost, and is
 //! accepted only after the normal type pass succeeds on the rebuilt AST.
 
-use crate::{passes::HealingMode, AstNodeId, Type, TypeError};
+use crate::{AstNodeId, Type, TypeError, passes::HealingMode};
 use vinglish_lexer::Span;
 use vinglish_parser::ast::{Block, Expr, Ident, Item, Module, Stmt, TypeExpr, UnOp};
 
@@ -385,23 +385,23 @@ fn find_expr_in_expr_mut(expr: &mut Expr, id: AstNodeId) -> Option<&mut Expr> {
                 return Some(e);
             }
             args.iter_mut().find_map(|e| find_expr_in_expr_mut(e, id))
-        },
+        }
         Expr::BinOp { left, right, .. } => {
             if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(left), id) {
                 return Some(e);
             }
             find_expr_in_expr_mut(std::sync::Arc::make_mut(right), id)
-        },
+        }
         Expr::UnOp { operand, .. } | Expr::PostfixTry { inner: operand, .. } => {
             find_expr_in_expr_mut(std::sync::Arc::make_mut(operand), id)
-        },
+        }
         Expr::Field { object, .. } => find_expr_in_expr_mut(std::sync::Arc::make_mut(object), id),
         Expr::Index { object, index, .. } => {
             if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(object), id) {
                 return Some(e);
             }
             find_expr_in_expr_mut(std::sync::Arc::make_mut(index), id)
-        },
+        }
         Expr::StructLit { ty, fields, .. } => {
             if let Some(e) = find_expr_in_expr_mut(std::sync::Arc::make_mut(ty), id) {
                 return Some(e);
@@ -409,7 +409,7 @@ fn find_expr_in_expr_mut(expr: &mut Expr, id: AstNodeId) -> Option<&mut Expr> {
             fields
                 .iter_mut()
                 .find_map(|(_, e)| find_expr_in_expr_mut(e, id))
-        },
+        }
         Expr::Block(b) => find_expr_in_block_mut(std::sync::Arc::make_mut(b), id),
         Expr::List { elements, .. } | Expr::MacroCall { args: elements, .. } => elements
             .iter_mut()

@@ -24,15 +24,19 @@ impl<'ctx> TypeLowering<'ctx> {
             ),
             Type::Unit => None, // void
             Type::Named(name, _) => {
-                if let Some(type_id) = symbol_table.lookup(name) {
-                    if let Some(SymbolKind::Type(_)) = symbol_table.get(type_id) {
-                        return Some(self.lower_struct_type(symbol_table, TypeId(type_id)).into());
-                    }
+                if let Some(type_id) = symbol_table.lookup(name)
+                    && let Some(SymbolKind::Type(_)) = symbol_table.get(type_id)
+                {
+                    return Some(self.lower_struct_type(symbol_table, TypeId(type_id)).into());
                 }
                 let struct_type = self.context.opaque_struct_type(name);
                 Some(struct_type.into())
             }
-            Type::List(_) | Type::Dict(_, _) | Type::HashMap(_, _) | Type::Optional(_) | Type::Result(_, _) => Some(
+            Type::List(_)
+            | Type::Dict(_, _)
+            | Type::HashMap(_, _)
+            | Type::Optional(_)
+            | Type::Result(_, _) => Some(
                 self.context
                     .ptr_type(inkwell::AddressSpace::default())
                     .into(),
@@ -62,10 +66,15 @@ impl<'ctx> TypeLowering<'ctx> {
                 if elements.is_empty() {
                     None // Unit equivalent
                 } else {
-                    let struct_type = self.context.opaque_struct_type(&format!("tuple_{}", elements.len()));
+                    let struct_type = self
+                        .context
+                        .opaque_struct_type(&format!("tuple_{}", elements.len()));
                     let field_types: Vec<BasicTypeEnum<'ctx>> = elements
                         .iter()
-                        .map(|elem| self.lower_type(elem, symbol_table).unwrap_or(self.context.i64_type().into()))
+                        .map(|elem| {
+                            self.lower_type(elem, symbol_table)
+                                .unwrap_or(self.context.i64_type().into())
+                        })
                         .collect();
                     struct_type.set_body(&field_types, false);
                     Some(struct_type.into())
@@ -82,10 +91,10 @@ impl<'ctx> TypeLowering<'ctx> {
     ) -> StructType<'ctx> {
         if let Some(ts) = symbol_table.get_type(type_id) {
             let name = &ts.name;
-            if let Some(existing) = self.context.get_struct_type(name) {
-                if !existing.is_opaque() {
-                    return existing;
-                }
+            if let Some(existing) = self.context.get_struct_type(name)
+                && !existing.is_opaque()
+            {
+                return existing;
             }
             let struct_type = self.context.opaque_struct_type(name);
 

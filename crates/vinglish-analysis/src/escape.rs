@@ -66,16 +66,14 @@ impl EscapeAnalysisPass {
             for func in &module.functions {
                 for block in &func.blocks {
                     for instr in &block.instrs {
-                        if let Instruction::StoreField(obj, _, Operand::Var(val_src)) = instr {
-                            if let (Some(obj_alias), Some(val_alias)) =
+                        if let Instruction::StoreField(obj, _, Operand::Var(val_src)) = instr
+                            && let (Some(obj_alias), Some(val_alias)) =
                                 (alias_graph.get_alias(*obj), alias_graph.get_alias(*val_src))
-                            {
-                                if analysis.is_escaped(obj_alias) && !analysis.is_escaped(val_alias)
-                                {
-                                    analysis.escaped_aliases.insert(val_alias);
-                                    changed = true;
-                                }
-                            }
+                            && analysis.is_escaped(obj_alias)
+                            && !analysis.is_escaped(val_alias)
+                        {
+                            analysis.escaped_aliases.insert(val_alias);
+                            changed = true;
                         }
                     }
                 }
@@ -96,10 +94,10 @@ impl EscapeAnalysisPass {
                 if let Instruction::Call(_, _, args) = instr {
                     // Conservatively assume all arguments passed to a call escape
                     for arg in args {
-                        if let Operand::Var(v) = arg {
-                            if let Some(alias) = alias_graph.get_alias(*v) {
-                                analysis.escaped_aliases.insert(alias);
-                            }
+                        if let Operand::Var(v) = arg
+                            && let Some(alias) = alias_graph.get_alias(*v)
+                        {
+                            analysis.escaped_aliases.insert(alias);
                         }
                     }
                 }

@@ -1,5 +1,5 @@
-use vinglish_bindgen::vinglish_bindgen;
 use regex::Regex;
+use vinglish_bindgen::vinglish_bindgen;
 
 #[vinglish_bindgen]
 pub fn regex_is_match(pattern: &str, text: &str) -> bool {

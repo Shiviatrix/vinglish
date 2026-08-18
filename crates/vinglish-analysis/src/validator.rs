@@ -31,17 +31,16 @@ impl AnalysisValidator {
         for func in &module.functions {
             for block in &func.blocks {
                 for instr in &block.instrs {
-                    if let Instruction::StackAllocate(dest, _) = instr {
-                        if let Some(alias) = alias_graph.get_alias(*dest) {
-                            if escape_analysis.is_escaped(alias) {
-                                let diag = Diagnostic::error(
-                                    "E_ANALYSIS",
-                                    format!("Stack allocation {} escapes the function", dest),
-                                    Span::default(),
-                                );
-                                errors.push(diag);
-                            }
-                        }
+                    if let Instruction::StackAllocate(dest, _) = instr
+                        && let Some(alias) = alias_graph.get_alias(*dest)
+                        && escape_analysis.is_escaped(alias)
+                    {
+                        let diag = Diagnostic::error(
+                            "E_ANALYSIS",
+                            format!("Stack allocation {} escapes the function", dest),
+                            Span::default(),
+                        );
+                        errors.push(diag);
                     }
                 }
             }

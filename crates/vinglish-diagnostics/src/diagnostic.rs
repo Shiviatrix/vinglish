@@ -1,5 +1,5 @@
-use vinglish_lexer::Span;
 use strsim::damerau_levenshtein;
+use vinglish_lexer::Span;
 
 /// Severity level for a diagnostic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -204,7 +204,7 @@ fn calibrated_confidence(raw_similarity: f64) -> f32 {
     }
 
     // For low similarity (<0.7), very low confidence (likely not a typo)
-    return (raw_similarity * 50.0) as f32; // 0-35 range
+    (raw_similarity * 50.0) as f32 // 0-35 range
 }
 
 /// Convert lex/parse/type errors into diagnostics, and enrich with intent suggestions.
@@ -213,7 +213,7 @@ pub fn from_unknown_ident(name: &str, span: Span, symbol_table: &[&str]) -> Diag
     let mut scored: Vec<(&str, f64)> = symbol_table
         .iter()
         .map(|s| {
-            let score = similarity_score(name, *s);
+            let score = similarity_score(name, s);
             (*s, score)
         })
         .collect();

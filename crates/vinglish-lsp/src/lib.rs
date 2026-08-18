@@ -3,7 +3,7 @@ use tokio::sync::RwLock;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use vinglish_lexer::{tokenize, LexError, Span, Spanned, Token};
+use vinglish_lexer::{LexError, Span, Spanned, Token, tokenize};
 use vinglish_parser::ast::{Block, Item, LetStmt, Module, Stmt, TypeExpr};
 use vinglish_parser::parse;
 
@@ -55,16 +55,32 @@ fn format_type(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(inner) => format!("List of {}", format_type(inner)),
-        TypeExpr::Array { element_type, length } => format!("[{}; {}]", format_type(element_type), length),
-        TypeExpr::Dict { key, val } => format!("Dictionary from {} to {}", format_type(key), format_type(val)),
-        TypeExpr::HashMap { key, val } => format!("HashMap from {} to {}", format_type(key), format_type(val)),
+        TypeExpr::Array {
+            element_type,
+            length,
+        } => format!("[{}; {}]", format_type(element_type), length),
+        TypeExpr::Dict { key, val } => format!(
+            "Dictionary from {} to {}",
+            format_type(key),
+            format_type(val)
+        ),
+        TypeExpr::HashMap { key, val } => {
+            format!("HashMap from {} to {}", format_type(key), format_type(val))
+        }
         TypeExpr::Set(inner) => format!("Set of {}", format_type(inner)),
         TypeExpr::Tuple(elements) => {
-            let inner = elements.iter().map(format_type).collect::<Vec<_>>().join(", ");
+            let inner = elements
+                .iter()
+                .map(format_type)
+                .collect::<Vec<_>>()
+                .join(", ");
             format!("({})", inner)
-        },
+        }
         TypeExpr::Optional(inner) => format!("Optional {}", format_type(inner)),
-        TypeExpr::Result { ok_type, error_type: _ } => format!("Result of {}", format_type(&ok_type)),
+        TypeExpr::Result {
+            ok_type,
+            error_type: _,
+        } => format!("Result of {}", format_type(ok_type)),
         TypeExpr::ResultOf(inner) => format!("Result of {}", format_type(inner)),
         TypeExpr::Reference { mutable, inner } => {
             if *mutable {
@@ -72,10 +88,17 @@ fn format_type(ty: &TypeExpr) -> String {
             } else {
                 format!("borrow {}", format_type(inner))
             }
-        },
+        }
         TypeExpr::Box(inner) => format!("Box<{}>", format_type(inner)),
-        TypeExpr::Function { params, return_type } => {
-            let param_str = params.iter().map(format_type).collect::<Vec<_>>().join(", ");
+        TypeExpr::Function {
+            params,
+            return_type,
+        } => {
+            let param_str = params
+                .iter()
+                .map(format_type)
+                .collect::<Vec<_>>()
+                .join(", ");
             format!("({}) -> {}", param_str, format_type(return_type))
         }
         TypeExpr::Unit => "()".to_string(),
@@ -129,7 +152,10 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "vinglish-lsp fully initialized with hover, completion, and definition support!")
+            .log_message(
+                MessageType::INFO,
+                "vinglish-lsp fully initialized with hover, completion, and definition support!",
+            )
             .await;
     }
 
@@ -148,8 +174,12 @@ impl LanguageServer for Backend {
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
         if let Some(change) = params.content_changes.pop() {
-            self.on_change(params.text_document.uri, change.text, params.text_document.version)
-                .await;
+            self.on_change(
+                params.text_document.uri,
+                change.text,
+                params.text_document.version,
+            )
+            .await;
         }
     }
 
@@ -165,10 +195,10 @@ impl LanguageServer for Backend {
         let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
-        
+
         let mut is_field_access = false;
         let mut object_ident = None;
-        
+
         let mut prev_token_idx = None;
         for (i, t) in tokens.iter().enumerate() {
             if t.span.start >= offset {
@@ -176,7 +206,7 @@ impl LanguageServer for Backend {
             }
             prev_token_idx = Some(i);
         }
-        
+
         if let Some(idx) = prev_token_idx {
             let t = &tokens[idx];
             if matches!(t.node, Token::Dot) {
@@ -213,7 +243,9 @@ impl LanguageServer for Backend {
                             walk_block(else_b, offset, locals);
                         }
                     }
-                    Stmt::Repeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
+                    Stmt::Repeat(vinglish_parser::ast::RepeatStmt::ForEvery {
+                        var, body, ..
+                    }) => {
                         if body.span.start < offset && offset <= body.span.end {
                             locals.push((var.name.to_string(), None));
                         }
@@ -225,7 +257,11 @@ impl LanguageServer for Backend {
                     Stmt::Repeat(vinglish_parser::ast::RepeatStmt::Count { body, .. }) => {
                         walk_block(body, offset, locals);
                     }
-                    Stmt::ParallelRepeat(vinglish_parser::ast::RepeatStmt::ForEvery { var, body, .. }) => {
+                    Stmt::ParallelRepeat(vinglish_parser::ast::RepeatStmt::ForEvery {
+                        var,
+                        body,
+                        ..
+                    }) => {
                         if body.span.start < offset && offset <= body.span.end {
                             locals.push((var.name.to_string(), None));
                         }
@@ -249,13 +285,16 @@ impl LanguageServer for Backend {
             if let Some(obj_name) = object_ident {
                 let mut obj_type = None;
                 for item in &ast.items {
-                    if let Item::Function(f) = item && offset >= f.span.start && offset <= f.span.end {
+                    if let Item::Function(f) = item
+                        && offset >= f.span.start
+                        && offset <= f.span.end
+                    {
                         let mut locals = vec![];
                         for p in &f.params {
                             locals.push((p.name.name.to_string(), Some(p.ty.clone())));
                         }
                         walk_block(&f.body, offset, &mut locals);
-                        
+
                         for (name, ty) in locals.into_iter().rev() {
                             if name == obj_name {
                                 obj_type = ty;
@@ -264,10 +303,12 @@ impl LanguageServer for Backend {
                         }
                     }
                 }
-                
+
                 if let Some(TypeExpr::Named(type_id)) = obj_type {
                     for item in &ast.items {
-                        if let Item::Type(t) = item && t.name.name == type_id.name {
+                        if let Item::Type(t) = item
+                            && t.name.name == type_id.name
+                        {
                             for field in &t.fields {
                                 items.push(CompletionItem {
                                     label: field.name.name.to_string(),
@@ -285,34 +326,67 @@ impl LanguageServer for Backend {
 
         let mut in_function = false;
         for item in &ast.items {
-            if let Item::Function(f) = item {
-                if offset >= f.span.start && offset <= f.span.end {
-                    in_function = true;
-                    let mut locals = vec![];
-                    for p in &f.params {
-                        locals.push((p.name.name.to_string(), Some(p.ty.clone())));
-                    }
-                    walk_block(&f.body, offset, &mut locals);
-                    
-                    for (name, ty) in locals {
-                        let detail = ty.map(|t| format_type(&t)).unwrap_or_else(|| "Local".to_string());
-                        items.push(CompletionItem {
-                            label: name,
-                            kind: Some(CompletionItemKind::VARIABLE),
-                            detail: Some(detail),
-                            ..Default::default()
-                        });
-                    }
+            if let Item::Function(f) = item
+                && offset >= f.span.start
+                && offset <= f.span.end
+            {
+                in_function = true;
+                let mut locals = vec![];
+                for p in &f.params {
+                    locals.push((p.name.name.to_string(), Some(p.ty.clone())));
+                }
+                walk_block(&f.body, offset, &mut locals);
+
+                for (name, ty) in locals {
+                    let detail = ty
+                        .map(|t| format_type(&t))
+                        .unwrap_or_else(|| "Local".to_string());
+                    items.push(CompletionItem {
+                        label: name,
+                        kind: Some(CompletionItemKind::VARIABLE),
+                        detail: Some(detail),
+                        ..Default::default()
+                    });
                 }
             }
         }
 
         if !in_function {
             let keywords = vec![
-                "let", "be", "function", "returns", "if", "then", "otherwise", "when", "repeat", "for",
-                "every", "while", "match", "case", "parallel", "spawn", "send", "receive",
-                "transaction", "commit", "compile", "use", "package", "module", "public", "private",
-                "internal", "type", "requires", "effects", "foreign", "export", "using", "arena",
+                "let",
+                "be",
+                "function",
+                "returns",
+                "if",
+                "then",
+                "otherwise",
+                "when",
+                "repeat",
+                "for",
+                "every",
+                "while",
+                "match",
+                "case",
+                "parallel",
+                "spawn",
+                "send",
+                "receive",
+                "transaction",
+                "commit",
+                "compile",
+                "use",
+                "package",
+                "module",
+                "public",
+                "private",
+                "internal",
+                "type",
+                "requires",
+                "effects",
+                "foreign",
+                "export",
+                "using",
+                "arena",
             ];
             for kw in keywords {
                 items.push(CompletionItem {
@@ -369,7 +443,7 @@ impl LanguageServer for Backend {
         let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
-        
+
         let mut target_ident = None;
         for t in tokens {
             if offset >= t.span.start && offset <= t.span.end {
@@ -379,16 +453,19 @@ impl LanguageServer for Backend {
                     match &t.node {
                         Token::Spawn => {
                             return Ok(Some(Hover {
-                                contents: HoverContents::Scalar(MarkedString::String("`spawn` creates a new lightweight actor running concurrently.".to_string())),
+                                contents: HoverContents::Scalar(MarkedString::String(
+                                    "`spawn` creates a new lightweight actor running concurrently."
+                                        .to_string(),
+                                )),
                                 range: Some(span_to_range(src, t.span)),
                             }));
-                        },
+                        }
                         Token::Transaction => {
                             return Ok(Some(Hover {
                                 contents: HoverContents::Scalar(MarkedString::String("`transaction` starts a Software Transactional Memory (STM) block.".to_string())),
                                 range: Some(span_to_range(src, t.span)),
                             }));
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -404,7 +481,11 @@ impl LanguageServer for Backend {
             match item {
                 Item::Function(f) if f.name.name.as_ref() == target => {
                     let mut sig = format!("function {}", f.name.name);
-                    let params_str: Vec<String> = f.params.iter().map(|p| format!("{}: {}", p.name.name, format_type(&p.ty))).collect();
+                    let params_str: Vec<String> = f
+                        .params
+                        .iter()
+                        .map(|p| format!("{}: {}", p.name.name, format_type(&p.ty)))
+                        .collect();
                     sig.push_str(&format!("({})", params_str.join(", ")));
                     if let Some(ret) = &f.ret_type {
                         sig.push_str(&format!(" returns {}", format_type(ret)));
@@ -452,7 +533,7 @@ impl LanguageServer for Backend {
         let ast = &state.module;
 
         let offset = position_to_offset(src, pos);
-        
+
         let mut target_ident = None;
         for t in tokens {
             if offset >= t.span.start && offset <= t.span.end {
@@ -497,14 +578,28 @@ impl LanguageServer for Backend {
         let ast = &state.module;
 
         let formatted = vinglish_fmt::format_module(ast);
-        
+
         let lines: Vec<&str> = src.lines().collect();
-        let end_line = if lines.is_empty() { 0 } else { (lines.len() - 1) as u32 };
-        let end_char = if lines.is_empty() { 0 } else { lines.last().unwrap().len() as u32 };
+        let end_line = if lines.is_empty() {
+            0
+        } else {
+            (lines.len() - 1) as u32
+        };
+        let end_char = if lines.is_empty() {
+            0
+        } else {
+            lines.last().unwrap().len() as u32
+        };
 
         let range = Range {
-            start: Position { line: 0, character: 0 },
-            end: Position { line: end_line, character: end_char },
+            start: Position {
+                line: 0,
+                character: 0,
+            },
+            end: Position {
+                line: end_line,
+                character: end_char,
+            },
         };
 
         Ok(Some(vec![TextEdit {
@@ -574,11 +669,14 @@ impl Backend {
             .publish_diagnostics(uri.clone(), diagnostics, Some(version))
             .await;
 
-        self.cache.write().await.insert(uri, DocumentState {
-            source: text,
-            tokens,
-            module: ast,
-        });
+        self.cache.write().await.insert(
+            uri,
+            DocumentState {
+                source: text,
+                tokens,
+                module: ast,
+            },
+        );
     }
 }
 

@@ -711,20 +711,23 @@ fn type_to_c(ty: &TypeExpr) -> String {
         } => {
             // For simplicity, treat arrays as pointers to their element type in C
             format!("{}*", type_to_c(element_type))
-        },
+        }
         TypeExpr::Dict { .. } => "void*".into(),
         TypeExpr::HashMap { .. } => "void*".into(),
         TypeExpr::Set(_) => "void*".into(),
         TypeExpr::Tuple(_) => "void*".into(), // Simplified representation
         TypeExpr::Optional(t) => type_to_c(t),
-        TypeExpr::Result { ok_type, error_type: _ } => type_to_c(&ok_type),
+        TypeExpr::Result {
+            ok_type,
+            error_type: _,
+        } => type_to_c(ok_type),
         TypeExpr::ResultOf(t) => type_to_c(t),
         TypeExpr::Reference { inner, .. } => {
             format!("{}*", type_to_c(inner))
-        },
+        }
         TypeExpr::Box(inner) => {
             format!("{}*", type_to_c(inner))
-        },
+        }
         TypeExpr::Function { .. } => "void*".into(), // Function pointers simplified
         TypeExpr::Unit => "void".into(),
         TypeExpr::Never => "void".into(), // ! type - zero sized

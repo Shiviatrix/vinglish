@@ -162,13 +162,15 @@ impl<'a> MirLowerer<'a> {
         let result = match expr {
             HirExpr::Lit { value, .. } => Operand::Constant(value.clone()),
             HirExpr::VarRef { id, .. } => Operand::Var(*id),
-            HirExpr::Tuple { elements: _, ty, .. } => {
+            HirExpr::Tuple {
+                elements: _, ty, ..
+            } => {
                 // For now, we'll handle tuples by allocating space on the stack
                 // and storing each element. This is a simplified implementation.
                 let temp = self.new_temp(*ty, expr.span());
                 // TODO: Proper tuple layout and element storage
                 Operand::Var(temp)
-            },
+            }
             HirExpr::Call {
                 callee, args, ty, ..
             } => {

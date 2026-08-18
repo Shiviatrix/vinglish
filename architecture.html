@@ -1,47 +1,100 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Architecture - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture - Vinglish</title>
+    <style>
+      :root {
+        --bg: #081821;
+        --panel: #122c38;
+        --text: #edf7fb;
+        --muted: #c5d8df;
+        --accent: #7ae1ff;
+        --accent-2: #ffc857;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #081821 0%, #122c38 100%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+      header {
+        margin-bottom: 26px;
+      }
+      h1 {
+        margin-bottom: 10px;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      nav a {
+        text-decoration: none;
+        color: var(--text);
+        border: 1px solid rgba(122,225,255,0.3);
+        background: rgba(122,225,255,0.06);
+        border-radius: 999px;
+        padding: 9px 12px;
+      }
+      .panel {
+        background: rgba(17,38,48,0.8);
+        border: 1px solid rgba(122,225,255,0.3);
+        border-radius: 14px;
+        padding: 22px;
+        margin-top: 18px;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: rgba(255,255,255,0.04);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      a { color: var(--accent); }
+      ul { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Compiler architecture</h1>
+        <nav>
+          <a href="index.html">Home</a>
+          <a href="language_guide.html">Language guide</a>
+          <a href="standard_library.html">Standard library</a>
+          <a href="docs/index.html">Docs</a>
+        </nav>
+      </header>
 
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Compiler Architecture</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="index.html">Home</a> ] | [ <a href="language_guide.html">Language Guide</a> ] | [ <a href="architecture.html">Architecture</a> ] | [ <a href="standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
+      <div class="panel">
+        <p>The compiler is organized in stages so that syntax, semantics, and code generation remain independent and observable.</p>
+        <p><code>source</code> → <code>lexer</code> → <code>parser</code> → <code>type inference</code> → <code>HIR</code> → <code>MIR</code> → <code>SSA</code> → <code>backend</code> → <code>executable</code></p>
+        <ul>
+          <li><strong>Lexer:</strong> tokenizes source text and recognizes the language keywords.</li>
+          <li><strong>Parser:</strong> builds the AST and enforces syntax.</li>
+          <li><strong>Type inference:</strong> resolves value types and ownership constraints.</li>
+          <li><strong>HIR/MIR/SSA:</strong> lower the program into a compiler-friendly representation for optimization and analysis.</li>
+          <li><strong>Backend:</strong> emits C or LLVM output for the runtime environment.</li>
+        </ul>
+      </div>
 
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#000080">
-          <font size="+2" face="Courier New" color="#FFFFFF"><b>Pipeline Overview</b></font>
-        </td>
-      </tr>
-      <tr>
-        <td bgcolor="#C0C0C0">
-          <font color="#000000" face="Times New Roman">
-            <p>The architecture of the Vinglish compiler is detailed in the <a href="docs/explanation/architecture.html"><code>docs/explanation/architecture.html</code></a> documentation.</p>
-            <p><b>Source file -&gt; Lexer -&gt; Parser -&gt; Type Inference -&gt; MIR Lowering -&gt; SSA Conversion -&gt; Optimization -&gt; C Code Generation.</b></p>
-            <p>For a complete breakdown of the passes, see <a href="docs/explanation/compiler-pipeline.html"><code>docs/explanation/compiler-pipeline.html</code></a>.</p>
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
+      <div class="panel">
+        <h2>Relevant docs</h2>
+        <ul>
+          <li><a href="docs/compiler-pipeline.md">Compiler pipeline guide</a></li>
+          <li><a href="docs/explanation/architecture.html">Architecture explanation</a></li>
+          <li><a href="docs/reference/ownership.html">Ownership reference</a></li>
+          <li><a href="docs/reference/ssa.html">SSA reference</a></li>
+        </ul>
+      </div>
+    </div>
   </body>
 </html>

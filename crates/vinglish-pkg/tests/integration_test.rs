@@ -1,7 +1,7 @@
 use std::{fs, sync::Mutex};
 
 use tempfile::tempdir;
-use vinglish_pkg::{cmd_init, write_lockfile, PackageLock, VinglishManifest};
+use vinglish_pkg::{PackageLock, VinglishManifest, cmd_init, write_lockfile};
 
 static TEST_DIR_LOCK: Mutex<()> = Mutex::new(());
 static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -109,7 +109,10 @@ fn registry_index_resolves_known_package() {
 
     let info = vinglish_pkg::RegistryClient::query_package("core").unwrap();
     assert_eq!(info.version, "0.2.1");
-    assert_eq!(info.git.as_deref(), Some("https://github.com/Shiviatrix/vinglish.git"));
+    assert_eq!(
+        info.git.as_deref(),
+        Some("https://github.com/Shiviatrix/vinglish.git")
+    );
 
     match old {
         Some(v) => unsafe { std::env::set_var("VINGLISH_REGISTRY_INDEX", v) },
@@ -135,9 +138,12 @@ fn registry_index_resolves_latest_matching_version() {
     fs::write(&index_path, index).unwrap();
 
     let old = std::env::var_os("VINGLISH_REGISTRY_INDEX");
-    unsafe { std::env::set_var("VINGLISH_REGISTRY_INDEX", &index_path); }
+    unsafe {
+        std::env::set_var("VINGLISH_REGISTRY_INDEX", &index_path);
+    }
 
-    let info = vinglish_pkg::RegistryClient::query_package_with_requirement("core", "^0.3.0").unwrap();
+    let info =
+        vinglish_pkg::RegistryClient::query_package_with_requirement("core", "^0.3.0").unwrap();
     assert_eq!(info.version, "0.3.1");
 
     match old {

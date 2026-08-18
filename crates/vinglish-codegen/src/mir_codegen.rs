@@ -65,7 +65,12 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
             if function.name == "main" {
                 out.push_str("int main(void);\n");
             } else {
-                write!(out, "static {} fn_{}(", function_c_return_type(function, symbols), function.id.0.0)?;
+                write!(
+                    out,
+                    "static {} fn_{}(",
+                    function_c_return_type(function, symbols),
+                    function.id.0.0
+                )?;
                 for (index, param) in function.params.iter().enumerate() {
                     if index != 0 {
                         out.push_str(", ");
@@ -77,19 +82,25 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
         }
     }
     for function in &module.functions {
-        if function.is_foreign {
-            if let Some(fn_sym) = symbols.get_func(function.id) {
-                let symbol = c_ident(&fn_sym.name);
-                if symbol != "print" && symbol != "println" && symbol != "abs" {
-                    if let vinglish_hir::types::Type::Function(params, ret) = &fn_sym.ty {
-                        let mut arg_types = Vec::new();
-                        for p in params {
-                            arg_types.push(to_c_type(p));
-                        }
-                        let args_decl = if arg_types.is_empty() { "void".to_string() } else { arg_types.join(", ") };
-                        writeln!(out, "extern {} {}({});", to_c_type(ret), symbol, args_decl)?;
-                    }
+        if function.is_foreign
+            && let Some(fn_sym) = symbols.get_func(function.id)
+        {
+            let symbol = c_ident(&fn_sym.name);
+            if symbol != "print"
+                && symbol != "println"
+                && symbol != "abs"
+                && let vinglish_hir::types::Type::Function(params, ret) = &fn_sym.ty
+            {
+                let mut arg_types = Vec::new();
+                for p in params {
+                    arg_types.push(to_c_type(p));
                 }
+                let args_decl = if arg_types.is_empty() {
+                    "void".to_string()
+                } else {
+                    arg_types.join(", ")
+                };
+                writeln!(out, "extern {} {}({});", to_c_type(ret), symbol, args_decl)?;
             }
         }
     }
@@ -263,9 +274,13 @@ fn instruction_to_c<V: CValueId>(
         Instruction::StoreField(object, access, value) => {
             let ty = match value {
                 vinglish_mir::Operand::Var(v) => c_value_type(*v, symbols),
-                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Float(_)) => "double",
+                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Float(_)) => {
+                    "double"
+                }
                 vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Bool(_)) => "bool",
-                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Text(_)) => "const char *",
+                vinglish_mir::Operand::Constant(vinglish_parser::ast::Literal::Text(_)) => {
+                    "const char *"
+                }
                 _ => "int64_t",
             };
             format!(
@@ -276,24 +291,26 @@ fn instruction_to_c<V: CValueId>(
                 operand(value, pool)
             )
         }
-        Instruction::HeapAllocate(d, layout) => format!(
-            "v_{} = (uintptr_t)calloc(1, {})",
-            d.raw(),
-            layout.size
-        ),
-        Instruction::StackAllocate(d, _) => format!(
-            "v_{} = (uintptr_t)stack_storage_{}.bytes",
-            d.raw(),
-            d.raw()
-        ),
+        Instruction::HeapAllocate(d, layout) => {
+            format!("v_{} = (uintptr_t)calloc(1, {})", d.raw(), layout.size)
+        }
+        Instruction::StackAllocate(d, _) => {
+            format!("v_{} = (uintptr_t)stack_storage_{}.bytes", d.raw(), d.raw())
+        }
         Instruction::Borrow(d, v) | Instruction::BorrowMut(d, v) => {
             if let vinglish_mir::Operand::Var(var) = v {
-                let ty = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))).map(|s| &s.ty);
+                let ty = symbols
+                    .get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw())))
+                    .map(|s| &s.ty);
                 match ty {
-                    Some(Type::Named(_, _)) | Some(Type::List(_)) | Some(Type::Dict(_, _)) | Some(Type::Pointer(_)) | Some(Type::Reference(_, _)) => {
+                    Some(Type::Named(_, _))
+                    | Some(Type::List(_))
+                    | Some(Type::Dict(_, _))
+                    | Some(Type::Pointer(_))
+                    | Some(Type::Reference(_, _)) => {
                         format!("v_{} = v_{}", d.raw(), var.raw())
                     }
-                    _ => format!("v_{} = (uintptr_t)&v_{}", d.raw(), var.raw())
+                    _ => format!("v_{} = (uintptr_t)&v_{}", d.raw(), var.raw()),
                 }
             } else {
                 unreachable!("Cannot borrow constant");
@@ -349,9 +366,17 @@ fn instruction_to_c<V: CValueId>(
             if stack_allocations.contains_key(&var.raw()) {
                 return format!("/* stack storage v_{} expires automatically */", var.raw());
             }
-            if let Some(symbol) = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))) {
+            if let Some(symbol) =
+                symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw())))
+            {
                 match &symbol.ty {
-                    Type::Reference(_, _) | Type::Pointer(_) | Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit => {
+                    Type::Reference(_, _)
+                    | Type::Pointer(_)
+                    | Type::Int
+                    | Type::Float
+                    | Type::Bool
+                    | Type::Text
+                    | Type::Unit => {
                         format!("/* skip free v_{} */", var.raw())
                     }
                     Type::List(_) => format!("rt_list_free((int64_t)v_{})", var.raw()),
@@ -471,7 +496,10 @@ fn call_name<V: CValueId>(id: FunctionId, symbols: &SymbolTable, module: &MirMod
     }
 }
 
-fn function_c_return_type<V: CValueId>(function: &MirFunction<V>, symbols: &SymbolTable) -> &'static str {
+fn function_c_return_type<V: CValueId>(
+    function: &MirFunction<V>,
+    symbols: &SymbolTable,
+) -> &'static str {
     symbols
         .get_func(function.id)
         .and_then(|symbol| match &symbol.ty {
@@ -513,8 +541,8 @@ fn to_c_type(ty: &Type) -> &'static str {
         Type::Array(inner, _len) => {
             // For simplicity, treat arrays as pointers to their element type
             to_c_type(inner)
-        },
-        Type::Set(_) => "uintptr_t", // Treat as pointer to hash set
+        }
+        Type::Set(_) => "uintptr_t",   // Treat as pointer to hash set
         Type::Tuple(_) => "uintptr_t", // Treat as pointer to struct
     }
 }
@@ -621,7 +649,8 @@ mod tests {
                 name: "f".into(),
                 params: vec![],
                 locals: vec![value],
-                blocks: vec![BasicBlock { spans: vec![],
+                blocks: vec![BasicBlock {
+                    spans: vec![],
                     id: BlockId(0),
                     instrs: vec![Instruction::Assign(
                         value,
@@ -668,7 +697,9 @@ mod tests {
         };
 
         let c = emit_mir_c(&module, &SymbolTable::new()).unwrap();
-        assert!(c.contains("union { max_align_t align; unsigned char bytes[8]; } stack_storage_1;"));
+        assert!(
+            c.contains("union { max_align_t align; unsigned char bytes[8]; } stack_storage_1;")
+        );
         assert!(c.contains("v_1 = (uintptr_t)stack_storage_1.bytes;"));
         assert!(c.contains("stack storage v_1 expires automatically"));
         assert!(!c.contains("free((void *)(uintptr_t)v_1)"));

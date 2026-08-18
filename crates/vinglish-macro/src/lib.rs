@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
-use syn::{parse_macro_input, FnArg, ItemFn, Pat, ReturnType, Type};
+use syn::{FnArg, ItemFn, Pat, ReturnType, Type, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn vinglish_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -18,35 +18,35 @@ pub fn vinglish_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut v_args = Vec::new();
 
     for arg in &input.sig.inputs {
-        if let FnArg::Typed(pat_type) = arg {
-            if let Pat::Ident(pat_ident) = &*pat_type.pat {
-                let arg_name = &pat_ident.ident;
-                let ty = &*pat_type.ty;
+        if let FnArg::Typed(pat_type) = arg
+            && let Pat::Ident(pat_ident) = &*pat_type.pat
+        {
+            let arg_name = &pat_ident.ident;
+            let ty = &*pat_type.ty;
 
-                if let Type::Path(type_path) = ty {
-                    if let Some(segment) = type_path.path.segments.last() {
-                        let type_name = segment.ident.to_string();
-                        match type_name.as_str() {
-                            "String" => {
-                                c_args.push(quote! { #arg_name: *const std::os::raw::c_char });
-                                rust_args.push(quote! {
-                                    unsafe { std::ffi::CStr::from_ptr(#arg_name) }.to_string_lossy().into_owned()
-                                });
-                                v_args.push(format!("{}: string", arg_name));
-                            }
-                            "i32" => {
-                                c_args.push(quote! { #arg_name: i32 });
-                                rust_args.push(quote! { #arg_name });
-                                v_args.push(format!("{}: number", arg_name));
-                            }
-                            "f64" => {
-                                c_args.push(quote! { #arg_name: f64 });
-                                rust_args.push(quote! { #arg_name });
-                                v_args.push(format!("{}: number", arg_name));
-                            }
-                            _ => panic!("Unsupported type in #[vinglish_export]: {}", type_name),
-                        }
+            if let Type::Path(type_path) = ty
+                && let Some(segment) = type_path.path.segments.last()
+            {
+                let type_name = segment.ident.to_string();
+                match type_name.as_str() {
+                    "String" => {
+                        c_args.push(quote! { #arg_name: *const std::os::raw::c_char });
+                        rust_args.push(quote! {
+                            unsafe { std::ffi::CStr::from_ptr(#arg_name) }.to_string_lossy().into_owned()
+                        });
+                        v_args.push(format!("{}: string", arg_name));
                     }
+                    "i32" => {
+                        c_args.push(quote! { #arg_name: i32 });
+                        rust_args.push(quote! { #arg_name });
+                        v_args.push(format!("{}: number", arg_name));
+                    }
+                    "f64" => {
+                        c_args.push(quote! { #arg_name: f64 });
+                        rust_args.push(quote! { #arg_name });
+                        v_args.push(format!("{}: number", arg_name));
+                    }
+                    _ => panic!("Unsupported type in #[vinglish_export]: {}", type_name),
                 }
             }
         }

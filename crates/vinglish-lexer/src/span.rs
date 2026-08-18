@@ -1,5 +1,7 @@
 /// A half-open byte-offset range `[start, end)` in a source file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize,
+)]
 pub struct Span {
     pub start: u32,
     pub end: u32,

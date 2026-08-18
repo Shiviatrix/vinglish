@@ -145,7 +145,11 @@ impl UnionFind {
             (Type::Tuple(a), Type::Tuple(b)) => {
                 if a.len() != b.len() {
                     return Err(TypeError::new(
-                        format!("tuple length mismatch: expected {} elements, got {}", a.len(), b.len()),
+                        format!(
+                            "tuple length mismatch: expected {} elements, got {}",
+                            a.len(),
+                            b.len()
+                        ),
                         span,
                     ));
                 }
@@ -196,12 +200,11 @@ impl UnionFind {
             | (Type::Pointer(a_inner), Type::Reference(b_inner, _)) => {
                 self.unify(*a_inner, *b_inner, span)
             }
-            (Type::Pointer(a_inner), b @ Type::Named(_, _)) | (b @ Type::Named(_, _), Type::Pointer(a_inner)) => {
+            (Type::Pointer(a_inner), b @ Type::Named(_, _))
+            | (b @ Type::Named(_, _), Type::Pointer(a_inner)) => {
                 self.unify(*a_inner, b.clone(), span)
             }
-            (Type::Pointer(_), Type::Int) | (Type::Int, Type::Pointer(_)) => {
-                Ok(())
-            }
+            (Type::Pointer(_), Type::Int) | (Type::Int, Type::Pointer(_)) => Ok(()),
             (Type::Named(na, arga), Type::Named(nb, argb)) => {
                 if na != nb || arga.len() != argb.len() {
                     return Err(TypeError::new(
@@ -371,12 +374,12 @@ impl TypeInferencePass {
     /// `TypeError::Mismatch -> healer::attempt_heal` interception point.
     pub fn run_with_healing(&mut self, ast: &mut Module, ctx: &mut CompilerContext) -> HirModule {
         use crate::passes::HealingMode;
-        
+
         let baseline = ctx.clone();
         let initial_hir = self
             .run(ast, ctx)
             .unwrap_or_else(|| HirModule { items: vec![] });
-            
+
         if ctx.healing_mode == HealingMode::Deny {
             return initial_hir;
         }
@@ -387,31 +390,32 @@ impl TypeInferencePass {
             .filter(|error| matches!(error, TypeError::Mismatch { .. }))
             .cloned()
             .collect();
-            
+
         if mismatches.is_empty() {
             return initial_hir;
         }
 
         let mut any_healed = false;
-        
+
         for mismatch in mismatches {
-            let warning = crate::healer::attempt_heal(&mismatch, ast, ctx.healing_mode, |candidate| {
-                let mut retry_ctx = baseline.clone();
-                let mut retry_pass = TypeInferencePass::new();
-                retry_pass.run(candidate, &mut retry_ctx);
-                if retry_ctx.type_errors.len() < ctx.type_errors.len() {
-                    Ok(())
-                } else {
-                    Err(())
-                }
-            });
-            
+            let warning =
+                crate::healer::attempt_heal(&mismatch, ast, ctx.healing_mode, |candidate| {
+                    let mut retry_ctx = baseline.clone();
+                    let mut retry_pass = TypeInferencePass::new();
+                    retry_pass.run(candidate, &mut retry_ctx);
+                    if retry_ctx.type_errors.len() < ctx.type_errors.len() {
+                        Ok(())
+                    } else {
+                        Err(())
+                    }
+                });
+
             if let Some(w) = warning {
                 ctx.healing_warnings.push(w);
                 any_healed = true;
             }
         }
-        
+
         if !any_healed {
             return initial_hir;
         }
@@ -456,9 +460,10 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
             }
         },
         TypeExpr::List(t) => Type::List(Box::new(type_expr_to_type(t, env))),
-        TypeExpr::Array { element_type, length } => {
-            Type::Array(Box::new(type_expr_to_type(element_type, env)), *length)
-        }
+        TypeExpr::Array {
+            element_type,
+            length,
+        } => Type::Array(Box::new(type_expr_to_type(element_type, env)), *length),
         TypeExpr::Dict { key, val } => Type::Dict(
             Box::new(type_expr_to_type(key, env)),
             Box::new(type_expr_to_type(val, env)),
@@ -472,14 +477,16 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
             Type::Tuple(elements.iter().map(|e| type_expr_to_type(e, env)).collect())
         }
         TypeExpr::Optional(t) => Type::Optional(Box::new(type_expr_to_type(t, env))),
-        TypeExpr::Result { ok_type, error_type } => Type::Result(
+        TypeExpr::Result {
+            ok_type,
+            error_type,
+        } => Type::Result(
             Box::new(type_expr_to_type(ok_type, env)),
-            Box::new(type_expr_to_type(error_type, env))
+            Box::new(type_expr_to_type(error_type, env)),
         ),
-        TypeExpr::ResultOf(t) => Type::Result(
-            Box::new(type_expr_to_type(t, env)),
-            Box::new(Type::Text)
-        ),
+        TypeExpr::ResultOf(t) => {
+            Type::Result(Box::new(type_expr_to_type(t, env)), Box::new(Type::Text))
+        }
         TypeExpr::Generic { base, args } => {
             if base.name.as_ref() == "address" && args.len() == 1 {
                 Type::Pointer(Box::new(type_expr_to_type(&args[0], env)))
@@ -494,9 +501,12 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
             Type::Reference(Box::new(type_expr_to_type(inner, env)), *mutable)
         }
         TypeExpr::Box(inner) => Type::Pointer(Box::new(type_expr_to_type(inner, env))),
-        TypeExpr::Function { params, return_type } => Type::Function(
+        TypeExpr::Function {
+            params,
+            return_type,
+        } => Type::Function(
             params.iter().map(|p| type_expr_to_type(p, env)).collect(),
-            Box::new(type_expr_to_type(return_type, env))
+            Box::new(type_expr_to_type(return_type, env)),
         ),
         TypeExpr::Unit => Type::Unit,
         TypeExpr::Never => Type::Never,
@@ -775,7 +785,11 @@ impl TypeInferencePass {
         }
 
         ctx.pop_scope();
-        self.record(ctx, f.name.span, Type::Named(f.name.name.to_string(), vec![]));
+        self.record(
+            ctx,
+            f.name.span,
+            Type::Named(f.name.name.to_string(), vec![]),
+        );
 
         let hir_name = if let Some(target) = &f.target_type {
             format!("{}_{}", target.name, f.name.name) // Lowered name format
@@ -1138,8 +1152,16 @@ impl TypeInferencePass {
                 } else {
                     let fresh = self.fresh();
                     // Get all known symbol names for typo suggestions
-                    let symbol_names: Vec<String> = ctx.symbol_table.names().keys().cloned().collect();
-                    let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(&id.name, id.span, &symbol_names.iter().map(|s| s.as_str()).collect::<Vec<&str>>());
+                    let symbol_names: Vec<String> =
+                        ctx.symbol_table.names().keys().cloned().collect();
+                    let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(
+                        &id.name,
+                        id.span,
+                        &symbol_names
+                            .iter()
+                            .map(|s| s.as_str())
+                            .collect::<Vec<&str>>(),
+                    );
                     ctx.type_errors.push(TypeError::Message {
                         message: diag.message,
                         span: diag.span,
@@ -1188,8 +1210,16 @@ impl TypeInferencePass {
                         // Types or vars with generics not supported in expressions yet
                         let fresh = self.fresh();
                         // Get all known symbol names for typo suggestions
-                        let symbol_names: Vec<String> = ctx.symbol_table.names().keys().cloned().collect();
-                        let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(&base.name, *span, &symbol_names.iter().map(|s| s.as_str()).collect::<Vec<&str>>());
+                        let symbol_names: Vec<String> =
+                            ctx.symbol_table.names().keys().cloned().collect();
+                        let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(
+                            &base.name,
+                            *span,
+                            &symbol_names
+                                .iter()
+                                .map(|s| s.as_str())
+                                .collect::<Vec<&str>>(),
+                        );
                         ctx.type_errors.push(TypeError::Message {
                             message: diag.message,
                             span: diag.span,
@@ -1351,15 +1381,15 @@ impl TypeInferencePass {
                 let (lt, hl) = self.infer_expr(ctx, left);
                 let (rt, hr) = self.infer_expr(ctx, right);
                 let result = match op {
-                    BinOp::Add 
-                    | BinOp::Sub 
-                    | BinOp::Mul 
-                    | BinOp::Div 
-                    | BinOp::Mod 
-                    | BinOp::BitXor 
-                    | BinOp::BitAnd 
-                    | BinOp::BitOr 
-                    | BinOp::Shl 
+                    BinOp::Add
+                    | BinOp::Sub
+                    | BinOp::Mul
+                    | BinOp::Div
+                    | BinOp::Mod
+                    | BinOp::BitXor
+                    | BinOp::BitAnd
+                    | BinOp::BitOr
+                    | BinOp::Shl
                     | BinOp::Shr => {
                         self.unify(ctx, lt.clone(), rt, right.span());
                         lt
@@ -1410,9 +1440,10 @@ impl TypeInferencePass {
                                 self.fresh()
                             }
                         }
-                        ScopedId::Type(id) => {
-                            Type::Named(ctx.symbol_table.get_type(id).unwrap().name.to_string(), vec![])
-                        }
+                        ScopedId::Type(id) => Type::Named(
+                            ctx.symbol_table.get_type(id).unwrap().name.to_string(),
+                            vec![],
+                        ),
                         ScopedId::Var(id) => {
                             if let Some(vs) = ctx.symbol_table.get_var(id) {
                                 vs.ty.clone()
@@ -1509,7 +1540,9 @@ impl TypeInferencePass {
             }
             Expr::StructLit { ty, fields, span } => {
                 let (name, mut struct_ty) = match &**ty {
-                    Expr::Ident(ident) => (ident.clone(), Type::Named(ident.name.to_string(), vec![])),
+                    Expr::Ident(ident) => {
+                        (ident.clone(), Type::Named(ident.name.to_string(), vec![]))
+                    }
                     Expr::GenericInst { base, args, .. } => {
                         let ty_args: Vec<Type> = args
                             .iter()

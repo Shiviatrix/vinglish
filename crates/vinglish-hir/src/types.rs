@@ -33,14 +33,14 @@ pub enum Type {
     Bool,
     Text,
     Unit,
-    Never, // ! type (diverging functions)
+    Never,                      // ! type (diverging functions)
     Reference(Box<Type>, bool), // bool is true if mutable
     Pointer(Box<Type>),         // Raw pointer address<T>
     Box(Box<Type>),             // Owning pointer Box<T>
 
     // ── Composite types ───────────────────────────────────────────────────────
     List(Box<Type>),
-    Array(Box<Type>, u64),      // Fixed-size array [T; N]
+    Array(Box<Type>, u64), // Fixed-size array [T; N]
     Dict(Box<Type>, Box<Type>),
     HashMap(Box<Type>, Box<Type>),
     Set(Box<Type>),
@@ -66,9 +66,13 @@ impl Type {
             // explicit at the std.string API boundary, so passing it does not
             // invalidate the source value. Heap containers and structs remain
             // move-only.
-            Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit | Type::Never | Type::Pointer(_) => {
-                true
-            }
+            Type::Int
+            | Type::Float
+            | Type::Bool
+            | Type::Text
+            | Type::Unit
+            | Type::Never
+            | Type::Pointer(_) => true,
             _ => false,
         }
     }

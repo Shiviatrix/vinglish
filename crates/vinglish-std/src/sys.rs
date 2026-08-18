@@ -1,6 +1,6 @@
-use vinglish_bindgen::vinglish_bindgen;
 use std::env;
 use std::process::Command;
+use vinglish_bindgen::vinglish_bindgen;
 
 #[vinglish_bindgen]
 pub fn sys_env(key: &str) -> String {

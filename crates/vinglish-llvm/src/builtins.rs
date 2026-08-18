@@ -1,7 +1,7 @@
+use inkwell::AddressSpace;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::values::FunctionValue;
-use inkwell::AddressSpace;
 
 /// Declares external runtime functions (malloc, free, printf) in the LLVM module.
 pub struct Builtins<'ctx> {

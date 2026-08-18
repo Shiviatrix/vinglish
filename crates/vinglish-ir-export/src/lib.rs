@@ -606,7 +606,10 @@ impl<'a> ExportBuilder<'a> {
                     // For simplicity, treat as struct-like for now
                     ExportType::Named {
                         name: format!("Tuple{}", element_types.len()),
-                        arguments: element_types.iter().map(|ty| self.type_from_hir(ty)).collect(),
+                        arguments: element_types
+                            .iter()
+                            .map(|ty| self.type_from_hir(ty))
+                            .collect(),
                     }
                 }
             }

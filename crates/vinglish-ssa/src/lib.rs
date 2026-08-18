@@ -89,7 +89,7 @@ fn convert_to_ssa_types(
                 Instruction::BorrowMut(convert_var(dest), convert_operand(op))
             }
             Instruction::Deref(dest, src, ty) => {
-                Instruction::Deref(convert_var(dest), convert_operand(src), ty.clone())
+                Instruction::Deref(convert_var(dest), convert_operand(src), ty)
             }
             Instruction::StoreDeref(ptr, val) => {
                 Instruction::StoreDeref(convert_operand(ptr), convert_operand(val))

@@ -1,12 +1,12 @@
-pub mod math;
-pub mod io;
-pub mod net;
-pub mod sys;
-pub mod regex;
-pub mod db;
-pub mod scrape;
 pub mod ai;
+pub mod db;
 pub mod fuzzy;
+pub mod io;
+pub mod math;
+pub mod net;
+pub mod regex;
+pub mod scrape;
+pub mod sys;
 
 use vinglish_bindgen::vinglish_bindgen;
 

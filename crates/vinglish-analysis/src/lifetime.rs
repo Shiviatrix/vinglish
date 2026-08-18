@@ -97,15 +97,15 @@ impl LifetimeAnalysisPass {
                     _ => None,
                 };
 
-                if let Some(dest) = dests {
-                    if let Some(alias) = alias_graph.get_alias(dest) {
-                        let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
-                            created_at: None,
-                            last_used_at: None,
-                        });
-                        if entry.created_at.is_none() {
-                            entry.created_at = Some((block.id, idx));
-                        }
+                if let Some(dest) = dests
+                    && let Some(alias) = alias_graph.get_alias(dest)
+                {
+                    let entry = graph.alias_lifetimes.entry(alias).or_insert(Lifetime {
+                        created_at: None,
+                        last_used_at: None,
+                    });
+                    if entry.created_at.is_none() {
+                        entry.created_at = Some((block.id, idx));
                     }
                 }
             }

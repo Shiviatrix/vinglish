@@ -85,7 +85,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
     }
 
     fn get_or_create_struct_type(&mut self, type_id: TypeId) -> inkwell::types::StructType<'ctx> {
-        let key = type_id.0 .0;
+        let key = type_id.0.0;
         if let Some(&st) = self.struct_types.get(&key) {
             return st;
         }
@@ -97,10 +97,10 @@ impl<'ctx> LLVMCodeGen<'ctx> {
     }
 
     fn get_func_return_type(&self, func: &MirFunction<SsaValueId>) -> Option<BasicTypeEnum<'ctx>> {
-        if let Some(fs) = self.symbol_table.get_func(func.id) {
-            if let Type::Function(_, ret) = &fs.ty {
-                return self.type_lowering.lower_type(ret, self.symbol_table);
-            }
+        if let Some(fs) = self.symbol_table.get_func(func.id)
+            && let Type::Function(_, ret) = &fs.ty
+        {
+            return self.type_lowering.lower_type(ret, self.symbol_table);
         }
         None // void
     }
@@ -109,18 +109,18 @@ impl<'ctx> LLVMCodeGen<'ctx> {
         &self,
         func: &MirFunction<SsaValueId>,
     ) -> Vec<BasicMetadataTypeEnum<'ctx>> {
-        if let Some(fs) = self.symbol_table.get_func(func.id) {
-            if let Type::Function(params, _) = &fs.ty {
-                return params
-                    .iter()
-                    .map(
-                        |p| match self.type_lowering.lower_type(p, self.symbol_table) {
-                            Some(t) => t.into(),
-                            None => self.context.i64_type().into(),
-                        },
-                    )
-                    .collect();
-            }
+        if let Some(fs) = self.symbol_table.get_func(func.id)
+            && let Type::Function(params, _) = &fs.ty
+        {
+            return params
+                .iter()
+                .map(
+                    |p| match self.type_lowering.lower_type(p, self.symbol_table) {
+                        Some(t) => t.into(),
+                        None => self.context.i64_type().into(),
+                    },
+                )
+                .collect();
         }
         vec![]
     }
@@ -164,7 +164,6 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             return Ok(());
         }
 
-        
         // Determine return mode
         let return_mode = if func.name == "main" {
             ReturnMode::MainEntrypoint
@@ -219,7 +218,6 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             self.compile_instruction(instr)?;
         }
 
-        
         // Compile terminator
         self.compile_terminator(&block.terminator, mode)?;
 
@@ -228,14 +226,13 @@ impl<'ctx> LLVMCodeGen<'ctx> {
 
     /// Get the current value of an SSA ID, loading from memory if necessary
     fn get_ssa_value(&self, id: SsaValueId) -> Result<BasicValueEnum<'ctx>, String> {
-        if let Some(&ptr) = self.variable_ptrs.get(&id) {
+        if let Some(ptr) = self.variable_ptrs.get(&id) {
             // Value has been promoted to memory, load from it
             // For simplicity, we assume i64 for now - in a full implementation,
             // we would need to track the type of each SSA value
             let int_type = self.context.i64_type();
             self.builder
-                .build_load(int_type, ptr, &format!("load_{}", id.0))
-                .map(|loaded| loaded.into())
+                .build_load(int_type, *ptr, &format!("load_{}", id.0))
                 .map_err(|e| e.to_string())
         } else {
             // Value is available directly (in a register or as a constant)
@@ -311,10 +308,10 @@ impl<'ctx> LLVMCodeGen<'ctx> {
         match instr {
             Instruction::Assign(dest, op) => {
                 let val = self.resolve_operand(op)?;
-                if let Some(&ptr) = self.variable_ptrs.get(&dest) {
+                if let Some(ptr) = self.variable_ptrs.get(dest) {
                     // Destination has been promoted to memory, store to that memory
                     self.builder
-                        .build_store(ptr, val)
+                        .build_store(*ptr, val)
                         .map_err(|e| e.to_string())?;
                 } else {
                     // Destination is still in a register (or we track its value directly)
@@ -342,7 +339,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 match target {
                     vinglish_mir::CallTarget::Direct(id) => {
                         let func_id = *id;
-                        let result = self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
+                        let result =
+                            self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
                         if let Some(val) = result {
                             self.ssa_values.insert(*dest, val);
                         } else {
@@ -361,7 +359,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                         } else {
                             return Err(format!(
                                 "foreign MIR call `{}` (length: {}) is not implemented by the LLVM backend",
-                                c_symbol, c_symbol.len()
+                                c_symbol,
+                                c_symbol.len()
                             ));
                         }
                     }
@@ -499,7 +498,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 let ty = self
                     .symbol_table
                     .get_interned_type(*type_id)
-                    .ok_or_else(|| format!("Type {} not found in intern table", type_id.0 .0))?;
+                    .ok_or_else(|| format!("Type {} not found in intern table", type_id.0.0))?;
 
                 let llvm_type = self
                     .type_lowering
@@ -558,10 +557,10 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 // but their SSA values should already exist since SSA dominance ensures
                 // defs dominate uses, except for loop back-edges which use phi)
                 for (op, block_id) in args {
-                    if let Ok(val) = self.resolve_operand(op) {
-                        if let Some(&bb) = self.block_map.get(block_id) {
-                            phi.add_incoming(&[(&val, bb)]);
-                        }
+                    if let Ok(val) = self.resolve_operand(op)
+                        && let Some(&bb) = self.block_map.get(block_id)
+                    {
+                        phi.add_incoming(&[(&val, bb)]);
                     }
                 }
 
@@ -871,16 +870,16 @@ impl<'ctx> LLVMCodeGen<'ctx> {
         name: &str,
     ) -> Result<Option<BasicValueEnum<'ctx>>, String> {
         // Check if it's a known built-in
-        if let Some(fs) = self.symbol_table.get_func(func_id) {
-            if fs.name == "print" || fs.name == "print_num" {
-                return self.compile_print_call(args);
-            }
+        if let Some(fs) = self.symbol_table.get_func(func_id)
+            && (fs.name == "print" || fs.name == "print_num")
+        {
+            return self.compile_print_call(args);
         }
 
         let llvm_func = self
             .func_map
             .get(&func_id)
-            .ok_or_else(|| format!("Function fn_{} not found in LLVM module", func_id.0 .0))?;
+            .ok_or_else(|| format!("Function fn_{} not found in LLVM module", func_id.0.0))?;
 
         let mut arg_values: Vec<inkwell::values::BasicMetadataValueEnum<'ctx>> = Vec::new();
         for arg in args {

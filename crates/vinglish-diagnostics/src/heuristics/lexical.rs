@@ -51,14 +51,14 @@ fn calibrated_confidence(raw_similarity: f64) -> f32 {
     }
 
     // For low similarity (<0.7), very low confidence (likely not a typo)
-    return (raw_similarity * 50.0) as f32; // 0-35 range
+    (raw_similarity * 50.0) as f32 // 0-35 range
 }
 
 pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> bool {
     let mut scored: Vec<(&str, f64)> = VINGLISH_KEYWORDS
         .iter()
         .map(|s| {
-            let score = similarity_score(bad_token_text, *s);
+            let score = similarity_score(bad_token_text, s);
             (*s, score)
         })
         .collect();
@@ -128,13 +128,13 @@ mod tests {
     fn test_calibrated_confidence() {
         // Test that confidence scores are reasonable
         let conf = calibrated_confidence(0.96); // Very high similarity
-        assert!(conf >= 95.0 && conf <= 100.0);
+        assert!((95.0..=100.0).contains(&conf));
 
         let conf = calibrated_confidence(0.90); // High similarity
-        assert!(conf >= 85.0 && conf < 95.0);
+        assert!((85.0..95.0).contains(&conf));
 
         let conf = calibrated_confidence(0.75); // Moderate similarity
-        assert!(conf >= 70.0 && conf < 85.0);
+        assert!((70.0..85.0).contains(&conf));
 
         let conf = calibrated_confidence(0.5); // Low similarity
         assert!(conf < 35.0);
@@ -146,20 +146,23 @@ mod tests {
         let mut diag1 = crate::diagnostic::Diagnostic::error(
             "T0001",
             "test error",
-            vinglish_lexer::Span::dummy()
+            vinglish_lexer::Span::dummy(),
         );
         let result = check_lexical_proximity("funtion", &mut diag1);
         assert!(result);
         assert!(!diag1.suggestions.is_empty());
         // Should have high confidence (>85)
         assert!(diag1.suggestions[0].confidence.unwrap() > 85.0);
-        assert_eq!(diag1.suggestions[0].replacement.as_ref().unwrap(), "function");
+        assert_eq!(
+            diag1.suggestions[0].replacement.as_ref().unwrap(),
+            "function"
+        );
 
         // Should suggest function for fction (missing char) - moderate confidence
         let mut diag2 = crate::diagnostic::Diagnostic::error(
             "T0001",
             "test error",
-            vinglish_lexer::Span::dummy()
+            vinglish_lexer::Span::dummy(),
         );
         let result = check_lexical_proximity("fction", &mut diag2);
         assert!(result);
@@ -167,13 +170,16 @@ mod tests {
         #[allow(dead_code)]
         let conf = diag2.suggestions[0].confidence.unwrap();
         assert!(conf > 70.0);
-        assert_eq!(diag2.suggestions[0].replacement.as_ref().unwrap(), "function");
+        assert_eq!(
+            diag2.suggestions[0].replacement.as_ref().unwrap(),
+            "function"
+        );
 
         // Should NOT suggest function for hello (unrelated word) - low confidence
         let mut diag3 = crate::diagnostic::Diagnostic::error(
             "T0001",
             "test error",
-            vinglish_lexer::Span::dummy()
+            vinglish_lexer::Span::dummy(),
         );
         let result = check_lexical_proximity("hello", &mut diag3);
         assert!(!result); // Should not find any suggestions

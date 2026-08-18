@@ -85,7 +85,7 @@ impl Formatter {
                     if let Some(payload) = &variant.payload {
                         self.line(&format!("{} {}", variant.name.name, fmt_type(payload)));
                     } else {
-                        self.line(&variant.name.name.to_string());
+                        self.line(variant.name.name.as_ref());
                     }
                 }
                 self.dedent();
@@ -370,7 +370,10 @@ fn fmt_type(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(t) => format!("List of {}", fmt_type(t)),
-        TypeExpr::Array { element_type, length } => {
+        TypeExpr::Array {
+            element_type,
+            length,
+        } => {
             format!("[{}; {}]", fmt_type(element_type), length)
         }
         TypeExpr::Dict { key, val } => {
@@ -385,7 +388,10 @@ fn fmt_type(ty: &TypeExpr) -> String {
             format!("({})", inner)
         }
         TypeExpr::Optional(t) => format!("{}?", fmt_type(t)),
-        TypeExpr::Result { ok_type, error_type } => {
+        TypeExpr::Result {
+            ok_type,
+            error_type,
+        } => {
             format!("Result<{}, {}>", fmt_type(ok_type), fmt_type(error_type))
         }
         TypeExpr::ResultOf(t) => format!("Result of {}", fmt_type(t)),
@@ -401,7 +407,10 @@ fn fmt_type(ty: &TypeExpr) -> String {
             }
         }
         TypeExpr::Box(inner) => format!("Box<{}>", fmt_type(inner)),
-        TypeExpr::Function { params, return_type } => {
+        TypeExpr::Function {
+            params,
+            return_type,
+        } => {
             let param_str = params.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
             format!("({}) -> {}", param_str, fmt_type(return_type))
         }

@@ -78,7 +78,10 @@ impl TypeEnv {
     fn seed_builtins(&mut self) {
         use Type::*;
         let builtins: &[(&str, Type)] = &[
-            ("print_number", Function(vec![Int], std::boxed::Box::new(Unit))),
+            (
+                "print_number",
+                Function(vec![Int], std::boxed::Box::new(Unit)),
+            ),
             ("abs", Function(vec![Int], std::boxed::Box::new(Int))),
             ("sqrt", Function(vec![Float], std::boxed::Box::new(Float))),
             ("min", Function(vec![Int, Int], std::boxed::Box::new(Int))),
@@ -114,7 +117,10 @@ impl TypeEnv {
             "len",
             TypeScheme {
                 vars: vec![tv_len],
-                ty: Function(vec![Named("List".into(), vec![Var(tv_len)])], std::boxed::Box::new(Int)),
+                ty: Function(
+                    vec![Named("List".into(), vec![Var(tv_len)])],
+                    std::boxed::Box::new(Int),
+                ),
             },
         );
     }

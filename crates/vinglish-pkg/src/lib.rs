@@ -121,15 +121,10 @@ pub fn write_lockfile(manifest: &VinglishManifest) -> Result<(), String> {
         dependencies: manifest
             .dependencies
             .iter()
-            .filter_map(|(name, dep)| {
+            .map(|(name, dep)| {
                 let requirement = dep.version_requirement();
                 let (version, source, checksum, integrity) = match dep {
-                    DependencyMeta::Version(version) => (
-                        version.clone(),
-                        None,
-                        None,
-                        None,
-                    ),
+                    DependencyMeta::Version(version) => (version.clone(), None, None, None),
                     DependencyMeta::Detailed {
                         version,
                         path,
@@ -145,7 +140,7 @@ pub fn write_lockfile(manifest: &VinglishManifest) -> Result<(), String> {
                     ),
                 };
 
-                Some((
+                (
                     name.clone(),
                     LockEntry {
                         version,
@@ -154,7 +149,7 @@ pub fn write_lockfile(manifest: &VinglishManifest) -> Result<(), String> {
                         requirement: Some(requirement),
                         integrity,
                     },
-                ))
+                )
             })
             .collect(),
     };
@@ -198,9 +193,10 @@ end
 
 pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
     println!("Adding package '{}'...", package);
-    
-    let mut manifest = VinglishManifest::load("ving.toml").map_err(|_| "Failed to read ving.toml. Are you in a Vinglish package?".to_string())?;
-    
+
+    let mut manifest = VinglishManifest::load("ving.toml")
+        .map_err(|_| "Failed to read ving.toml. Are you in a Vinglish package?".to_string())?;
+
     if let Some(git_url) = url {
         manifest.dependencies.insert(
             package.to_string(),
@@ -231,7 +227,10 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
                 );
             }
             Err(e) => {
-                return Err(format!("Failed to resolve '{}' in registry: {}", package, e));
+                return Err(format!(
+                    "Failed to resolve '{}' in registry: {}",
+                    package, e
+                ));
             }
         }
     }
@@ -288,7 +287,10 @@ impl RegistryClient {
         Self::query_package_with_requirement(name, "*")
     }
 
-    pub fn query_package_with_requirement(name: &str, requirement: &str) -> Result<RegistryResponse, String> {
+    pub fn query_package_with_requirement(
+        name: &str,
+        requirement: &str,
+    ) -> Result<RegistryResponse, String> {
         if !name
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
@@ -301,15 +303,15 @@ impl RegistryClient {
                 .map_err(|error| format!("cannot read registry index {:?}: {error}", index_path))?;
             let index: HashMap<String, RegistryIndexEntry> = serde_json::from_str(&content)
                 .map_err(|error| format!("invalid registry index: {error}"))?;
-            let entry = index
-                .get(name)
-                .cloned()
-                .ok_or_else(|| format!("package `{name}` was not found in the local registry index"))?;
+            let entry = index.get(name).cloned().ok_or_else(|| {
+                format!("package `{name}` was not found in the local registry index")
+            })?;
             return match entry {
                 RegistryIndexEntry::Single(response) => {
                     let req = parse_requirement(requirement)?;
-                    let version = Version::parse(&response.version)
-                        .map_err(|error| format!("registry version for `{name}` is invalid: {error}"))?;
+                    let version = Version::parse(&response.version).map_err(|error| {
+                        format!("registry version for `{name}` is invalid: {error}")
+                    })?;
                     if req.matches(&version) {
                         Ok(response)
                     } else {
@@ -323,8 +325,9 @@ impl RegistryClient {
                     let req = parse_requirement(requirement)?;
                     let mut best_match: Option<RegistryVersionInfo> = None;
                     for info in versions.values() {
-                        let version = Version::parse(&info.version)
-                            .map_err(|error| format!("registry version for `{name}` is invalid: {error}"))?;
+                        let version = Version::parse(&info.version).map_err(|error| {
+                            format!("registry version for `{name}` is invalid: {error}")
+                        })?;
                         if req.matches(&version) {
                             match &best_match {
                                 None => best_match = Some(info.clone()),
@@ -360,7 +363,9 @@ impl RegistryClient {
             .error_for_status()
             .map_err(|error| format!("registry request for `{name}` failed: {error}"))?
             .json::<RegistryResponse>()
-            .map_err(|error| format!("registry returned an invalid response for `{name}`: {error}"))?;
+            .map_err(|error| {
+                format!("registry returned an invalid response for `{name}`: {error}")
+            })?;
 
         let req = parse_requirement(requirement)?;
         let version = Version::parse(&response.version)
@@ -381,7 +386,8 @@ fn parse_requirement(requirement: &str) -> Result<VersionReq, String> {
     if req.is_empty() || req == "*" {
         return Ok(VersionReq::STAR);
     }
-    VersionReq::parse(req).map_err(|error| format!("invalid semver requirement `{requirement}`: {error}"))
+    VersionReq::parse(req)
+        .map_err(|error| format!("invalid semver requirement `{requirement}`: {error}"))
 }
 
 fn registry_endpoint(name: &str) -> Result<String, String> {
@@ -427,7 +433,9 @@ pub fn fetch_dependencies() -> Result<(), String> {
                 }
                 cmd.arg(git_url).arg(&target_dir);
 
-                let status = cmd.status().map_err(|e| format!("Failed to execute git clone: {}", e))?;
+                let status = cmd
+                    .status()
+                    .map_err(|e| format!("Failed to execute git clone: {}", e))?;
                 if !status.success() {
                     return Err(format!("Failed to clone repository for {}", name));
                 }
@@ -443,13 +451,21 @@ pub fn fetch_dependencies() -> Result<(), String> {
                 cmd.arg(local_path);
                 cmd.arg(&target_dir);
 
-                let status = cmd.status().map_err(|e| format!("Failed to copy local path: {}", e))?;
+                let status = cmd
+                    .status()
+                    .map_err(|e| format!("Failed to copy local path: {}", e))?;
                 if !status.success() {
-                    return Err(format!("Failed to copy local path {} for {}", local_path, name));
+                    return Err(format!(
+                        "Failed to copy local path {} for {}",
+                        local_path, name
+                    ));
                 }
             }
             _ => {
-                println!("Warning: Registry fetching not yet implemented for {}", name);
+                println!(
+                    "Warning: Registry fetching not yet implemented for {}",
+                    name
+                );
             }
         }
     }

@@ -1,5 +1,5 @@
-use vinglish_bindgen::vinglish_bindgen;
 use std::fs;
+use vinglish_bindgen::vinglish_bindgen;
 
 #[vinglish_bindgen]
 pub fn io_read_file(path: &str) -> String {

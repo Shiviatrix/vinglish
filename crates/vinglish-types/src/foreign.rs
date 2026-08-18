@@ -1,7 +1,7 @@
 use crate::passes::CompilerContext;
 use vinglish_hir::symbol::{FunctionId, FunctionSymbol, SymbolId, TypeId, TypeSymbol};
-use vinglish_parser::ast::Visibility;
 use vinglish_hir::types::Type;
+use vinglish_parser::ast::Visibility;
 
 pub fn import_c_header(path: &str, ctx: &mut CompilerContext) {
     let bindings_res = bindgen::Builder::default()
@@ -49,11 +49,13 @@ pub fn import_c_header(path: &str, ctx: &mut CompilerContext) {
                         }
                         let ret_ty = match f.sig.output {
                             syn::ReturnType::Default => Type::Unit,
-                            syn::ReturnType::Type(_, ty) => syn_type_to_vinglish_type(&ty, &type_aliases),
+                            syn::ReturnType::Type(_, ty) => {
+                                syn_type_to_vinglish_type(&ty, &type_aliases)
+                            }
                         };
 
                         let fn_ty = Type::Function(params, Box::new(ret_ty));
-                        
+
                         ctx.symbol_table.define_func(
                             name.clone(),
                             FunctionSymbol {
@@ -81,7 +83,8 @@ pub fn import_c_header(path: &str, ctx: &mut CompilerContext) {
                         for field in fields.named {
                             if let Some(ident) = field.ident {
                                 let field_name = ident.to_string();
-                                let field_type = syn_type_to_vinglish_type(&field.ty, &type_aliases);
+                                let field_type =
+                                    syn_type_to_vinglish_type(&field.ty, &type_aliases);
                                 ts.add_field(field_name, field_type, Visibility::Public);
                             }
                         }
@@ -93,14 +96,18 @@ pub fn import_c_header(path: &str, ctx: &mut CompilerContext) {
     }
 }
 
-fn syn_type_to_vinglish_type(ty: &syn::Type, aliases: &std::collections::HashMap<String, Type>) -> Type {
+fn syn_type_to_vinglish_type(
+    ty: &syn::Type,
+    aliases: &std::collections::HashMap<String, Type>,
+) -> Type {
     match ty {
         syn::Type::Path(p) => {
             if let Some(segment) = p.path.segments.last() {
                 let ident = segment.ident.to_string();
                 match ident.as_str() {
-                    "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64" | "usize" | "isize" |
-                    "c_int" | "c_uint" | "c_long" | "c_ulong" | "c_short" | "c_ushort" | "c_char" | "c_uchar" => Type::Int,
+                    "i8" | "i16" | "i32" | "i64" | "u8" | "u16" | "u32" | "u64" | "usize"
+                    | "isize" | "c_int" | "c_uint" | "c_long" | "c_ulong" | "c_short"
+                    | "c_ushort" | "c_char" | "c_uchar" => Type::Int,
                     "f32" | "f64" | "c_float" | "c_double" => Type::Float,
                     "bool" => Type::Bool,
                     _ => {

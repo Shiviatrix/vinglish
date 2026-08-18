@@ -191,10 +191,10 @@ impl OwnershipAnalysisPass {
                             }
                         }
                         Instruction::<SsaValueId>::ListPush(list, val) => {
-                            if let Operand::<SsaValueId>::Var(src) = val {
-                                if let Operand::<SsaValueId>::Var(l_src) = list {
-                                    graph.set_state(*src, OwnershipState::Moved(*l_src));
-                                }
+                            if let Operand::<SsaValueId>::Var(src) = val
+                                && let Operand::<SsaValueId>::Var(l_src) = list
+                            {
+                                graph.set_state(*src, OwnershipState::Moved(*l_src));
                             }
                         }
                         Instruction::<SsaValueId>::ListPop(dest, _list) => {

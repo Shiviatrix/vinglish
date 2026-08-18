@@ -1,10 +1,10 @@
 use std::path::Path;
 
+use inkwell::OptimizationLevel;
 use inkwell::module::Module;
 use inkwell::targets::{
     CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine,
 };
-use inkwell::OptimizationLevel;
 
 /// Emit LLVM IR as a string.
 pub fn emit_ir(module: &Module) -> String {

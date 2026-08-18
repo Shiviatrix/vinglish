@@ -538,10 +538,12 @@ impl<'t> Parser<'t> {
                 let ty = self.parse_type_expr();
                 // If we successfully parsed a type and the next token indicates
                 // this is a type-only declaration (no value), return it as such
-                if ty.is_some() && matches!(
-                    self.current(),
-                    Token::Newline | Token::Dedent | Token::EOF | Token::End | Token::Otherwise
-                ) {
+                if ty.is_some()
+                    && matches!(
+                        self.current(),
+                        Token::Newline | Token::Dedent | Token::EOF | Token::End | Token::Otherwise
+                    )
+                {
                     return (ty, None);
                 }
                 // Otherwise, parse as an expression (could be a type used as identifier or actual expression)
@@ -1441,7 +1443,10 @@ impl<'t> Parser<'t> {
                             let ok_type = self.parse_type_expr().map(Arc::new)?;
                             if self.eat(&Token::Comma) {
                                 let error_type = self.parse_type_expr().map(Arc::new)?;
-                                Some(TypeExpr::Result { ok_type, error_type })
+                                Some(TypeExpr::Result {
+                                    ok_type,
+                                    error_type,
+                                })
                             } else {
                                 Some(TypeExpr::Named(Ident::new("Result", span)))
                             }
@@ -1461,7 +1466,11 @@ impl<'t> Parser<'t> {
                                 });
 
                                 // Extract length constant
-                                let length = if let Expr::Lit { value: Literal::Int(n), .. } = length_expr {
+                                let length = if let Expr::Lit {
+                                    value: Literal::Int(n),
+                                    ..
+                                } = length_expr
+                                {
                                     n as u64
                                 } else {
                                     // Default to 0 for non-literal lengths
@@ -1469,7 +1478,10 @@ impl<'t> Parser<'t> {
                                 };
 
                                 self.expect(&Token::Gt);
-                                return Some(TypeExpr::Array { element_type, length });
+                                return Some(TypeExpr::Array {
+                                    element_type,
+                                    length,
+                                });
                             } else {
                                 // Generic array: Array<T> (backward compatibility with List<T>)
                                 self.expect(&Token::Gt);
@@ -1490,18 +1502,25 @@ impl<'t> Parser<'t> {
                                 });
 
                                 // Extract length constant
-                                let length = if let Expr::Lit { value: Literal::Int(n), .. } = length_expr {
+                                let length = if let Expr::Lit {
+                                    value: Literal::Int(n),
+                                    ..
+                                } = length_expr
+                                {
                                     n as u64
                                 } else {
                                     // Default to 0 for non-literal lengths
                                     0
                                 };
 
-                                return Some(TypeExpr::Array { element_type, length });
+                                return Some(TypeExpr::Array {
+                                    element_type,
+                                    length,
+                                });
                             }
 
                             // If no semicolon, it's just List syntax (backward compatibility)
-                            return Some(TypeExpr::List(element_type));
+                            Some(TypeExpr::List(element_type))
                         } else {
                             Some(TypeExpr::Named(Ident::new("Array", span)))
                         }
@@ -1553,7 +1572,7 @@ impl<'t> Parser<'t> {
                                         let return_type = self.parse_type_expr().map(Arc::new)?;
                                         return Some(TypeExpr::Function {
                                             params: param_types,
-                                            return_type
+                                            return_type,
                                         });
                                     } else {
                                         self.expect(&Token::Gt);
@@ -1562,20 +1581,16 @@ impl<'t> Parser<'t> {
                                 }
                             }
                             // If we get here without ->, treat as generic
-                            return Some(TypeExpr::Generic {
+                            Some(TypeExpr::Generic {
                                 base: Ident::new("Function".to_string(), span),
-                                args: param_types
-                            });
+                                args: param_types,
+                            })
                         } else {
                             Some(TypeExpr::Named(Ident::new("Function", span)))
                         }
                     }
-                    "Unit" => {
-                        Some(TypeExpr::Unit)
-                    }
-                    "Never" => {
-                        Some(TypeExpr::Never)
-                    }
+                    "Unit" => Some(TypeExpr::Unit),
+                    "Never" => Some(TypeExpr::Never),
                     _ => {
                         let base = Ident::new(s, span);
                         if self.eat(&Token::Lt) {
@@ -1775,7 +1790,9 @@ impl<'t> Parser<'t> {
         let start = self.current_span();
         self.expect(&Token::Import);
         self.expect(&Token::Foreign);
-        let lang = self.expect_ident().unwrap_or_else(|| Ident::new("c", Span::dummy()));
+        let lang = self
+            .expect_ident()
+            .unwrap_or_else(|| Ident::new("c", Span::dummy()));
         let path = if let Token::StringLit(s) = self.current().clone() {
             self.advance();
             s
