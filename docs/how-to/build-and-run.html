@@ -1,41 +1,28 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Build And Run - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Build And Run</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="build-and-run">Build and Run</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Build And Run - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Build and Run</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="build-and-run">Build and Run</h1>
 <p>This guide covers how to use the <code>vng</code> CLI to compile and
 run Vinglish programs.</p>
-<hr />
+<hr/>
 <h2 id="building-a-native-binary">Building a Native Binary</h2>
 <p>To compile a <code>.ving</code> file into an executable:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build <span class="op">&lt;</span>file.ving<span class="op">&gt;</span> --output <span class="op">&lt;</span>binary<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="ex">vng</span> build <span class="op">&lt;</span>file.ving<span class="op">&gt;</span> --output <span class="op">&lt;</span>binary<span class="op">&gt;</span></span></code></pre></div>
 <p>By default, this emits C code and passes it to your system’s
 <code>cc</code> compiler. If you prefer to use the experimental LLVM
 backend, pass <code>--backend llvm</code>.</p>
@@ -47,43 +34,44 @@ for debugging: - <code>--emit c</code>: Dump the generated C source -
 <code>--emit mir-diff</code>: Shows you exactly what the optimization
 passes changed - <code>--emit ownership</code>: Dumps the ownership
 graph</p>
-<hr />
+<hr/>
 <h2 id="running-without-compiling">Running without Compiling</h2>
 <p>To execute code directly without invoking a C compiler, use the
 built-in tree-walk interpreter:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> run <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
-<hr />
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="ex">vng</span> run <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
+<hr/>
 <h2 id="type-checking">Type-Checking</h2>
 <p>To validate code without compiling or executing it:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> check <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a aria-hidden="true" href="#cb3-1" tabindex="-1"></a><span class="ex">vng</span> check <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
 <p>This runs the lexer, parser, type inference, and ownership checks. It
 reports any syntax or type errors and exits silently on success.</p>
-<hr />
+<hr/>
 <h2 id="formatting">Formatting</h2>
 <p>Vinglish includes a built-in code formatter to ensure consistent
 style:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> fmt <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a aria-hidden="true" href="#cb4-1" tabindex="-1"></a><span class="ex">vng</span> fmt <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
 <p>To verify formatting in CI environments (prints a diff and exits with
 a non-zero status if the file requires formatting), use:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> fmt <span class="at">--check</span> <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
-<hr />
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a aria-hidden="true" href="#cb5-1" tabindex="-1"></a><span class="ex">vng</span> fmt <span class="at">--check</span> <span class="op">&lt;</span>file.ving<span class="op">&gt;</span></span></code></pre></div>
+<hr/>
 <h2 id="environment-variables">Environment Variables</h2>
 <h3 id="the-standard-library-path">1. The Standard Library Path</h3>
 <p>For the compiler to resolve <code>std</code> imports, you must
 provide the path to the Vinglish repository:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">VINGLISH_ROOT</span><span class="op">=</span>/path/to/vinglish</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build src/main.ving</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">VINGLISH_ROOT</span><span class="op">=</span>/path/to/vinglish</span>
+<span id="cb6-2"><a aria-hidden="true" href="#cb6-2" tabindex="-1"></a><span class="ex">vng</span> build src/main.ving</span></code></pre></div>
 <h3 id="custom-c-compiler">2. Custom C Compiler</h3>
 <p>By default, Vinglish just calls <code>cc</code>. If you want to use
 <code>gcc</code> or <code>clang</code> specifically, just set the
 <code>CC</code> variable:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">CC</span><span class="op">=</span>clang <span class="ex">vng</span> build file.ving</span></code></pre></div>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a><span class="va">CC</span><span class="op">=</span>clang <span class="ex">vng</span> build file.ving</span></code></pre></div>
+          </article>
+          <div class="status-row">
+            <span>Build And Run - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

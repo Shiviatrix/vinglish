@@ -1,77 +1,65 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Emit Mir - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Emit Mir</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="emit-and-inspect-mir">Emit and Inspect MIR</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emit Mir - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Emit and Inspect MIR</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="emit-and-inspect-mir">Emit and Inspect MIR</h1>
 <p>How to inspect the compiler’s intermediate representations.</p>
-<hr />
+<hr/>
 <h2 id="print-mir-before-optimization">Print MIR Before
 Optimization</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-before</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-before</span></code></pre></div>
 <p>Prints the MIR as produced by <code>MirLowerer</code>, before any
 optimization passes.</p>
-<hr />
+<hr/>
 <h2 id="print-mir-after-optimization">Print MIR After Optimization</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir</span></code></pre></div>
 <p>Prints the SSA MIR after all optimization passes.</p>
-<hr />
+<hr/>
 <h2 id="print-beforeafter-diff">Print Before/After Diff</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-diff</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a aria-hidden="true" href="#cb3-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-diff</span></code></pre></div>
 <p>Prints the MIR before optimization, followed by the MIR after
 optimization.</p>
-<hr />
+<hr/>
 <h2 id="print-optimization-statistics">Print Optimization
 Statistics</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-stats</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a aria-hidden="true" href="#cb4-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> mir-stats</span></code></pre></div>
 <p>Prints: - Total variables - Number of functions - Merged blocks (CFG
 simplification) - Folded constants - GVN eliminated values</p>
-<hr />
+<hr/>
 <h2 id="print-ssa-form">Print SSA Form</h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> ssa</span></code></pre></div>
-<hr />
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a aria-hidden="true" href="#cb5-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> ssa</span></code></pre></div>
+<hr/>
 <h2 id="print-ownership-graph">Print Ownership Graph</h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> ownership</span></code></pre></div>
-<hr />
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a aria-hidden="true" href="#cb6-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> ownership</span></code></pre></div>
+<hr/>
 <h2 id="print-llvm-ir">Print LLVM IR</h2>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> llvm</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a aria-hidden="true" href="#cb7-1" tabindex="-1"></a><span class="ex">vng</span> build file.ving <span class="at">--emit</span> llvm</span></code></pre></div>
 <p>Requires the LLVM backend.</p>
-<hr />
+<hr/>
 <h2 id="export-semantic-ir-json">Export Semantic IR (JSON)</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">vng</span> <span class="at">--emit-ir</span> file.ving</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a aria-hidden="true" href="#cb8-1" tabindex="-1"></a><span class="ex">vng</span> <span class="at">--emit-ir</span> file.ving</span></code></pre></div>
 <p>Prints the HIR in JSON interchange format to stdout.</p>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Emit Mir - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

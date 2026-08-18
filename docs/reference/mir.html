@@ -1,42 +1,29 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Mir - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Mir</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="mir">MIR</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mir - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>MIR</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="mir">MIR</h1>
 <p>The Mid-Level Intermediate Representation is a CFG-based IR used for
 optimization and code generation.</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Provide a lower-level representation suitable for SSA conversion,
 optimization passes, ownership analysis, and code generation.</p>
-<hr />
+<hr/>
 <h2 id="responsibilities">Responsibilities</h2>
 <ul>
 <li>Represent programs as functions containing basic blocks.</li>
@@ -46,7 +33,7 @@ terminator.</li>
 (<code>SsaValueId</code>) forms via a type parameter
 <code>V</code>.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="design">Design</h2>
 <p>Defined in <code>vinglish-mir/src/lib.rs</code>.</p>
 <h3 id="module-structure">Module Structure</h3>
@@ -64,8 +51,8 @@ terminator.</li>
 <h3 id="instructions">Instructions</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -135,8 +122,8 @@ terminator.</li>
 <h3 id="terminators">Terminators</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -203,12 +190,12 @@ terminator.</li>
 <h3 id="allocation-layout">Allocation Layout</h3>
 <p><code>AllocationLayout { layout: TypeId, size: u32, align: u32 }</code>
 — carries size and alignment for allocation instructions.</p>
-<hr />
+<hr/>
 <h2 id="mir-validation">MIR Validation</h2>
 <p><code>MirValidatorPass</code> in
 <code>vinglish-mir/src/validator.rs</code> checks structural correctness
 of the MIR module after each optimization pass.</p>
-<hr />
+<hr/>
 <h2 id="display">Display</h2>
 <p>All MIR types implement <code>Display</code>: - Functions:
 <code>fn name (fn_N) { ... }</code> - Blocks: <code>bbN:</code> -
@@ -217,19 +204,20 @@ Instructions: <code>dest = operand op operand</code> - Terminators:
 <code>branch cond ? bbT : bbF</code></p>
 <p>The <code>--emit ssa</code>, <code>--emit mir</code>, and
 <code>--emit mir-diff</code> CLI flags print MIR to stdout.</p>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="ssa.html">Reference: SSA</a></li>
 <li><a href="optimizations.html">Reference: Optimizations</a></li>
 <li><a href="codegen.html">Reference: Code Generation</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Mir - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

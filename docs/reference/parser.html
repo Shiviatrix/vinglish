@@ -1,43 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Parser - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Parser</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="parser">Parser</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parser - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Parser</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="parser">Parser</h1>
 <p>The Vinglish parser consumes a token stream and produces an abstract
 syntax tree.</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Convert <code>Vec&lt;Spanned&lt;Token&gt;&gt;</code> into
 <code>ast::Module</code>, reporting parse errors as structured
 diagnostics.</p>
-<hr />
+<hr/>
 <h2 id="responsibilities">Responsibilities</h2>
 <ul>
 <li>Parse top-level items: functions, types, enums, use declarations,
@@ -51,7 +38,7 @@ macro calls, postfix try (<code>?</code>), generic instantiation.</li>
 indentation-based blocks.</li>
 <li>Report errors with spans for diagnostic rendering.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="design">Design</h2>
 <p>Recursive-descent parser. Implemented in
 <code>vinglish-parser/src/parser.rs</code>.</p>
@@ -79,19 +66,19 @@ indentation-based blocks.</li>
 </table>
 <p>Each <code>ParseError</code> has a <code>span()</code> method
 returning the error location.</p>
-<hr />
+<hr/>
 <h2 id="data-flow">Data Flow</h2>
 <p><strong>Input</strong>: <code>&amp;[Spanned&lt;Token&gt;]</code></p>
 <p><strong>Output</strong>:
 <code>(ast::Module, Vec&lt;ParseError&gt;)</code></p>
-<hr />
+<hr/>
 <h2 id="public-api-ast-types">Public API: AST Types</h2>
 <p>All defined in <code>vinglish-parser/src/ast.rs</code>.</p>
 <h3 id="top-level-items">Top-Level Items</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -149,8 +136,8 @@ type (<code>on T</code>), effects, <code>is_foreign</code></td>
 <h3 id="statements">Statements</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -212,8 +199,8 @@ type (<code>on T</code>), effects, <code>is_foreign</code></td>
 <h3 id="expressions">Expressions</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -285,8 +272,8 @@ type (<code>on T</code>), effects, <code>is_foreign</code></td>
 <h3 id="type-expressions">Type Expressions</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 50%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
 <tr>
@@ -329,14 +316,14 @@ type (<code>on T</code>), effects, <code>is_foreign</code></td>
 <h3 id="visibility">Visibility</h3>
 <p><code>Private</code> (default), <code>Public</code>,
 <code>Internal</code>.</p>
-<hr />
+<hr/>
 <h2 id="limitations">Limitations</h2>
 <ul>
 <li>No operator precedence climbing; precedence is handled by the
 recursive structure.</li>
 <li>Error recovery is limited to collecting errors and continuing.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="lexer.html">Reference: Lexer</a></li>
@@ -344,12 +331,13 @@ recursive structure.</li>
 <li><a href="../explanation/compiler-pipeline.html">Compiler
 Pipeline</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Parser - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

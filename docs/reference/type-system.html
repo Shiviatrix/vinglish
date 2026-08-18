@@ -1,42 +1,29 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Type System - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Type System</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="type-system">Type System</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Type System - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Type System</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="type-system">Type System</h1>
 <p>The Vinglish type system uses Hindley-Milner-style inference with a
 unification-based approach.</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Assign types to all expressions, validate type constraints, and
 optionally heal type mismatches.</p>
-<hr />
+<hr/>
 <h2 id="responsibilities">Responsibilities</h2>
 <ul>
 <li>Name resolution via <code>NameResolutionPass</code>.</li>
@@ -45,7 +32,7 @@ optionally heal type mismatches.</p>
 <li>HIR validation via <code>HirValidatorPass</code>.</li>
 <li>MIR lowering via <code>MirLowerer</code>.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="design">Design</h2>
 <p>Defined across <code>vinglish-types/src/</code>.</p>
 <h3 id="compilercontext">CompilerContext</h3>
@@ -90,13 +77,13 @@ semantics. All other types have move semantics.</p>
 <p><code>MirLowerer::lower_module(&amp;hir) -&gt; MirModule&lt;VariableId&gt;</code>
 converts HIR to MIR. Struct layout (field byte offsets) is computed in
 <code>vinglish-hir/src/layout.rs</code>.</p>
-<hr />
+<hr/>
 <h2 id="error-types">Error Types</h2>
 <table>
 <colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
 </colgroup>
 <thead>
 <tr>
@@ -118,7 +105,7 @@ converts HIR to MIR. Struct layout (field byte offsets) is computed in
 </tr>
 </tbody>
 </table>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="hir.html">Reference: HIR</a></li>
@@ -126,12 +113,13 @@ converts HIR to MIR. Struct layout (field byte offsets) is computed in
 <li><a href="../explanation/compiler-pipeline.html">Compiler
 Pipeline</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Type System - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

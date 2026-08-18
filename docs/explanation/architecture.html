@@ -1,41 +1,28 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Architecture - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Architecture</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="architecture">Architecture</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architecture - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Architecture</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="architecture">Architecture</h1>
 <p>Vinglish compiles down to C in a few distinct passes. It takes your
 <code>.ving</code> code, performs parsing and type inference, optimizes
 the intermediate representation, and generates C code that your system’s
 compiler (like <code>gcc</code> or <code>clang</code>) turns into a
 native binary.</p>
-<hr />
+<hr/>
 <h2 id="overview">1. Overview</h2>
 <p>Vinglish is a statically-typed language. The compiler is written in
 Rust and split across 19 different crates in a Cargo workspace so it’s
@@ -57,7 +44,7 @@ standard library features.</li>
 <li>A Rust runtime (<code>rt_rust/</code>) handles UI capabilities via
 <code>minifb</code> and facilitates Rust interop.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="how-the-pieces-fit-together">4. How the pieces fit together</h2>
 <pre class="text"><code>You write .ving files
        │
@@ -75,16 +62,16 @@ System C compiler (cc/gcc/clang) builds it
        │
        ▼
 Native executable!</code></pre>
-<hr />
+<hr/>
 <h2 id="the-pipeline">5. The Pipeline</h2>
 <p>The whole process is kicked off by <code>cmd_build()</code> in
 <code>vinglish-cli/src/main.rs</code>.</p>
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
 </colgroup>
 <thead>
 <tr>
@@ -195,7 +182,7 @@ Native executable!</code></pre>
 </table>
 <p>If you have multiple files, we load the module graph, resolve your
 <code>use</code> statements, and compile them in topological order.</p>
-<hr />
+<hr/>
 <h2 id="what-each-crate-actually-does">6. What each crate actually
 does</h2>
 <h3 id="frontend-vinglish-lexer-vinglish-parser">Frontend
@@ -235,22 +222,21 @@ SHA-256, and embeds it as a base64 comment at the bottom of the C file.
 <p>These enforce ownership rules to prevent double-freeing memory or
 using variables after they are moved. We check this both at the AST
 level and the MIR level.</p>
-<h3
-id="tooling-vinglish-diagnostics-vinglish-cli-vinglish-fmt-vinglish-lsp">Tooling
+<h3 id="tooling-vinglish-diagnostics-vinglish-cli-vinglish-fmt-vinglish-lsp">Tooling
 (<code>vinglish-diagnostics</code>, <code>vinglish-cli</code>,
 <code>vinglish-fmt</code>, <code>vinglish-lsp</code>)</h3>
 <p>Additional tooling for the ecosystem. <code>diagnostics</code>
 provides formatted terminal errors with line snippets. <code>cli</code>
 is the main binary. We also have a formatter and a language server for
 VS Code.</p>
-<hr />
+<hr/>
 <h2 id="key-data-types">7. Key Data Types</h2>
 <p>Here are the primary data structures used across the compiler:</p>
 <table>
 <colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
 </colgroup>
 <thead>
 <tr>
@@ -303,7 +289,7 @@ VS Code.</p>
 </tr>
 </tbody>
 </table>
-<hr />
+<hr/>
 <h2 id="limitations">8. Limitations</h2>
 <p>A few features that are currently incomplete: - The C backend just
 uses <code>long</code> (<code>int64_t</code>) for almost everything. -
@@ -313,12 +299,13 @@ instructions don’t actually emit <code>free()</code> in C yet, they just
 emit a no-op <code>(void)0</code>. - The package manager
 (<code>vng pkg</code>) just builds scaffolding; there’s no real package
 registry yet.</p>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Architecture - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

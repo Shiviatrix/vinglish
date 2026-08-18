@@ -1,43 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Ssa - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Ssa</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="ssa">SSA</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ssa - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>SSA</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="ssa">SSA</h1>
 <p>The SSA conversion pass transforms MIR from a variable-based form
 (<code>VariableId</code>) to static single assignment form
 (<code>SsaValueId</code>).</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Enable optimization passes that require SSA properties (e.g.,
 constant propagation, GVN, copy propagation).</p>
-<hr />
+<hr/>
 <h2 id="responsibilities">Responsibilities</h2>
 <ul>
 <li>Compute dominator trees per function.</li>
@@ -46,16 +33,15 @@ constant propagation, GVN, copy propagation).</p>
 <li>Convert <code>MirModule&lt;VariableId&gt;</code> to
 <code>MirModule&lt;SsaValueId&gt;</code>.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="design">Design</h2>
 <p>Defined in <code>vinglish-ssa/src/lib.rs</code>.</p>
 <h3 id="entry-point">Entry Point</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="pp">SSAConversionPass::</span>run(</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    module<span class="op">:</span> MirModule<span class="op">&lt;</span>VariableId<span class="op">&gt;,</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    symbol_table<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> SymbolTable<span class="op">,</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> MirModule<span class="op">&lt;</span>SsaValueId<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="pp">SSAConversionPass::</span>run(</span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>    <span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span></span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a>    module<span class="op">:</span> MirModule<span class="op">&lt;</span>VariableId<span class="op">&gt;,</span></span>
+<span id="cb1-4"><a aria-hidden="true" href="#cb1-4" tabindex="-1"></a>    symbol_table<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> SymbolTable<span class="op">,</span></span>
+<span id="cb1-5"><a aria-hidden="true" href="#cb1-5" tabindex="-1"></a>) <span class="op">-&gt;</span> MirModule<span class="op">&lt;</span>SsaValueId<span class="op">&gt;</span></span></code></pre></div>
 <h3 id="algorithm">Algorithm</h3>
 <p>For each function in the module: 1. <strong>Dominator tree</strong>
 (<code>dominators.rs</code>): Compute the dominator tree from the CFG.
@@ -72,12 +58,12 @@ maps <code>VariableId(SymbolId(n))</code> to
 <h3 id="validation">Validation</h3>
 <p><code>SSAValidator</code> in <code>validator.rs</code> checks that
 SSA properties hold in the output module.</p>
-<hr />
+<hr/>
 <h2 id="data-flow">Data Flow</h2>
 <p><strong>Input</strong>: <code>MirModule&lt;VariableId&gt;</code> +
 <code>&amp;mut SymbolTable</code></p>
 <p><strong>Output</strong>: <code>MirModule&lt;SsaValueId&gt;</code></p>
-<hr />
+<hr/>
 <h2 id="public-api">Public API</h2>
 <table>
 <thead>
@@ -101,7 +87,7 @@ SSA properties hold in the output module.</p>
 </tr>
 </tbody>
 </table>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="mir.html">Reference: MIR</a></li>
@@ -109,12 +95,13 @@ SSA properties hold in the output module.</p>
 <li><a href="../explanation/compiler-pipeline.html">Compiler
 Pipeline</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Ssa - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

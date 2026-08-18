@@ -1,51 +1,38 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Standard Library - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Standard Library</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="standard-library">Standard Library</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standard Library - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Standard Library</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="standard-library">Standard Library</h1>
 <p>The Vinglish standard library consists of <code>.ving</code> modules
 in <code>std/</code> with corresponding C runtime implementations in
 <code>rt/</code>.</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Provide built-in functionality for I/O, strings, math, files,
 networking, threads, subprocesses, terminal interaction, UI, and
 collections.</p>
-<hr />
+<hr/>
 <h2 id="modules">Modules</h2>
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
+<col style="width: 25%"/>
 </colgroup>
 <thead>
 <tr>
@@ -130,7 +117,7 @@ collections.</p>
 </tr>
 </tbody>
 </table>
-<hr />
+<hr/>
 <h2 id="module-details">Module Details</h2>
 <h3 id="std.io">std.io</h3>
 <p>Public functions: - <code>read_line() returns string</code> -
@@ -171,7 +158,7 @@ collections.</p>
 <p>Public foreign functions:
 <code>ving_alloc(size) returns address&lt;number&gt;</code>,
 <code>ving_free(ptr)</code>.</p>
-<hr />
+<hr/>
 <h2 id="usage">Usage</h2>
 <p>Import a standard library module:</p>
 <pre><code>use std.io
@@ -181,7 +168,7 @@ use std.collections.vector</code></pre>
 the repository root for <code>std</code> resolution. Otherwise,
 <code>std/</code> is resolved relative to the current working
 directory.</p>
-<hr />
+<hr/>
 <h2 id="limitations">Limitations</h2>
 <ul>
 <li>No standard library documentation beyond function signatures.</li>
@@ -190,18 +177,19 @@ directory.</p>
 <li>Collections rely on raw pointer arithmetic via
 <code>std.runtime</code>.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="cli.html">Reference: CLI</a></li>
 <li><a href="../explanation/architecture.html">Architecture</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Standard Library - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

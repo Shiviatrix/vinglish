@@ -1,43 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link rel="icon" type="image/svg+xml" href="../../logos/vinglish-icon-color.svg">
-  <meta charset="UTF-8">
-  <title>Optimizations - Vinglish</title>
-  <link rel="stylesheet" type="text/css" href="../site.css?v=retro">
-</head>
-<body bgcolor="#008080" text="#FFFFFF" link="#FFFF00" vlink="#FF00FF" alink="#FF0000">
-
-  <center>
-    <h1><marquee width="50%" behavior="alternate">Optimizations</marquee></h1>
-    <hr width="80%">
-    
-    <table border="4" cellpadding="10" bgcolor="#C0C0C0" width="80%">
-      <tr>
-        <td align="center">
-          <font color="#000000" face="Arial">
-            <b>[ <a href="../index.html">Home</a> ] | [ <a href="../language_guide.html">Language Guide</a> ] | [ <a href="../architecture.html">Architecture</a> ] | [ <a href="../standard_library.html">Standard Library</a> ]</b>
-          </font>
-        </td>
-      </tr>
-    </table>
-    <br>
-  </center>
-
-  <center>
-    <table border="0" width="80%" cellpadding="10">
-      <tr>
-        <td bgcolor="#C0C0C0" align="left">
-          <font color="#000000" face="Times New Roman">
-<h1 id="optimizations">Optimizations</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Optimizations - Vinglish</title>
+    <link rel="stylesheet" href="../../site.css" />
+    <script src="../../site.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="site-window">
+        <header class="site-header">
+          <h1>Optimizations</h1>
+        </header>
+        <div class="site-body">
+          <nav class="site-nav" aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../language_guide.html">Language guide</a><a href="../../architecture.html">Architecture</a><a href="../../standard_library.html">Standard library</a><a href="../index.html">Docs</a><a href="https://github.com/Shiviatrix/vinglish">GitHub</a></nav>
+          <article class="article-shell">
+            <h1 id="optimizations">Optimizations</h1>
 <p>The optimization framework applies a configurable sequence of MIR
 transformation passes.</p>
-<hr />
+<hr/>
 <h2 id="purpose">Purpose</h2>
 <p>Reduce generated code size and improve runtime performance by
 eliminating redundant instructions, simplifying the CFG, and folding
 constants.</p>
-<hr />
+<hr/>
 <h2 id="responsibilities">Responsibilities</h2>
 <ul>
 <li>Provide a <code>PassManager</code> that runs passes in
@@ -45,7 +32,7 @@ sequence.</li>
 <li>Validate MIR after each pass.</li>
 <li>Collect statistics about transformations performed.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="design">Design</h2>
 <p>Defined in <code>vinglish-opt/src/lib.rs</code>.</p>
 <h3 id="passmanager">PassManager</h3>
@@ -55,19 +42,17 @@ sequence.</li>
 <code>MirValidatorPass::validate()</code> after each pass. If validation
 fails, the pipeline aborts with the validation errors.</p>
 <h3 id="optimization-pass-trait">Optimization Pass Trait</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">trait</span> OptimizationPass<span class="op">&lt;</span>V<span class="op">&gt;</span> <span class="op">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> name(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="op">&amp;</span><span class="ot">&#39;static</span> <span class="dt">str</span><span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">fn</span> run(<span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span> module<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> MirModule<span class="op">&lt;</span>V<span class="op">&gt;,</span> symbol_table<span class="op">:</span> <span class="op">&amp;</span>SymbolTable) <span class="op">-&gt;</span> PassStats<span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">trait</span> OptimizationPass<span class="op">&lt;</span>V<span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>    <span class="kw">fn</span> name(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="op">&amp;</span><span class="ot">'static</span> <span class="dt">str</span><span class="op">;</span></span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a>    <span class="kw">fn</span> run(<span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span> module<span class="op">:</span> <span class="op">&amp;</span><span class="kw">mut</span> MirModule<span class="op">&lt;</span>V<span class="op">&gt;,</span> symbol_table<span class="op">:</span> <span class="op">&amp;</span>SymbolTable) <span class="op">-&gt;</span> PassStats<span class="op">;</span></span>
+<span id="cb1-4"><a aria-hidden="true" href="#cb1-4" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h3 id="pass-statistics">Pass Statistics</h3>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> PassStats <span class="op">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> removed_instructions<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> merged_blocks<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> folded_constants<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> gvn_eliminated<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> PassStats <span class="op">{</span></span>
+<span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a>    <span class="kw">pub</span> removed_instructions<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-3"><a aria-hidden="true" href="#cb2-3" tabindex="-1"></a>    <span class="kw">pub</span> merged_blocks<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-4"><a aria-hidden="true" href="#cb2-4" tabindex="-1"></a>    <span class="kw">pub</span> folded_constants<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-5"><a aria-hidden="true" href="#cb2-5" tabindex="-1"></a>    <span class="kw">pub</span> gvn_eliminated<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-6"><a aria-hidden="true" href="#cb2-6" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <h3 id="pipeline-configuration">Pipeline Configuration</h3>
 <h4 id="pre-ssa-pipeline">Pre-SSA Pipeline</h4>
 <p>Operates on <code>MirModule&lt;VariableId&gt;</code>:</p>
@@ -154,7 +139,7 @@ Replaces variable references with the source of copy assignments.</li>
 Eliminates redundant computations by assigning value numbers. Tracks
 <code>gvn_eliminated</code>.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="cli-integration">CLI Integration</h2>
 <ul>
 <li><code>--emit mir-before</code>: Print MIR before optimization.</li>
@@ -164,7 +149,7 @@ after optimization.</li>
 <li><code>--emit mir-stats</code>: Print optimization statistics.</li>
 <li><code>--emit mir-diff</code>: Print before and after MIR.</li>
 </ul>
-<hr />
+<hr/>
 <h2 id="related-components">Related Components</h2>
 <ul>
 <li><a href="mir.html">Reference: MIR</a></li>
@@ -172,12 +157,13 @@ after optimization.</li>
 <li><a href="../explanation/compiler-pipeline.html">Compiler
 Pipeline</a></li>
 </ul>
-
-          </font>
-        </td>
-      </tr>
-    </table>
-  </center>
-
-</body>
+          </article>
+          <div class="status-row">
+            <span>Optimizations - Vinglish</span>
+            <span><a href="https://github.com/Shiviatrix/vinglish">GitHub repository</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
