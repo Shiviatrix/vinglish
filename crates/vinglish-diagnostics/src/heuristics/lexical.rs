@@ -95,7 +95,6 @@ pub fn check_lexical_proximity(bad_token_text: &str, diag: &mut Diagnostic) -> b
 #[cfg(test)]
 mod tests {
     use super::*;
-    use strsim::{damerau_levenshtein, levenshtein, jaro_winkler};
 
     #[test]
     fn test_similarity_scoring() {

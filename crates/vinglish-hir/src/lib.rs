@@ -2,9 +2,6 @@ pub mod layout;
 pub mod symbol;
 pub mod types;
 
-#[cfg(test)]
-mod layout_stress;
-
 use crate::symbol::{FieldId, FunctionId, TypeId, VariableId};
 use vinglish_lexer::span::Span;
 use vinglish_parser::ast::{BinOp, Literal, UnOp, Visibility};

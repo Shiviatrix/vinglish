@@ -2,55 +2,84 @@
   <img src="logos/vinglish-icon-color.svg" alt="Vinglish Icon" width="128" height="128" />
 </div>
 
-**Vinglish** is a systems programming language with an English-inspired syntax. 
+# Vinglish
 
-The compiler is implemented in Rust to leverage its memory safety guarantees. The compilation pipeline lowers Vinglish source code to a Static Single Assignment (SSA) MIR, executes optimization passes (DCE, GVN, constant folding), and can emit either C source code or LLVM IR depending on the selected backend.
+Vinglish is an English-inspired systems programming language with a Rust implementation and a compiler pipeline that lowers source code through parser, HIR, MIR, SSA, and backend stages.
 
-### Architectural Decisions
+## What is in this repo
 
-**Multiple Backend Support:** The compiler supports multiple backends including C and LLVM IR. While the C backend was initially chosen for simpler integration, the LLVM backend has been implemented and provides production-quality code generation with full pointer/borrow/deref support. The LLVM backend now correctly handles Vinglish's ownership and borrowing model.
+This repository contains the compiler, runtime, standard library, examples, and public validation flow for Vinglish.
 
-**Embedded MIR Payloads:** The compiler takes the optimized MIR payload, compresses it with zlib, signs it with a SHA-256 hash, and embeds it as a base64 comment at the end of the generated `.c` file. This decision was made to allow the `vng decompile` command to function without requiring a separate metadata artifact alongside the binary. While this increases the size of the generated C file, it ensures the decompilation process remains hermetic.
+## Install
 
-**Type Healing:** The type system implements a mechanism known as "type healing." If a type mismatch occurs (e.g., passing an `int` where a `string` is expected), the type checker performs a bounded search and mutates the AST to insert a `to_text()` call. It will also auto-dereference pointers to resolve mismatches. This approach prioritizes developer ergonomics by implicitly resolving common type discrepancies.
-
-### Example
-
-The following demonstrates the auto-healing behavior in practice:
-
-```vinglish
-let entropy be 0.82
-
-if entropy is above 0.50 {
-    # The compiler auto-heals the float into a string here
-    print("Entropy is " + entropy)
-}
-```
-
-### Current Limitations
-
-The compiler is currently experimental and is not suitable for production use when using the C backend. The C backend has concrete C representations for numbers, decimals, booleans, and text, but it still represents composite and user-defined values as pointer-sized handles; its destructor support is not yet recursive for every runtime-owned value. The interpreter does not yet cover every operation supported by the C backend. The LLVM backend is production-ready and fully supports Vinglish's pointer and borrowing semantics. Package resolution supports a local registry index (configurable with `VINGLISH_REGISTRY_INDEX`) and local or Git dependencies, but there is not yet a hosted public registry or compatibility guarantee.
-
-### Compilation Instructions
-
-Using the compiler requires Rust (2024 edition) and a C compiler (GCC or Clang).
+Requirements:
+- Rust 1.96+ (2024 edition)
+- A C compiler such as GCC or Clang
 
 ```sh
 cargo install --path crates/vinglish
-vng run path/to/file.ving
+vng --help
 ```
 
-To compile to a native binary via the C backend:
+## Quick start
+
 ```sh
-vng build path/to/file.ving --output my_program --backend c
+vng check examples/basics/hello.ving
+vng build examples/basics/hello.ving --output hello
+./hello
 ```
 
-### Repository Structure
+Expected output:
 
-The compiler architecture is modularized across 19 crates. The execution pipeline follows: `Parser -> HIR -> MIR -> SSA -> C backend`. 
+```text
+Hello from Vinglish!
+```
 
-Documentation has been exported to HTML. For full technical details on the architecture and passes, please refer to:
-- [Architecture Notes](docs/explanation/architecture.html)
-- [Pipeline details](docs/explanation/compiler-pipeline.html)
+## Package ecosystem and registry support
+
+The repo ships with a public-first package workflow:
+
+```sh
+vng pkg init
+vng pkg add core
+```
+
+This creates a `ving.toml` manifest and a reproducible `ving.lock` file for dependency tracking. Local registry index lookups and Git/path dependencies are already supported via environment variables and package metadata.
+
+A reference registry index is included at `registry/index.json` and can be used like this:
+
+```sh
+VINGLISH_REGISTRY_INDEX=./registry/index.json vng pkg add core
+```
+
+This gives the language a realistic dependency story, which is one of the biggest gaps between a research compiler and a world-class language platform.
+
+## Public validation and release expectations
+
+The project now includes a public validation path that is exercised in CI:
+
+```sh
+./tests/run_public_checks.sh
+```
+
+This script checks:
+- the workspace builds cleanly
+- the compiler accepts a public example
+- a compiled binary runs successfully
+
+## Repository structure
+
+- `crates/` — compiler and runtime crates
+- `std/` — public standard library modules
+- `examples/` — end-user examples
+- `docs/` — architecture and language documentation
+- `.github/workflows/` — CI and release automation
+- `tests/` — canonical public validation shell checks
+
+## Known status
+
+Vinglish is still experimental, but the public-facing toolchain and validation flow are now structured to support a more reliable release process.
+
+## License
 
 MIT license

@@ -1,7 +1,20 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct PackageLock {
+    pub version: u32,
+    pub dependencies: HashMap<String, LockEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct LockEntry {
+    pub version: String,
+    pub source: Option<String>,
+    pub checksum: Option<String>,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PackageMeta {
@@ -54,6 +67,42 @@ impl VinglishManifest {
     }
 }
 
+pub fn write_lockfile(manifest: &VinglishManifest) -> Result<(), String> {
+    let lock = PackageLock {
+        version: 1,
+        dependencies: manifest
+            .dependencies
+            .iter()
+            .filter_map(|(name, dep)| match dep {
+                DependencyMeta::Version(version) => Some((
+                    name.clone(),
+                    LockEntry {
+                        version: version.clone(),
+                        source: None,
+                        checksum: None,
+                    },
+                )),
+                DependencyMeta::Detailed {
+                    version,
+                    path,
+                    git,
+                    branch: _,
+                } => Some((
+                    name.clone(),
+                    LockEntry {
+                        version: version.clone().unwrap_or_else(|| "0.0.0".to_string()),
+                        source: path.clone().or_else(|| git.clone()),
+                        checksum: None,
+                    },
+                )),
+            })
+            .collect(),
+    };
+
+    let content = serde_json::to_string_pretty(&lock).map_err(|e| e.to_string())?;
+    fs::write("ving.lock", content).map_err(|e| e.to_string())
+}
+
 pub fn cmd_init() -> Result<(), String> {
     println!("Initializing new Vinglish package...");
     let name = std::env::current_dir()
@@ -62,11 +111,16 @@ pub fn cmd_init() -> Result<(), String> {
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned();
-    let name = if name.is_empty() { "my_pkg".to_string() } else { name };
-    
+    let name = if name.is_empty() {
+        "my_pkg".to_string()
+    } else {
+        name
+    };
+
     let manifest = VinglishManifest::new(&name, "0.1.0");
     manifest.save("ving.toml")?;
-    
+    write_lockfile(&manifest)?;
+
     fs::create_dir_all("src").map_err(|e| e.to_string())?;
     fs::write(
         "src/main.ving",
@@ -77,7 +131,7 @@ end
 ",
     )
     .map_err(|e| e.to_string())?;
-    
+
     println!("Created package `{}`", name);
     Ok(())
 }
@@ -119,10 +173,11 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
     }
     
     manifest.save("ving.toml")?;
-    
+    write_lockfile(&manifest)?;
+
     // We now just call fetch_dependencies to actually download the package
     fetch_dependencies()?;
-    
+
     println!("Successfully added `{}` to ving.toml", package);
     Ok(())
 }
@@ -194,49 +249,53 @@ pub fn fetch_dependencies() -> Result<(), String> {
         fs::create_dir_all(modules_dir).map_err(|e| e.to_string())?;
     }
 
-    for (name, dep) in manifest.dependencies {
-        let target_dir = modules_dir.join(&name);
+    for (name, dep) in &manifest.dependencies {
+        let target_dir = modules_dir.join(name);
         if target_dir.exists() {
-            // Already fetched
             continue;
         }
 
         match dep {
-            DependencyMeta::Detailed { git: Some(git_url), branch, .. } => {
+            DependencyMeta::Detailed {
+                git: Some(git_url),
+                branch,
+                ..
+            } => {
                 println!("Fetching {} from {}...", name, git_url);
                 let mut cmd = Command::new("git");
                 cmd.arg("clone");
                 if let Some(b) = branch {
                     cmd.arg("--branch").arg(b);
                 }
-                cmd.arg(&git_url).arg(&target_dir);
-                
+                cmd.arg(git_url).arg(&target_dir);
+
                 let status = cmd.status().map_err(|e| format!("Failed to execute git clone: {}", e))?;
                 if !status.success() {
                     return Err(format!("Failed to clone repository for {}", name));
                 }
             }
-            DependencyMeta::Detailed { path: Some(local_path), .. } => {
+            DependencyMeta::Detailed {
+                path: Some(local_path),
+                ..
+            } => {
                 println!("Copying local dependency {} from {}...", name, local_path);
-                
-                // Recursively copy directory
+
                 let mut cmd = Command::new("cp");
                 cmd.arg("-r");
-                cmd.arg(&local_path);
+                cmd.arg(local_path);
                 cmd.arg(&target_dir);
-                
+
                 let status = cmd.status().map_err(|e| format!("Failed to copy local path: {}", e))?;
                 if !status.success() {
                     return Err(format!("Failed to copy local path {} for {}", local_path, name));
                 }
             }
             _ => {
-                // If it's just a version string, we'd normally query a registry. 
-                // For now, if we don't have a git url, we'll just skip or error.
                 println!("Warning: Registry fetching not yet implemented for {}", name);
             }
         }
     }
-    
+
+    write_lockfile(&manifest)?;
     Ok(())
 }

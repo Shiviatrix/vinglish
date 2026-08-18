@@ -705,7 +705,10 @@ fn type_to_c(ty: &TypeExpr) -> String {
             }
         },
         TypeExpr::List(_) => "void*".into(),
-        TypeExpr::Array { element_type, length } => {
+        TypeExpr::Array {
+            element_type,
+            length: _,
+        } => {
             // For simplicity, treat arrays as pointers to their element type in C
             format!("{}*", type_to_c(element_type))
         },

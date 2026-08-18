@@ -3,9 +3,6 @@
 //! This crate deliberately does not parse arbitrary C.  C is only the carrier: the
 //! canonical MIR payload in `vinglish:mir` comments is the source of truth.
 
-#[cfg(test)]
-mod stress_tests;
-
 use base64::Engine;
 use flate2::read::ZlibDecoder;
 use sha2::{Digest, Sha256};

@@ -18,7 +18,7 @@ use vinglish_ownership::check_module;
 use vinglish_parser::parse;
 use vinglish_types::{
     CompilerContext, MirLowerer,
-    passes::{CompilerPass, NameResolutionPass, HealingMode},
+    passes::{CompilerPass, HealingMode, NameResolutionPass},
     type_pass::TypeInferencePass,
     validator::HirValidatorPass,
 };
@@ -27,7 +27,7 @@ use vinglish_types::{
 
 #[derive(Parser)]
 #[command(
-    name = "ving",
+    name = "vng",
     version = env!("CARGO_PKG_VERSION"),
     about = "The Vinglish intent-aware systems programming language",
     long_about = "vng — compile, run, check, and format Vinglish source files.\n\nVinglish is a statically compiled language whose primary abstraction is intent.\nWrite what you mean. Let the compiler determine how to execute it correctly."
@@ -191,14 +191,22 @@ async fn main() {
         Some(Commands::Lsp) => {
             vinglish_lsp::run_server().await;
         }
-        Some(Commands::Check { file, heal, deny_heal }) => {
+        Some(Commands::Check {
+            file,
+            heal,
+            deny_heal,
+        }) => {
             let mode = get_healing_mode(heal, deny_heal);
             let ok = cmd_check(&file, mode);
             if !ok {
                 std::process::exit(1);
             }
         }
-        Some(Commands::Fix { file, allow_dirty, yes }) => {
+        Some(Commands::Fix {
+            file,
+            allow_dirty,
+            yes,
+        }) => {
             if let Err(e) = cmd_fix(&file, allow_dirty, yes) {
                 eprintln!("{}", e);
                 std::process::exit(1);
@@ -234,12 +242,8 @@ async fn main() {
 
 fn cmd_pkg(command: PkgCommands) -> Result<(), String> {
     match command {
-        PkgCommands::Init => {
-            vinglish_pkg::cmd_init()
-        }
-        PkgCommands::Add { package, url } => {
-            vinglish_pkg::cmd_add(&package, url.as_deref())
-        }
+        PkgCommands::Init => vinglish_pkg::cmd_init(),
+        PkgCommands::Add { package, url } => vinglish_pkg::cmd_add(&package, url.as_deref()),
     }
 }
 
@@ -274,7 +278,7 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
                 if pkg_dir.join("src").exists() {
                     pkg_path.push("src");
                 }
-                
+
                 if path_parts.len() == 1 {
                     let maybe_main = pkg_path.join("main").with_extension("ving");
                     if maybe_main.exists() {
@@ -290,7 +294,7 @@ fn resolve_dep_path(current_file: &Path, path_parts: &[String]) -> Result<PathBu
                 if pkg_path.exists() {
                     return Ok(pkg_path);
                 }
-                
+
                 // Fallback for single file dummy module
                 let mut fallback = pkg_dir.clone();
                 if path_parts.len() == 1 {
@@ -425,12 +429,16 @@ fn topological_sort(
 fn compile_project(
     file: &Path,
     mode: HealingMode,
-    mut collected_fixes: Option<&mut Vec<(PathBuf, String, vinglish_types::healer::HealingWarning)>>,
+    mut collected_fixes: Option<
+        &mut Vec<(PathBuf, String, vinglish_types::healer::HealingWarning)>,
+    >,
 ) -> Result<CompileResult, String> {
     let entry_path = file.to_path_buf();
     let entry_name = "main".to_string();
 
-    if std::path::Path::new("ving.toml").exists() && let Err(e) = vinglish_pkg::fetch_dependencies() {
+    if std::path::Path::new("ving.toml").exists()
+        && let Err(e) = vinglish_pkg::fetch_dependencies()
+    {
         println!("Warning: Failed to fetch dependencies: {}", e);
     }
 
@@ -477,14 +485,20 @@ fn compile_project(
 
         let mut has_errors = false;
         let is_fixing = collected_fixes.is_some();
-        
+
         for e in &ctx.type_errors {
             let mut diag = Diagnostic::error("T0001", e.message(), e.span());
-            
-            if mode == HealingMode::SuggestOnly && !is_fixing && let Some(warning) = ctx.healing_warnings.iter().find(|w| w.span == e.span()) {
-                diag.add_help(format!("auto-fixable — wrap in `{}` (run `vng fix` to apply)", vinglish_fmt::format_expr(&warning.replacement)));
+
+            if mode == HealingMode::SuggestOnly
+                && !is_fixing
+                && let Some(warning) = ctx.healing_warnings.iter().find(|w| w.span == e.span())
+            {
+                diag.add_help(format!(
+                    "auto-fixable — wrap in `{}` (run `vng fix` to apply)",
+                    vinglish_fmt::format_expr(&warning.replacement)
+                ));
             }
-            
+
             diag.enrich(src);
             if !is_fixing {
                 let rendered = render(&[diag], &path.display().to_string());
@@ -492,7 +506,7 @@ fn compile_project(
             }
             has_errors = true;
         }
-        
+
         for warning in &ctx.healing_warnings {
             let mut diag = Diagnostic::warning(
                 "T1001",
@@ -510,7 +524,7 @@ fn compile_project(
                 eprint!("{}", render(&[diag], &path.display().to_string()));
             }
         }
-        
+
         if let Some(ref mut fixes) = collected_fixes {
             for warning in ctx.healing_warnings {
                 fixes.push((path.clone(), src.clone(), warning));
@@ -634,9 +648,15 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
 
     let mut interp = Interpreter::new(&symbol_table);
     if let Some(lib_path) = lib {
-        interp.load_dynamic_library(lib_path).map_err(|e| format!("Failed to load dynamic library: {}", e))?;
+        interp
+            .load_dynamic_library(lib_path)
+            .map_err(|e| format!("Failed to load dynamic library: {}", e))?;
     } else {
-        let std_lib_names = ["libvinglish_std.dylib", "libvinglish_std.so", "vinglish_std.dll"];
+        let std_lib_names = [
+            "libvinglish_std.dylib",
+            "libvinglish_std.so",
+            "vinglish_std.dll",
+        ];
         for ext in std_lib_names {
             let mut p = std::env::current_dir().unwrap_or_default();
             p.push("target");
@@ -653,12 +673,12 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
         .map_err(|e| format!("runtime error: {}", e.message))
 }
 
+use std::collections::HashMap;
 use std::io::{self, Write};
 use vinglish_codegen::interp::DebuggerHook;
-use vinglish_mir::{MirFunction, BasicBlock};
-use vinglish_hir::symbol::SsaValueId;
 use vinglish_codegen::interp::Value;
-use std::collections::HashMap;
+use vinglish_hir::symbol::SsaValueId;
+use vinglish_mir::{BasicBlock, MirFunction};
 
 struct ReplDebugger {
     source: String,
@@ -734,7 +754,9 @@ impl DebuggerHook for ReplDebugger {
                                 println!("Invalid SSA ID format (expected ssa_<num>)");
                             }
                         } else {
-                            println!("Printing original variable names is not yet fully supported. Use MIR SSA IDs (e.g. ssa_0).");
+                            println!(
+                                "Printing original variable names is not yet fully supported. Use MIR SSA IDs (e.g. ssa_0)."
+                            );
                         }
                     } else {
                         println!("Usage: p <var>");
@@ -827,12 +849,12 @@ fn cmd_debug(file: &Path) -> Result<(), String> {
     }
 
     let mut interp = Interpreter::new(&symbol_table);
-    
+
     let debugger = ReplDebugger {
         source: compile_res.entry_src,
         stepping: true,
     };
-    
+
     let debugger_ref = std::rc::Rc::new(std::cell::RefCell::new(debugger));
     interp.debugger_hook = Some(debugger_ref);
 
@@ -1406,7 +1428,9 @@ fn cmd_fix(file: &Path, allow_dirty: bool, yes: bool) -> Result<(), String> {
             .output()
             .map_err(|e| format!("Failed to run git status: {}", e))?;
         if !output.stdout.is_empty() {
-            return Err("Git working tree is dirty. Commit or stash changes, or use --allow-dirty.".into());
+            return Err(
+                "Git working tree is dirty. Commit or stash changes, or use --allow-dirty.".into(),
+            );
         }
     }
 
@@ -1420,7 +1444,13 @@ fn cmd_fix(file: &Path, allow_dirty: bool, yes: bool) -> Result<(), String> {
 
     println!("Found {} auto-fixable error(s):", collected_fixes.len());
     for (path, _, warning) in &collected_fixes {
-        println!("  - {}:{}:{} : wrap in `{}`", path.display(), warning.span.start, warning.span.end, vinglish_fmt::format_expr(&warning.replacement));
+        println!(
+            "  - {}:{}:{} : wrap in `{}`",
+            path.display(),
+            warning.span.start,
+            warning.span.end,
+            vinglish_fmt::format_expr(&warning.replacement)
+        );
     }
 
     if !yes {
@@ -1436,9 +1466,16 @@ fn cmd_fix(file: &Path, allow_dirty: bool, yes: bool) -> Result<(), String> {
     }
 
     // Group by file
-    let mut files_to_fix: std::collections::HashMap<PathBuf, (String, Vec<vinglish_types::healer::HealingWarning>)> = std::collections::HashMap::new();
+    let mut files_to_fix: std::collections::HashMap<
+        PathBuf,
+        (String, Vec<vinglish_types::healer::HealingWarning>),
+    > = std::collections::HashMap::new();
     for (path, src, warning) in collected_fixes.clone() {
-        files_to_fix.entry(path).or_insert_with(|| (src, Vec::new())).1.push(warning);
+        files_to_fix
+            .entry(path)
+            .or_insert_with(|| (src, Vec::new()))
+            .1
+            .push(warning);
     }
 
     for (path, (mut src, mut warnings)) in files_to_fix {
@@ -1449,15 +1486,19 @@ fn cmd_fix(file: &Path, allow_dirty: bool, yes: bool) -> Result<(), String> {
             let replacement_str = vinglish_fmt::format_expr(&warning.replacement);
             src = format!("{}{}{}", &src[..start], replacement_str, &src[end..]);
         }
-        std::fs::write(&path, src).map_err(|e| format!("Failed to write {}: {}", path.display(), e))?;
+        std::fs::write(&path, src)
+            .map_err(|e| format!("Failed to write {}: {}", path.display(), e))?;
     }
 
     println!("Fixes applied. Verifying...");
-    
+
     // We expect it to succeed now. If it still fails, it's fine, the user can see errors.
     match compile_project(file, HealingMode::Deny, None) {
         Ok(_) => {
-            println!("Healed {} type mismatch(es). Review with `git diff` before committing.", collected_fixes.len());
+            println!(
+                "Healed {} type mismatch(es). Review with `git diff` before committing.",
+                collected_fixes.len()
+            );
             Ok(())
         }
         Err(_) => {

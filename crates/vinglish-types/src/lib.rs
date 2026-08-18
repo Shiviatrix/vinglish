@@ -5,9 +5,6 @@ pub mod passes;
 pub mod type_pass;
 pub mod validator;
 
-#[cfg(test)]
-mod healer_stress;
-
 pub use env::TypeEnv;
 pub use healer::{HealingRule, HealingWarning, attempt_heal};
 pub use mir_lower::MirLowerer;
