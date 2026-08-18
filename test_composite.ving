@@ -1,7 +1,0 @@
-// Test composite types in Vinglish
-let numbers be [1, 2, 3, 4, 5]
-let person be ("John", 30, true)
-let scores be HashMap from text to number
-let items be Set of number
-
-print("Testing composite types")

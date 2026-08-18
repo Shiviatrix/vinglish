@@ -1,4 +1,0 @@
-function main()
-begin
-    println("Hello, Vinglish!")
-end

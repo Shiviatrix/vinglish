@@ -1,8 +1,0 @@
-function main() begin
-    let l1 be [[1]]
-    let l2 be l1[0]
-    l2[0] = 42
-
-    print(l1[0][0])
-    print(l2[0])
-end

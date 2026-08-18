@@ -1,8 +1,0 @@
-use std.string
-
-function main() returns number
-begin
-    let s be string_new("hello world")
-    let l be s.length()
-    return l
-end

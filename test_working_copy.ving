@@ -1,7 +1,0 @@
-function add(a: number, b: number) returns number begin
-    return a + b
-end
-
-function test_list() returns number begin
-    return 0
-end

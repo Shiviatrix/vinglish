@@ -1,4 +1,0 @@
-// Test Array syntax
-function test_array() returns Array<number> begin
-    return 0
-end

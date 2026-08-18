@@ -1,2 +1,0 @@
-backend: 'c'
-file: simple.ving

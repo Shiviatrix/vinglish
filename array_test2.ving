@@ -1,4 +1,0 @@
-// Test returning an actual Array value
-function test() returns Array<number> begin
-    return [1, 2, 3]
-end

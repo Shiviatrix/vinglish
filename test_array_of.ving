@@ -1,4 +1,0 @@
-// Test Array of syntax
-function test() returns List of number begin
-    return [1, 2, 3]
-end

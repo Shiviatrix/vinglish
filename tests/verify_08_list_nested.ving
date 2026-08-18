@@ -1,6 +1,0 @@
-function main() begin
-    let l1 be [1, 2]
-    let l2 be [3, 4]
-    let nested be [l1, l2]
-    print("nested list ok")
-end

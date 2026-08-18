@@ -1,4 +1,0 @@
-// Test just the word Array as a type
-function test() returns Array begin
-    return 0
-end

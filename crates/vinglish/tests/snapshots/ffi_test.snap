@@ -1,6 +1,0 @@
----
-source: crates/vinglish/tests/ui_test_runner.rs
-expression: combined
----
-Hello, World!
-13

@@ -1,7 +1,0 @@
-import foreign c "sys/time.h"
-
-function main() begin
-    let tv be timeval { tv_sec: 0, tv_usec: 0 }
-    gettimeofday(borrow mutable tv, 0)
-    println(tv.tv_sec)
-end

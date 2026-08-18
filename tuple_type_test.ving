@@ -1,3 +1,0 @@
-function test() returns Tuple<text, number> begin
-    return ("hello", 0)
-end

@@ -1,3 +1,0 @@
-function test(x: number) returns number begin
-    return x
-end

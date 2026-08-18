@@ -1,5 +1,0 @@
-function main() begin
-    let l be [1, 2]
-    // The following should panic/abort at runtime
-    print(l[5])
-end

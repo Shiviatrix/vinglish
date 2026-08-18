@@ -1,7 +1,0 @@
-function main() begin
-    let mutable i be 0
-    repeat while i < 5 begin
-        print(i)
-        i = i + 1
-    end
-end

@@ -1,5 +1,0 @@
-function main() begin
-    let x be "hello"
-    let y be x.len()
-    print(x)
-end

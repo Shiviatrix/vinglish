@@ -1,6 +1,0 @@
-function main()
-begin
-    let x be 5
-    let y be "hello"
-    print(x + y)  // This should cause a type error
-end

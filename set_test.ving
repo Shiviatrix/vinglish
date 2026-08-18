@@ -1,4 +1,0 @@
-function test() returns Set of number begin
-    let empty be Set of number
-    return empty
-end

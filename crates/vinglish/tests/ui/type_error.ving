@@ -1,4 +1,0 @@
-function main()
-begin
-    let x: number be "this is a string"
-end
