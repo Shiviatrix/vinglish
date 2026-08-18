@@ -1,6 +1,0 @@
-import foreign c "math.h"
-
-function main() begin
-    let r be cos(0.0)
-    println(r)
-end

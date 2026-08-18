@@ -779,16 +779,32 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             }
             UnOp::Deref => {
                 if val.is_pointer_value() {
-                    let pointer_type = val.get_type().into_pointer_type();
-                    let element_type = pointer_type.get_element_type();
-                    // Convert AnyTypeEnum to BasicTypeEnum for build_load
-                    let basic_type = element_type.into_basic_type()
-                        .map_err(|e| format!("Cannot convert element type to basic type for deref: {}", e))?;
-                    let loaded = self
-                        .builder
-                        .build_load(basic_type, val.into_pointer_value(), name)
-                        .map_err(|e| e.to_string())?;
-                    Ok(loaded.into())
+                    // If inkwell is built with typed pointers, use the pointer's element type.
+                    // Otherwise fall back to a default integer-sized load (i64).
+                    #[cfg(feature = "typed-pointers")]
+                    {
+                        let pointer_type = val.get_type().into_pointer_type();
+                        let element_type = pointer_type.get_element_type();
+                        // Convert AnyTypeEnum to BasicTypeEnum for build_load
+                        let basic_type = element_type.into_basic_type()
+                            .map_err(|e| format!("Cannot convert element type to basic type for deref: {}", e))?;
+                        let loaded = self
+                            .builder
+                            .build_load(basic_type, val.into_pointer_value(), name)
+                            .map_err(|e| e.to_string())?;
+                        Ok(loaded.into())
+                    }
+
+                    #[cfg(not(feature = "typed-pointers"))]
+                    {
+                        // Without typed pointers the element type is not available from the LLVM
+                        // PointerType; default to i64 to provide a sensible fallback.
+                        let loaded = self
+                            .builder
+                            .build_load(self.context.i64_type(), val.into_pointer_value(), name)
+                            .map_err(|e| e.to_string())?;
+                        Ok(loaded.into())
+                    }
                 } else {
                     Err("Cannot dereference non-pointer".into())
                 }

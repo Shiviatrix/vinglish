@@ -1,7 +1,0 @@
-function main()
-begin
-    let x be 5
-    let y be "hello"
-    // This should trigger ToText healing if enabled
-    print(x + y)
-end

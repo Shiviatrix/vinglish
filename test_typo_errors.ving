@@ -1,6 +1,0 @@
-// This should trigger lexical healing suggestions
-let funtion = 42  // transposition
-let fction = "hello"   // missing char
-let funcction = true   // duplicated char
-let FUNCTION = 3.14    // case error
-let ifff = 10          // multiple f's
