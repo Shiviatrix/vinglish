@@ -51,6 +51,20 @@ A reference registry index is provided at `registry/index.json`:
 VINGLISH_REGISTRY_INDEX=./registry/index.json vng pkg add core
 ```
 
+The standard library now also includes richer public modules for common runtime tasks, including `std.time`, `std.random`, and `std.collections.list` for timestamps, RNGs, and resizable generic lists.
+
+The package registry is now semver-aware: dependency ranges are resolved against versioned registry metadata and `ving.lock` records the installed version plus integrity data so lockfile drift is detected immediately.
+
+## Example library
+
+The repository keeps examples organized by use case:
+
+- `examples/basics/` — syntax and compiler basics
+- `examples/apps/` — practical end-user programs
+- `examples/games/` — lightweight entertainment demos
+- `examples/tools/` — automation and utility scripts
+- `examples/advanced/` — larger experiments and edge cases
+
 ## Validation and testing
 
 The project includes automated validation checks run in CI:

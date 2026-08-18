@@ -1,0 +1,24 @@
+package std
+module random
+
+public foreign function ving_random_seed(seed: number)
+public foreign function ving_random_int() returns number
+
+public function seed(seed_value: number)
+begin
+    ving_random_seed(seed_value)
+end
+
+public function int() returns number
+begin
+    return ving_random_int()
+end
+
+public function range(min_value: number, max_value: number) returns number
+begin
+    let span be max_value - min_value
+    if span is 0 then begin
+        return min_value
+    end
+    return min_value + (ving_random_int() % span)
+end

@@ -1,17 +1,59 @@
 {
   "core": {
-    "version": "0.2.1",
-    "git": "https://github.com/Shiviatrix/vinglish.git",
-    "path": null
+    "latest": "0.3.1",
+    "versions": {
+      "0.2.1": {
+        "version": "0.2.1",
+        "git": "https://github.com/Shiviatrix/vinglish.git",
+        "path": null,
+        "checksum": "sha256:core-v0.2.1",
+        "integrity": "sha256:core-v0.2.1"
+      },
+      "0.3.1": {
+        "version": "0.3.1",
+        "git": "https://github.com/Shiviatrix/vinglish.git",
+        "path": null,
+        "checksum": "sha256:core-v0.3.1",
+        "integrity": "sha256:core-v0.3.1"
+      }
+    }
   },
   "std": {
-    "version": "0.2.1",
-    "git": null,
-    "path": "./std"
+    "latest": "0.3.1",
+    "versions": {
+      "0.2.1": {
+        "version": "0.2.1",
+        "git": null,
+        "path": "./std",
+        "checksum": "sha256:std-v0.2.1",
+        "integrity": "sha256:std-v0.2.1"
+      },
+      "0.3.1": {
+        "version": "0.3.1",
+        "git": null,
+        "path": "./std",
+        "checksum": "sha256:std-v0.3.1",
+        "integrity": "sha256:std-v0.3.1"
+      }
+    }
   },
   "ui": {
-    "version": "0.2.1",
-    "git": null,
-    "path": "./examples/ui_games"
+    "latest": "0.3.1",
+    "versions": {
+      "0.2.1": {
+        "version": "0.2.1",
+        "git": null,
+        "path": "./examples/ui_games",
+        "checksum": "sha256:ui-v0.2.1",
+        "integrity": "sha256:ui-v0.2.1"
+      },
+      "0.3.1": {
+        "version": "0.3.1",
+        "git": null,
+        "path": "./examples/ui_games",
+        "checksum": "sha256:ui-v0.3.1",
+        "integrity": "sha256:ui-v0.3.1"
+      }
+    }
   }
 }

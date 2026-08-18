@@ -1,0 +1,45 @@
+package std
+module list
+
+public foreign function rt_list_new(capacity: number) returns address<number>
+public foreign function rt_list_get(list_ptr: address<number>, index: number) returns number
+public foreign function rt_list_set(list_ptr: address<number>, index: number, value: number)
+public foreign function rt_list_len(list_ptr: address<number>) returns number
+public foreign function rt_list_push(list_ptr: address<number>, value: number)
+public foreign function rt_list_pop(list_ptr: address<number>) returns number
+public foreign function rt_list_free(list_ptr: address<number>)
+
+public function list_new() returns address<number>
+begin
+    return rt_list_new(8)
+end
+
+public function push(borrow address<number> list, number value)
+begin
+    rt_list_push(list, value)
+end
+
+public function get(borrow address<number> list, number index) returns number
+begin
+    return rt_list_get(list, index)
+end
+
+public function set(borrow address<number> list, number index, number value)
+begin
+    rt_list_set(list, index, value)
+end
+
+public function length(borrow address<number> list) returns number
+begin
+    return rt_list_len(list)
+end
+
+public function pop(borrow address<number> list) returns number
+begin
+    return rt_list_pop(list)
+end
+
+public function list_free(borrow address<number> list)
+begin
+    rt_list_free(list)
+end

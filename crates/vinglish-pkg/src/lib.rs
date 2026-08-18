@@ -1,3 +1,4 @@
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -14,6 +15,40 @@ pub struct LockEntry {
     pub version: String,
     pub source: Option<String>,
     pub checksum: Option<String>,
+    #[serde(default)]
+    pub requirement: Option<String>,
+    #[serde(default)]
+    pub integrity: Option<String>,
+}
+
+impl PackageLock {
+    pub fn validate_against_manifest(&self, manifest: &VinglishManifest) -> Result<(), String> {
+        for (name, dep) in &manifest.dependencies {
+            let lock_entry = self
+                .dependencies
+                .get(name)
+                .ok_or_else(|| format!("lockfile is missing the entry for `{name}`"))?;
+
+            let requirement = dep.version_requirement();
+            if requirement.trim().is_empty() || requirement == "*" {
+                continue;
+            }
+
+            let version_req = VersionReq::parse(&requirement)
+                .map_err(|error| format!("invalid semver requirement for `{name}`: {error}"))?;
+            let version = Version::parse(&lock_entry.version)
+                .map_err(|error| format!("invalid locked version for `{name}`: {error}"))?;
+
+            if !version_req.matches(&version) {
+                return Err(format!(
+                    "lockfile version {} for `{name}` does not satisfy requirement {}",
+                    lock_entry.version, requirement
+                ));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -33,7 +68,20 @@ pub enum DependencyMeta {
         path: Option<String>,
         git: Option<String>,
         branch: Option<String>,
+        #[serde(default)]
+        checksum: Option<String>,
+        #[serde(default)]
+        integrity: Option<String>,
     },
+}
+
+impl DependencyMeta {
+    pub fn version_requirement(&self) -> String {
+        match self {
+            Self::Version(version) => version.clone(),
+            Self::Detailed { version, .. } => version.clone().unwrap_or_else(|| "*".to_string()),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,28 +121,40 @@ pub fn write_lockfile(manifest: &VinglishManifest) -> Result<(), String> {
         dependencies: manifest
             .dependencies
             .iter()
-            .filter_map(|(name, dep)| match dep {
-                DependencyMeta::Version(version) => Some((
+            .filter_map(|(name, dep)| {
+                let requirement = dep.version_requirement();
+                let (version, source, checksum, integrity) = match dep {
+                    DependencyMeta::Version(version) => (
+                        version.clone(),
+                        None,
+                        None,
+                        None,
+                    ),
+                    DependencyMeta::Detailed {
+                        version,
+                        path,
+                        git,
+                        branch: _,
+                        checksum,
+                        integrity,
+                    } => (
+                        version.clone().unwrap_or_else(|| "0.0.0".to_string()),
+                        path.clone().or_else(|| git.clone()),
+                        checksum.clone(),
+                        integrity.clone(),
+                    ),
+                };
+
+                Some((
                     name.clone(),
                     LockEntry {
-                        version: version.clone(),
-                        source: None,
-                        checksum: None,
+                        version,
+                        source,
+                        checksum,
+                        requirement: Some(requirement),
+                        integrity,
                     },
-                )),
-                DependencyMeta::Detailed {
-                    version,
-                    path,
-                    git,
-                    branch: _,
-                } => Some((
-                    name.clone(),
-                    LockEntry {
-                        version: version.clone().unwrap_or_else(|| "0.0.0".to_string()),
-                        source: path.clone().or_else(|| git.clone()),
-                        checksum: None,
-                    },
-                )),
+                ))
             })
             .collect(),
     };
@@ -143,13 +203,15 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
     
     if let Some(git_url) = url {
         manifest.dependencies.insert(
-            package.to_string(), 
+            package.to_string(),
             DependencyMeta::Detailed {
-                version: None,
+                version: Some("*".to_string()),
                 path: None,
                 git: Some(git_url.to_string()),
                 branch: None,
-            }
+                checksum: None,
+                integrity: None,
+            },
         );
     } else {
         // Query the mock registry
@@ -157,13 +219,15 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
             Ok(info) => {
                 println!("Found '{}' version {} in registry", package, info.version);
                 manifest.dependencies.insert(
-                    package.to_string(), 
+                    package.to_string(),
                     DependencyMeta::Detailed {
-                        version: Some(info.version),
+                        version: Some(info.version.clone()),
                         path: info.path,
                         git: info.git,
                         branch: None,
-                    }
+                        checksum: info.checksum,
+                        integrity: info.integrity,
+                    },
                 );
             }
             Err(e) => {
@@ -171,9 +235,12 @@ pub fn cmd_add(package: &str, url: Option<&str>) -> Result<(), String> {
             }
         }
     }
-    
+
     manifest.save("ving.toml")?;
     write_lockfile(&manifest)?;
+    let lock_content = fs::read_to_string("ving.lock").map_err(|e| e.to_string())?;
+    let lock: PackageLock = serde_json::from_str(&lock_content).map_err(|e| e.to_string())?;
+    lock.validate_against_manifest(&manifest)?;
 
     // We now just call fetch_dependencies to actually download the package
     fetch_dependencies()?;
@@ -189,10 +256,39 @@ pub struct RegistryResponse {
     pub version: String,
     pub git: Option<String>,
     pub path: Option<String>,
+    #[serde(default)]
+    pub checksum: Option<String>,
+    #[serde(default)]
+    pub integrity: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RegistryVersionInfo {
+    pub version: String,
+    pub git: Option<String>,
+    pub path: Option<String>,
+    #[serde(default)]
+    pub checksum: Option<String>,
+    #[serde(default)]
+    pub integrity: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum RegistryIndexEntry {
+    Single(RegistryResponse),
+    Versioned {
+        latest: String,
+        versions: HashMap<String, RegistryVersionInfo>,
+    },
 }
 
 impl RegistryClient {
     pub fn query_package(name: &str) -> Result<RegistryResponse, String> {
+        Self::query_package_with_requirement(name, "*")
+    }
+
+    pub fn query_package_with_requirement(name: &str, requirement: &str) -> Result<RegistryResponse, String> {
         if !name
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
@@ -200,29 +296,92 @@ impl RegistryClient {
             return Err(format!("invalid package name `{name}`"));
         }
 
-        // Local indices make offline development and integration tests
-        // deterministic. A configured index always takes precedence over HTTP.
         if let Some(index_path) = std::env::var_os("VINGLISH_REGISTRY_INDEX") {
             let content = fs::read_to_string(&index_path)
                 .map_err(|error| format!("cannot read registry index {:?}: {error}", index_path))?;
-            let index: HashMap<String, RegistryResponse> = serde_json::from_str(&content)
+            let index: HashMap<String, RegistryIndexEntry> = serde_json::from_str(&content)
                 .map_err(|error| format!("invalid registry index: {error}"))?;
-            return index
+            let entry = index
                 .get(name)
                 .cloned()
-                .ok_or_else(|| format!("package `{name}` was not found in the local registry index"));
+                .ok_or_else(|| format!("package `{name}` was not found in the local registry index"))?;
+            return match entry {
+                RegistryIndexEntry::Single(response) => {
+                    let req = parse_requirement(requirement)?;
+                    let version = Version::parse(&response.version)
+                        .map_err(|error| format!("registry version for `{name}` is invalid: {error}"))?;
+                    if req.matches(&version) {
+                        Ok(response)
+                    } else {
+                        Err(format!(
+                            "package `{name}` version {} does not satisfy requirement {}",
+                            response.version, requirement
+                        ))
+                    }
+                }
+                RegistryIndexEntry::Versioned { versions, .. } => {
+                    let req = parse_requirement(requirement)?;
+                    let mut best_match: Option<RegistryVersionInfo> = None;
+                    for info in versions.values() {
+                        let version = Version::parse(&info.version)
+                            .map_err(|error| format!("registry version for `{name}` is invalid: {error}"))?;
+                        if req.matches(&version) {
+                            match &best_match {
+                                None => best_match = Some(info.clone()),
+                                Some(current) => {
+                                    let current_version = Version::parse(&current.version)
+                                        .map_err(|error| format!("current registry version for `{name}` is invalid: {error}"))?;
+                                    if version > current_version {
+                                        best_match = Some(info.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    best_match.ok_or_else(|| format!(
+                        "package `{name}` has no registry version that satisfies requirement {}",
+                        requirement
+                    )).map(|info| RegistryResponse {
+                        version: info.version,
+                        git: info.git,
+                        path: info.path,
+                        checksum: info.checksum,
+                        integrity: info.integrity,
+                    })
+                }
+            };
         }
 
         let endpoint = registry_endpoint(name)?;
-        reqwest::blocking::Client::new()
+        let response = reqwest::blocking::Client::new()
             .get(&endpoint)
             .send()
             .map_err(|error| format!("cannot contact Vinglish registry at {endpoint}: {error}"))?
             .error_for_status()
             .map_err(|error| format!("registry request for `{name}` failed: {error}"))?
             .json::<RegistryResponse>()
-            .map_err(|error| format!("registry returned an invalid response for `{name}`: {error}"))
+            .map_err(|error| format!("registry returned an invalid response for `{name}`: {error}"))?;
+
+        let req = parse_requirement(requirement)?;
+        let version = Version::parse(&response.version)
+            .map_err(|error| format!("registry version for `{name}` is invalid: {error}"))?;
+        if req.matches(&version) {
+            Ok(response)
+        } else {
+            Err(format!(
+                "package `{name}` version {} does not satisfy requirement {}",
+                response.version, requirement
+            ))
+        }
     }
+}
+
+fn parse_requirement(requirement: &str) -> Result<VersionReq, String> {
+    let req = requirement.trim();
+    if req.is_empty() || req == "*" {
+        return Ok(VersionReq::STAR);
+    }
+    VersionReq::parse(req).map_err(|error| format!("invalid semver requirement `{requirement}`: {error}"))
 }
 
 fn registry_endpoint(name: &str) -> Result<String, String> {
@@ -234,7 +393,6 @@ fn registry_endpoint(name: &str) -> Result<String, String> {
     }
     Ok(format!("{base}/packages/{name}"))
 }
-
 
 use std::process::Command;
 

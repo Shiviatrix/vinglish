@@ -1,0 +1,10 @@
+use std.io
+use std.time
+
+function main()
+returns number
+begin
+    println("Current unix timestamp:")
+    println(now())
+    return 0
+end

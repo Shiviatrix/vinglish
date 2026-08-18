@@ -1,0 +1,20 @@
+package std
+module time
+
+public foreign function ving_time_now() returns number
+public foreign function ving_time_sleep(ms: number)
+
+public function now() returns number
+begin
+    return ving_time_now()
+end
+
+public function sleep(ms: number)
+begin
+    ving_time_sleep(ms)
+end
+
+public function unix_seconds() returns number
+begin
+    return ving_time_now()
+end

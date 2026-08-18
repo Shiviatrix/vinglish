@@ -1,0 +1,13 @@
+use std.io
+use std.random
+use std.time
+
+function main()
+returns number
+begin
+    seed(now())
+    let secret be range(1, 11)
+    println("Lucky number generated:")
+    println(secret)
+    return 0
+end

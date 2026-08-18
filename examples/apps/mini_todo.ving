@@ -1,0 +1,15 @@
+use std.io
+use std.math
+use std.random
+use std.time
+
+function main()
+returns number
+begin
+    seed(now())
+    let score be max(2, 7)
+    println("Mini todo summary")
+    println(score)
+    println(range(1, 10))
+    return 0
+end
