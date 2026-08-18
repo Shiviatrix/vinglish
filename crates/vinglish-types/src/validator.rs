@@ -211,6 +211,11 @@ impl HirValidatorPass {
                     self.validate_expr(ctx, e);
                 }
             }
+            HirExpr::Tuple { elements, .. } => {
+                for e in elements {
+                    self.validate_expr(ctx, e);
+                }
+            }
             HirExpr::MacroCall { args, .. } => {
                 for a in args {
                     self.validate_expr(ctx, a);

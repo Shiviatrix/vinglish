@@ -1,0 +1,37 @@
+// Test various types and operations
+function main() begin
+    // Basic types
+    let count be 42
+    let price be 3.14
+    let name be "Vinglish"
+    let active be true
+
+    print("Count: " + to_text(count))
+    print("Price: " + to_text(price))
+    print("Name: " + name)
+    print("Active: " + to_text(active))
+
+    // Arrays
+    let numbers be [1, 2, 3, 4, 5]
+    let first be numbers[0]
+    let last be numbers[4]
+    print("First: " + to_text(first))
+    print("Last: " + to_text(last))
+
+    // Tuples
+    let person be ("Alice", 30, true)
+    let person_name be person.0
+    let person_age be person.1
+    let person_active be person.2
+    print("Person: " + person_name + ", " + to_text(person_age) + ", " + to_text(person_active))
+
+    // Math operations
+    let sum be 10 + 5 * 2
+    let division be 10 / 3
+    print("Sum: " + to_text(sum))
+    print("Division: " + to_text(division))
+
+    // String concatenation
+    let greeting be "Hello, " + name + "!"
+    print(greeting)
+end

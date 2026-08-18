@@ -1,0 +1,4 @@
+// Test Array with angle brackets
+function test() returns Array<number> begin
+    return 0
+end

@@ -1,0 +1,7 @@
+let i be 42
+let f be 3.14
+let b be true
+let s be "hello"
+print(i + f)
+print(b)
+print(s)

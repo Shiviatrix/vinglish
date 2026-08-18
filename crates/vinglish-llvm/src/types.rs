@@ -32,7 +32,7 @@ impl<'ctx> TypeLowering<'ctx> {
                 let struct_type = self.context.opaque_struct_type(name);
                 Some(struct_type.into())
             }
-            Type::List(_) | Type::Dict(_, _) | Type::Optional(_) | Type::Result(_, _) => Some(
+            Type::List(_) | Type::Dict(_, _) | Type::HashMap(_, _) | Type::Optional(_) | Type::Result(_, _) => Some(
                 self.context
                     .ptr_type(inkwell::AddressSpace::default())
                     .into(),
@@ -42,11 +42,35 @@ impl<'ctx> TypeLowering<'ctx> {
                     .ptr_type(inkwell::AddressSpace::default())
                     .into(),
             ),
-            Type::Reference(_, _) | Type::Pointer(_) => Some(
+            Type::Reference(_, _) | Type::Pointer(_) | Type::Box(_) => Some(
                 self.context
                     .ptr_type(inkwell::AddressSpace::default())
                     .into(),
             ),
+            Type::Never => None, // ! type - zero sized
+            Type::Array(_inner, _len) => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
+            Type::Set(_) => Some(
+                self.context
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .into(),
+            ),
+            Type::Tuple(elements) => {
+                if elements.is_empty() {
+                    None // Unit equivalent
+                } else {
+                    let struct_type = self.context.opaque_struct_type(&format!("tuple_{}", elements.len()));
+                    let field_types: Vec<BasicTypeEnum<'ctx>> = elements
+                        .iter()
+                        .map(|elem| self.lower_type(elem, symbol_table).unwrap_or(self.context.i64_type().into()))
+                        .collect();
+                    struct_type.set_body(&field_types, false);
+                    Some(struct_type.into())
+                }
+            }
             Type::Var(_) => None,
         }
     }

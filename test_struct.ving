@@ -1,0 +1,11 @@
+type Point
+begin
+    x: number
+    y: number
+end
+
+function main()
+begin
+    let p be Point { x: 10, y: 20 }
+    print(p.x)
+end

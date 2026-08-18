@@ -107,9 +107,32 @@ impl<'a> LayoutResolver<'a> {
             | Type::Pointer(_)
             | Type::List(_)
             | Type::Dict(_, _)
+            | Type::HashMap(_, _)
             | Type::Function(_, _) => Ok((self.abi.pointer_size, self.abi.pointer_align)),
             Type::Optional(_) | Type::Result(_, _) => {
                 Ok((self.abi.pointer_size, self.abi.pointer_align))
+            }
+            Type::Box(_) => Ok((self.abi.pointer_size, self.abi.pointer_align)),
+            Type::Never => Ok((self.abi.long_size, self.abi.long_align)), // Zero-sized type
+            Type::Array(inner, len) => {
+                let (inner_size, inner_align) = self.layout_value(inner, containing)?;
+                Ok((inner_size * (*len as u32), inner_align))
+            }
+            Type::Set(_) => {
+                // Simplified: treat as pointer to hash set structure
+                Ok((self.abi.pointer_size, self.abi.pointer_align))
+            }
+            Type::Tuple(elements) => {
+                let mut offset = 0;
+                let mut max_align = 1;
+                for elem in elements {
+                    let (elem_size, elem_align) = self.layout_value(elem, containing)?;
+                    offset = align_up(offset, elem_align);
+                    offset += elem_size;
+                    max_align = max_align.max(elem_align);
+                }
+                let size = align_up(offset, max_align);
+                Ok((size, max_align))
             }
             Type::Named(name, _) => {
                 let symbol_id = self

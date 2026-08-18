@@ -477,8 +477,17 @@ impl<'a> Interpreter<'a> {
             }
             Instruction::<SsaValueId>::Borrow(dest, op)
             | Instruction::<SsaValueId>::BorrowMut(dest, op) => {
-                let val = self.eval_operand(op, locals)?;
-                locals.insert(*dest, val);
+                // For borrow, we create a reference to the variable given by op.
+                // We only support borrowing variables for now.
+                let reference = if let Operand::Var(var_id) = op {
+                    Value::Reference(ReferenceLoc::Local(*var_id))
+                } else {
+                    return Err(InterpError::new(format!(
+                        "Borrow of non-variable operand not yet implemented: {:?}",
+                        op
+                    )));
+                };
+                locals.insert(*dest, reference);
             }
             Instruction::<SsaValueId>::Deref(dest, op, _) => {
                 let val = self.eval_operand(op, locals)?;

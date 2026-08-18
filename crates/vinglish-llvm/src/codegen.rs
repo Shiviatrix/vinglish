@@ -5,7 +5,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicTypeEnum};
-use inkwell::values::{BasicValueEnum, FunctionValue, IntValue};
+use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue};
 use inkwell::{FloatPredicate, IntPredicate};
 
 use vinglish_hir::symbol::{FunctionId, SsaValueId, SymbolTable, TypeId};
@@ -37,6 +37,7 @@ pub struct LLVMCodeGen<'ctx> {
 
     // Per-function state
     ssa_values: HashMap<SsaValueId, BasicValueEnum<'ctx>>,
+    variable_ptrs: HashMap<SsaValueId, PointerValue<'ctx>>,
     block_map: HashMap<BlockId, LLVMBasicBlock<'ctx>>,
     func_map: HashMap<FunctionId, FunctionValue<'ctx>>,
 
@@ -59,6 +60,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             builtins,
             symbol_table,
             ssa_values: HashMap::new(),
+            variable_ptrs: HashMap::new(),
             block_map: HashMap::new(),
             func_map: HashMap::new(),
             struct_types: HashMap::new(),
@@ -71,7 +73,6 @@ impl<'ctx> LLVMCodeGen<'ctx> {
         for func in &mir.functions {
             self.declare_function(func)?;
         }
-
         // Second pass: compile function bodies
         for func in &mir.functions {
             self.compile_function(func)?;
@@ -163,6 +164,7 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             return Ok(());
         }
 
+        
         // Determine return mode
         let return_mode = if func.name == "main" {
             ReturnMode::MainEntrypoint
@@ -217,20 +219,68 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             self.compile_instruction(instr)?;
         }
 
+        
         // Compile terminator
         self.compile_terminator(&block.terminator, mode)?;
 
         Ok(())
     }
 
+    /// Get the current value of an SSA ID, loading from memory if necessary
+    fn get_ssa_value(&self, id: SsaValueId) -> Result<BasicValueEnum<'ctx>, String> {
+        if let Some(&ptr) = self.variable_ptrs.get(&id) {
+            // Value has been promoted to memory, load from it
+            // For simplicity, we assume i64 for now - in a full implementation,
+            // we would need to track the type of each SSA value
+            let int_type = self.context.i64_type();
+            self.builder
+                .build_load(int_type, ptr, &format!("load_{}", id.0))
+                .map(|loaded| loaded.into())
+                .map_err(|e| e.to_string())
+        } else {
+            // Value is available directly (in a register or as a constant)
+            self.ssa_values
+                .get(&id)
+                .copied()
+                .ok_or_else(|| format!("SSA value {} not found", id))
+        }
+    }
+
+    /// Ensure that an SSA ID has memory storage allocated, promoting its current value to memory if needed
+    fn ensure_ssa_value_storage(&mut self, id: SsaValueId) -> Result<PointerValue<'ctx>, String> {
+        if let Some(&ptr) = self.variable_ptrs.get(&id) {
+            // Already has storage allocated
+            Ok(ptr)
+        } else {
+            // Need to allocate storage and promote current value to it
+            let val = self.get_ssa_value(id)?;
+            if !val.is_pointer_value() {
+                // It's a value (not already a pointer), we can allocate storage for it
+                let alloca = self
+                    .builder
+                    .build_alloca(val.get_type(), &format!("alloc_{}", id.0))
+                    .map_err(|e| e.to_string())?;
+
+                // Store the current value to the allocated memory
+                self.builder
+                    .build_store(alloca, val)
+                    .map_err(|e| e.to_string())?;
+
+                // Track that this SSA value now uses memory storage
+                self.variable_ptrs.insert(id, alloca);
+
+                Ok(alloca)
+            } else {
+                // It's already a pointer (shouldn't happen for normal variables, but handle it)
+                Err(format!("Cannot promote pointer SSA value {} to memory", id))
+            }
+        }
+    }
+
     fn resolve_operand(&self, op: &Operand<SsaValueId>) -> Result<BasicValueEnum<'ctx>, String> {
         match op {
             Operand::Constant(lit) => self.lower_literal(lit),
-            Operand::Var(id) => self
-                .ssa_values
-                .get(id)
-                .copied()
-                .ok_or_else(|| format!("SSA value {} not found", id)),
+            &Operand::Var(id) => self.get_ssa_value(id),
         }
     }
 
@@ -261,7 +311,15 @@ impl<'ctx> LLVMCodeGen<'ctx> {
         match instr {
             Instruction::Assign(dest, op) => {
                 let val = self.resolve_operand(op)?;
-                self.ssa_values.insert(*dest, val);
+                if let Some(&ptr) = self.variable_ptrs.get(&dest) {
+                    // Destination has been promoted to memory, store to that memory
+                    self.builder
+                        .build_store(ptr, val)
+                        .map_err(|e| e.to_string())?;
+                } else {
+                    // Destination is still in a register (or we track its value directly)
+                    self.ssa_values.insert(*dest, val);
+                }
             }
             Instruction::CallIntrinsic(_dest, _name, _args) => {
                 // Not supported in LLVM yet, just dummy
@@ -281,22 +339,33 @@ impl<'ctx> LLVMCodeGen<'ctx> {
             }
 
             Instruction::Call(dest, target, args) => {
-                let func_id = match target {
-                    vinglish_mir::CallTarget::Direct(id) => *id,
+                match target {
+                    vinglish_mir::CallTarget::Direct(id) => {
+                        let func_id = *id;
+                        let result = self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
+                        if let Some(val) = result {
+                            self.ssa_values.insert(*dest, val);
+                        } else {
+                            // Void call — insert a dummy unit value
+                            self.ssa_values
+                                .insert(*dest, self.context.i64_type().const_int(0, false).into());
+                        }
+                    }
                     vinglish_mir::CallTarget::Foreign { c_symbol } => {
-                        return Err(format!(
-                            "foreign MIR call `{c_symbol}` is not implemented by the LLVM backend"
-                        ))
+                        // Handle known foreign functions
+                        if c_symbol == "print" || c_symbol == "print_num" {
+                            self.compile_print_call(args)?;
+                            // These functions return void, so we insert a unit value
+                            self.ssa_values
+                                .insert(*dest, self.context.i64_type().const_int(0, false).into());
+                        } else {
+                            return Err(format!(
+                                "foreign MIR call `{}` (length: {}) is not implemented by the LLVM backend",
+                                c_symbol, c_symbol.len()
+                            ));
+                        }
                     }
                 };
-                let result = self.compile_call(func_id, args, &format!("ssa_{}", dest.0))?;
-                if let Some(val) = result {
-                    self.ssa_values.insert(*dest, val);
-                } else {
-                    // Void call — insert a dummy unit value
-                    self.ssa_values
-                        .insert(*dest, self.context.i64_type().const_int(0, false).into());
-                }
             }
 
             Instruction::HeapAllocate(dest, layout) => {
@@ -325,6 +394,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                     .build_alloca(struct_type, &format!("ssa_{}", dest.0))
                     .map_err(|e| e.to_string())?;
                 self.ssa_values.insert(*dest, alloca.into());
+                // Track variable pointers for borrow operations
+                self.variable_ptrs.insert(*dest, alloca);
             }
 
             Instruction::LoadField(dest, obj, field_id) => {
@@ -391,12 +462,18 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                     .map_err(|e| e.to_string())?;
             }
 
-            Instruction::Borrow(dest, src) | Instruction::BorrowMut(dest, src) => {
-                let val = self.resolve_operand(src)?;
-                if val.is_pointer_value() {
-                    // It's already a pointer (e.g. heap object or another reference)
-                    self.ssa_values.insert(*dest, val);
-                } else {
+            Instruction::Borrow(dest, src_op) | Instruction::BorrowMut(dest, src_op) => {
+                // For borrowing a variable, we need to point to its allocated storage
+                if let Operand::Var(src_id) = src_op {
+                    // This is a variable borrow - ensure it has storage and use it
+                    let ptr = self.ensure_ssa_value_storage(*src_id)?;
+                    self.ssa_values.insert(*dest, ptr.into());
+                    return Ok(());
+                }
+
+                // Fallback: handle as a general borrow (e.g., borrowing a pointer or heap reference)
+                let val = self.resolve_operand(src_op)?;
+                if !val.is_pointer_value() {
                     // It's a primitive value in a register. We need a memory address to borrow it.
                     let alloca = self
                         .builder
@@ -406,6 +483,9 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                         .build_store(alloca, val)
                         .map_err(|e| e.to_string())?;
                     self.ssa_values.insert(*dest, alloca.into());
+                } else {
+                    // It's already a pointer (e.g. heap object or another reference)
+                    self.ssa_values.insert(*dest, val);
                 }
             }
 
@@ -778,21 +858,8 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                 }
             }
             UnOp::Deref => {
-                if val.is_pointer_value() {
-                    let pointer_type = val.get_type().into_pointer_type();
-                    let element_type = pointer_type.get_element_type();
-                    // Convert AnyTypeEnum to BasicTypeEnum for build_load
-                    let basic_type = element_type.into_basic_type()
-                        .map_err(|e| format!("Cannot convert element type to basic type for deref: {}", e))?;
-                    let loaded = self
-                        .builder
-                        .build_load(basic_type, val.into_pointer_value(), name)
-                        .map_err(|e| e.to_string())?;
-                    Ok(loaded.into())
-                } else {
-                    Err("Cannot dereference non-pointer".into())
-                }
-            }
+            Err("UnaryOp::Deref should not occur in MIR - HIR UnOp::Deref becomes MIR Instruction::Deref".to_string())
+        }
             UnOp::Borrow(_) => Err("Borrow should be an Instruction, not a UnaryOp".into()),
         }
     }

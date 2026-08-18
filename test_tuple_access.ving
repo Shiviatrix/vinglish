@@ -1,0 +1,11 @@
+// Test tuple field access
+function main() begin
+    let person be ("John", 25, true)
+    let name be person.0
+    let age be person.1
+    let active be person.2
+
+    print("Name: " + name)
+    print("Age: " + to_text(age))
+    print("Active: " + to_text(active))
+end

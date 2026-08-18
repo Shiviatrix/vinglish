@@ -1,0 +1,5 @@
+// Test with explicit main function
+function main() begin
+    let x be 42
+    print("x = " + to_text(x))
+end

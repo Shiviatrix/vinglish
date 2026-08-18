@@ -343,6 +343,10 @@ pub fn fmt_expr(expr: &Expr) -> String {
             let inner = elements.iter().map(fmt_expr).collect::<Vec<_>>().join(", ");
             format!("[{}]", inner)
         }
+        Expr::Tuple { elements, .. } => {
+            let inner = elements.iter().map(fmt_expr).collect::<Vec<_>>().join(", ");
+            format!("({})", inner)
+        }
         Expr::Block(_) => "( block )".into(),
         Expr::StructLit { ty, fields, .. } => {
             let fields_str = fields
@@ -366,11 +370,25 @@ fn fmt_type(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(t) => format!("List of {}", fmt_type(t)),
+        TypeExpr::Array { element_type, length } => {
+            format!("[{}; {}]", fmt_type(element_type), length)
+        }
         TypeExpr::Dict { key, val } => {
             format!("Dictionary from {} to {}", fmt_type(key), fmt_type(val))
         }
+        TypeExpr::HashMap { key, val } => {
+            format!("HashMap from {} to {}", fmt_type(key), fmt_type(val))
+        }
+        TypeExpr::Set(t) => format!("Set of {}", fmt_type(t)),
+        TypeExpr::Tuple(elements) => {
+            let inner = elements.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
+            format!("({})", inner)
+        }
         TypeExpr::Optional(t) => format!("{}?", fmt_type(t)),
-        TypeExpr::Result(t) => format!("Result of {}", fmt_type(t)),
+        TypeExpr::Result { ok_type, error_type } => {
+            format!("Result<{}, {}>", fmt_type(ok_type), fmt_type(error_type))
+        }
+        TypeExpr::ResultOf(t) => format!("Result of {}", fmt_type(t)),
         TypeExpr::Generic { base, args } => {
             let inner = args.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
             format!("{}<{}>", base.name, inner)
@@ -382,6 +400,13 @@ fn fmt_type(ty: &TypeExpr) -> String {
                 format!("borrow {}", fmt_type(inner))
             }
         }
+        TypeExpr::Box(inner) => format!("Box<{}>", fmt_type(inner)),
+        TypeExpr::Function { params, return_type } => {
+            let param_str = params.iter().map(fmt_type).collect::<Vec<_>>().join(", ");
+            format!("({}) -> {}", param_str, fmt_type(return_type))
+        }
+        TypeExpr::Unit => "()".to_string(),
+        TypeExpr::Never => "!".to_string(),
     }
 }
 

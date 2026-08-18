@@ -1,0 +1,3 @@
+function test_list_of() returns List of number begin
+    return 0
+end

@@ -1,0 +1,1 @@
+function test() returns Array<number; 5> begin end

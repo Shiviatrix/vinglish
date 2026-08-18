@@ -1,0 +1,4 @@
+function test() returns HashMap from text to number begin
+    let empty be HashMap from text to number
+    return empty
+end

@@ -33,12 +33,18 @@ pub enum Type {
     Bool,
     Text,
     Unit,
+    Never, // ! type (diverging functions)
     Reference(Box<Type>, bool), // bool is true if mutable
     Pointer(Box<Type>),         // Raw pointer address<T>
+    Box(Box<Type>),             // Owning pointer Box<T>
 
     // ── Composite types ───────────────────────────────────────────────────────
     List(Box<Type>),
+    Array(Box<Type>, u64),      // Fixed-size array [T; N]
     Dict(Box<Type>, Box<Type>),
+    HashMap(Box<Type>, Box<Type>),
+    Set(Box<Type>),
+    Tuple(Vec<Type>),
     Optional(Box<Type>),
     Result(Box<Type>, Box<Type>), // Ok(T), Err(E)
 
@@ -60,7 +66,7 @@ impl Type {
             // explicit at the std.string API boundary, so passing it does not
             // invalidate the source value. Heap containers and structs remain
             // move-only.
-            Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit | Type::Pointer(_) => {
+            Type::Int | Type::Float | Type::Bool | Type::Text | Type::Unit | Type::Never | Type::Pointer(_) => {
                 true
             }
             _ => false,
@@ -125,6 +131,7 @@ impl std::fmt::Display for Type {
             Type::Bool => write!(f, "boolean"),
             Type::Text => write!(f, "text"),
             Type::Unit => write!(f, "unit"),
+            Type::Never => write!(f, "!"),
             Type::Reference(inner, mutable) => {
                 if *mutable {
                     write!(f, "borrow mutable {inner}")
@@ -133,8 +140,22 @@ impl std::fmt::Display for Type {
                 }
             }
             Type::Pointer(inner) => write!(f, "address<{inner}>"),
+            Type::Box(inner) => write!(f, "Box<{inner}>"),
             Type::List(t) => write!(f, "List of {t}"),
+            Type::Array(t, n) => write!(f, "[{t}; {n}]"),
             Type::Dict(k, v) => write!(f, "Dictionary from {k} to {v}"),
+            Type::HashMap(k, v) => write!(f, "HashMap from {k} to {v}"),
+            Type::Set(t) => write!(f, "Set of {t}"),
+            Type::Tuple(elements) => {
+                write!(f, "(")?;
+                for (i, e) in elements.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{e}")?;
+                }
+                write!(f, ")")
+            }
             Type::Optional(t) => write!(f, "{t}?"),
             Type::Result(ok, err) => write!(f, "Result<{ok}, {err}>"),
             Type::Function(args, ret) => {

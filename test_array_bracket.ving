@@ -1,0 +1,3 @@
+function test_array_bracket() returns Array<number> begin
+    return 0
+end

@@ -48,19 +48,49 @@ pub enum TypeExpr {
     Named(Ident),
     /// `List of T`
     List(Arc<TypeExpr>),
+    /// `Array of [T; N]` - fixed size array
+    Array {
+        element_type: Arc<TypeExpr>,
+        length: u64,
+    },
     /// `Dictionary from K to V`
     Dict {
         key: Arc<TypeExpr>,
         val: Arc<TypeExpr>,
     },
+    /// `HashMap from K to V` - hash map variant
+    HashMap {
+        key: Arc<TypeExpr>,
+        val: Arc<TypeExpr>,
+    },
+    /// `Set of T`
+    Set(Arc<TypeExpr>),
+    /// `Tuple of (T, U, ...)`
+    Tuple(Vec<TypeExpr>),
     /// `Optional T` / `T?`
     Optional(Arc<TypeExpr>),
-    /// `Result of T` (error type is inferred)
-    Result(Arc<TypeExpr>),
+    /// `Result<T, E>` - explicit result type
+    Result {
+        ok_type: Arc<TypeExpr>,
+        error_type: Arc<TypeExpr>,
+    },
+    /// `Result of T` - shorthand for Result<T, text>
+    ResultOf(Arc<TypeExpr>),
     /// Generic instantiation: `Array of length N` etc.
     Generic { base: Ident, args: Vec<TypeExpr> },
     /// `borrow T` or `borrow mutable T`
     Reference { mutable: bool, inner: Arc<TypeExpr> },
+    /// `Box<T>` - owning pointer
+    Box(Arc<TypeExpr>),
+    /// Function type: `(T, U) -> V`
+    Function {
+        params: Vec<TypeExpr>,
+        return_type: Arc<TypeExpr>,
+    },
+    /// Unit type `()`
+    Unit,
+    /// Never type `!` (diverging functions)
+    Never,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,6 +179,8 @@ pub enum Expr {
     Block(Arc<Block>),
     /// List literal: `[1, 2, 3]`
     List { elements: Vec<Expr>, span: Span },
+    /// Tuple literal: `(1, 2, 3)`
+    Tuple { elements: Vec<Expr>, span: Span },
     /// Macro call: `fmt!(...)`
     MacroCall {
         name: Ident,
@@ -172,7 +204,8 @@ impl Expr {
             | Expr::List { span, .. }
             | Expr::MacroCall { span, .. }
             | Expr::PostfixTry { span, .. }
-            | Expr::GenericInst { span, .. } => *span,
+            | Expr::GenericInst { span, .. }
+            | Expr::Tuple { span, .. } => *span,
             Expr::Ident(id) => id.span,
             Expr::Block(b) => b.span,
         }

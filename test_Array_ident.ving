@@ -1,0 +1,4 @@
+// Test if Array is being recognized as an identifier
+function test() returns Array begin
+    return 0
+end

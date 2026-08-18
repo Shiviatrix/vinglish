@@ -1,0 +1,26 @@
+function test_arrays() returns Array<number; 5> begin
+    return [1, 2, 3, 4, 5]
+end
+
+function test_hashmap() returns HashMap from text to number begin
+    let empty be HashMap from text to number
+    return empty
+end
+
+function test_set() returns Set of number begin
+    let empty be Set of number
+    return empty
+end
+
+function test_tuple() returns Tuple<text, number, boolean> begin
+    return ("test", 42, true)
+end
+
+function test_nested() returns HashMap from text to Tuple<number, boolean> begin
+    let empty be HashMap from text to Tuple<number, boolean>
+    return empty
+end
+
+function test_array_of_tuples() returns Array<Tuple<text, number>; 3> begin
+    return [("a", 1), ("b", 2), ("c", 3)]
+end

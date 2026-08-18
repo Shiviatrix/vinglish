@@ -646,6 +646,14 @@ impl CEmitter {
                     .collect::<Result<_, _>>()?;
                 Ok(format!("{{ {} }}", elems.join(", ")))
             }
+            Expr::Tuple { elements, .. } => {
+                // Emit as C struct with fields (simplified approach)
+                let elems: Vec<String> = elements
+                    .iter()
+                    .map(|e| self.emit_expr(e))
+                    .collect::<Result<_, _>>()?;
+                Ok(format!("{{ {} }}", elems.join(", ")))
+            }
 
             Expr::StructLit { ty, fields, .. } => {
                 let name = match &**ty {
@@ -697,9 +705,26 @@ fn type_to_c(ty: &TypeExpr) -> String {
             }
         },
         TypeExpr::List(_) => "void*".into(),
+        TypeExpr::Array { element_type, length } => {
+            // For simplicity, treat arrays as pointers to their element type in C
+            format!("{}*", type_to_c(element_type))
+        },
         TypeExpr::Dict { .. } => "void*".into(),
+        TypeExpr::HashMap { .. } => "void*".into(),
+        TypeExpr::Set(_) => "void*".into(),
+        TypeExpr::Tuple(_) => "void*".into(), // Simplified representation
         TypeExpr::Optional(t) => type_to_c(t),
-        TypeExpr::Result(t) => type_to_c(t),
+        TypeExpr::Result { ok_type, error_type: _ } => type_to_c(&ok_type),
+        TypeExpr::ResultOf(t) => type_to_c(t),
+        TypeExpr::Reference { inner, .. } => {
+            format!("{}*", type_to_c(inner))
+        },
+        TypeExpr::Box(inner) => {
+            format!("{}*", type_to_c(inner))
+        },
+        TypeExpr::Function { .. } => "void*".into(), // Function pointers simplified
+        TypeExpr::Unit => "void".into(),
+        TypeExpr::Never => "void".into(), // ! type - zero sized
         TypeExpr::Generic { base, args } => match base.name.as_ref() {
             "List" => "void*".into(),
             "address" => {
@@ -717,9 +742,6 @@ fn type_to_c(ty: &TypeExpr) -> String {
                 }
             }
         },
-        TypeExpr::Reference { inner, .. } => {
-            format!("{}*", type_to_c(inner))
-        }
     }
 }
 

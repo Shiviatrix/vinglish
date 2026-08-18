@@ -849,6 +849,9 @@ fn cmd_build(
     mode: HealingMode,
     extra_libs: &[PathBuf],
 ) -> Result<(), String> {
+    println!("DEBUG: cmd_build start");
+    eprintln!("backend: '{}'", backend);
+    eprintln!("file: {}", file.display());
     let compile_res = compile_project(file, mode, None)?;
     let mut symbol_table = compile_res.symbol_table;
     let mut mir_module = compile_res.mir_module;
@@ -906,6 +909,17 @@ fn cmd_build(
             eprintln!("SSA validation error: {}", e.message);
         }
         return Err("SSA validation failed".into());
+    }
+
+    if backend == "llvm" {
+        match vinglish_llvm::compile_to_llvm_ir(&ssa_module, &symbol_table) {
+            Ok(ir) => {
+                eprintln!("LLVM IR:\n{}", ir);
+            }
+            Err(e) => {
+                eprintln!("Failed to generate LLVM IR: {}", e);
+            }
+        }
     }
 
     let mut post_pm = vinglish_opt::post_ssa_pipeline();
@@ -989,6 +1003,7 @@ fn cmd_build(
     }
 
     if backend == "llvm" {
+        eprintln!("Using LLVM backend");
         vinglish_llvm::compile_to_executable(&ssa_module, &symbol_table, output, &runtime_paths)?;
         eprintln!("  \x1b[32m✓\x1b[0m  Binary: {}", output.display());
         return Ok(());

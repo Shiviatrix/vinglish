@@ -1,0 +1,3 @@
+function test() returns (text, number) begin
+    return ("hello", 42)
+end

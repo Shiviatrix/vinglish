@@ -1,0 +1,1 @@
+function test() begin return 42 end

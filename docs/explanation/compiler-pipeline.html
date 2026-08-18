@@ -103,7 +103,8 @@ double-freeing memory or using a value after you’ve moved it.</li>
 make sure our own optimizer didn’t break the code).</em></p>
 <hr />
 <h2 id="code-generation">4. Code Generation</h2>
-<p>If validation succeeds, the compiler emits C code.</p>
+<p>If validation succeeds, the compiler can emit code for multiple backends.
+The default backend emits C code, but an LLVM IR backend is also available.</p>
 <p><code>emit_mir_c()</code> generates a <code>.c</code> file that
 includes: - Standard <code>#include</code>s and a static string pool. -
 Forward declarations so C doesn’t complain about function order. -
@@ -113,6 +114,10 @@ lowered control flow to raw branches).</p>
 payload, compress it, hash it (SHA-256), and embed it at the very bottom
 of the generated C file as a base64 comment. This lets us decompile the
 C code back into Vinglish MIR later.</p>
+<p><strong>LLVM Backend:</strong> When using the LLVM backend (<code>--backend llvm</code>),
+the compiler emits LLVM IR instead of C. This backend is now production-ready and
+provides full support for Vinglish's pointer and borrowing semantics, including
+borrow, deref, and store deref operations.</p>
 <hr />
 <h2 id="native-compilation">5. Native Compilation</h2>
 <p>Finally, the generated C file is passed to your system’s C compiler

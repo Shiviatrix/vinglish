@@ -40,6 +40,8 @@ pub fn compile_to_executable(
     output: &Path,
     runtime_paths: &[std::path::PathBuf],
 ) -> Result<(), String> {
+    eprintln!("compile_to_executable called");
+    let _ = 42; // intentional unused variable to see if changed
     emit::initialize_targets();
     let context = Context::create();
     let mut codegen = codegen::LLVMCodeGen::new(&context, "vinglish_module", symbol_table);

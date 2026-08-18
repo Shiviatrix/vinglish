@@ -1,0 +1,3 @@
+function test() returns number begin
+    return 42
+end

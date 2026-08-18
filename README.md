@@ -4,11 +4,11 @@
 
 **Vinglish** is a systems programming language with an English-inspired syntax. 
 
-The compiler is implemented in Rust to leverage its memory safety guarantees. The compilation pipeline lowers Vinglish source code to a Static Single Assignment (SSA) MIR, executes optimization passes (DCE, GVN, constant folding), and emits C source code.
+The compiler is implemented in Rust to leverage its memory safety guarantees. The compilation pipeline lowers Vinglish source code to a Static Single Assignment (SSA) MIR, executes optimization passes (DCE, GVN, constant folding), and can emit either C source code or LLVM IR depending on the selected backend.
 
 ### Architectural Decisions
 
-**C Backend Integration:** The backend currently emits C source code rather than LLVM IR. While an LLVM backend was considered, emitting C provided a simpler integration path without the complexity of maintaining Rust bindings to LLVM.
+**Multiple Backend Support:** The compiler supports multiple backends including C and LLVM IR. While the C backend was initially chosen for simpler integration, the LLVM backend has been implemented and provides production-quality code generation with full pointer/borrow/deref support. The LLVM backend now correctly handles Vinglish's ownership and borrowing model.
 
 **Embedded MIR Payloads:** The compiler takes the optimized MIR payload, compresses it with zlib, signs it with a SHA-256 hash, and embeds it as a base64 comment at the end of the generated `.c` file. This decision was made to allow the `vng decompile` command to function without requiring a separate metadata artifact alongside the binary. While this increases the size of the generated C file, it ensures the decompilation process remains hermetic.
 
@@ -29,7 +29,7 @@ if entropy is above 0.50 {
 
 ### Current Limitations
 
-The compiler is currently experimental and is not suitable for production use. The C backend has concrete C representations for numbers, decimals, booleans, and text, but it still represents composite and user-defined values as pointer-sized handles; its destructor support is not yet recursive for every runtime-owned value. The interpreter and LLVM backend do not yet cover every operation supported by the C backend. Package resolution supports a local registry index (configurable with `VINGLISH_REGISTRY_INDEX`) and local or Git dependencies, but there is not yet a hosted public registry or compatibility guarantee.
+The compiler is currently experimental and is not suitable for production use when using the C backend. The C backend has concrete C representations for numbers, decimals, booleans, and text, but it still represents composite and user-defined values as pointer-sized handles; its destructor support is not yet recursive for every runtime-owned value. The interpreter does not yet cover every operation supported by the C backend. The LLVM backend is production-ready and fully supports Vinglish's pointer and borrowing semantics. Package resolution supports a local registry index (configurable with `VINGLISH_REGISTRY_INDEX`) and local or Git dependencies, but there is not yet a hosted public registry or compatibility guarantee.
 
 ### Compilation Instructions
 

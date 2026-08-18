@@ -1,0 +1,3 @@
+function test_list() returns List<number> begin
+    return 0
+end

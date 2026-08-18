@@ -55,9 +55,17 @@ fn format_type(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Named(id) => id.name.to_string(),
         TypeExpr::List(inner) => format!("List of {}", format_type(inner)),
+        TypeExpr::Array { element_type, length } => format!("[{}; {}]", format_type(element_type), length),
         TypeExpr::Dict { key, val } => format!("Dictionary from {} to {}", format_type(key), format_type(val)),
+        TypeExpr::HashMap { key, val } => format!("HashMap from {} to {}", format_type(key), format_type(val)),
+        TypeExpr::Set(inner) => format!("Set of {}", format_type(inner)),
+        TypeExpr::Tuple(elements) => {
+            let inner = elements.iter().map(format_type).collect::<Vec<_>>().join(", ");
+            format!("({})", inner)
+        },
         TypeExpr::Optional(inner) => format!("Optional {}", format_type(inner)),
-        TypeExpr::Result(inner) => format!("Result of {}", format_type(inner)),
+        TypeExpr::Result { ok_type, error_type: _ } => format!("Result of {}", format_type(&ok_type)),
+        TypeExpr::ResultOf(inner) => format!("Result of {}", format_type(inner)),
         TypeExpr::Reference { mutable, inner } => {
             if *mutable {
                 format!("borrow mutable {}", format_type(inner))
@@ -65,6 +73,13 @@ fn format_type(ty: &TypeExpr) -> String {
                 format!("borrow {}", format_type(inner))
             }
         },
+        TypeExpr::Box(inner) => format!("Box<{}>", format_type(inner)),
+        TypeExpr::Function { params, return_type } => {
+            let param_str = params.iter().map(format_type).collect::<Vec<_>>().join(", ");
+            format!("({}) -> {}", param_str, format_type(return_type))
+        }
+        TypeExpr::Unit => "()".to_string(),
+        TypeExpr::Never => "!".to_string(),
         TypeExpr::Generic { base, args } => {
             let args_str: Vec<String> = args.iter().map(format_type).collect();
             format!("{}<{}>", base.name, args_str.join(", "))

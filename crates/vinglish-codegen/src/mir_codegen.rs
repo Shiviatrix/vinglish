@@ -44,7 +44,7 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
 ) -> Result<String, MirCEmitError> {
     let pool = StringPool::collect(module);
     let mut out = String::from(
-        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stddef.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\nstatic int64_t ving_print_text(const char *value) { return fputs(value, stdout); }\nstatic int64_t ving_print_double(double value) { return printf(\"%g\", value); }\nstatic int64_t ving_print_bool(bool value) { return fputs(value ? \"true\" : \"false\", stdout); }\nstatic int64_t ving_print_i64(int64_t value) { return printf(\"%\" PRId64, value); }\nstatic int64_t ving_println_text(const char *value) { return printf(\"%s\\n\", value); }\nstatic int64_t ving_println_double(double value) { return printf(\"%g\\n\", value); }\nstatic int64_t ving_println_bool(bool value) { return fputs(value ? \"true\\n\" : \"false\\n\", stdout); }\nstatic int64_t ving_println_i64(int64_t value) { return printf(\"%\" PRId64 \"\\n\", value); }\n#define print(x) _Generic((x), const char*: ving_print_text, char*: ving_print_text, double: ving_print_double, bool: ving_print_bool, default: ving_print_i64)(x)\n#define println(x) _Generic((x), const char*: ving_println_text, char*: ving_println_text, double: ving_println_double, bool: ving_println_bool, default: ving_println_i64)(x)\n#define abs llabs\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern int64_t rt_list_borrow_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\nextern void rt_list_free(int64_t);\nextern uintptr_t ving_map_free(uintptr_t);\n\n",
+        "/* Generated from Vinglish SSA MIR. */\n#include <stdint.h>\n#include <stddef.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\nstatic int64_t ving_print_text(const char *value) { return fputs(value, stdout); }\nstatic int64_t ving_print_double(double value) { return printf(\"%g\", value); }\nstatic int64_t ving_print_bool(bool value) { return fputs(value ? \"true\" : \"false\", stdout); }\nstatic int64_t ving_print_i64(int64_t value) { return printf(\"%\" PRId64, value); }\nstatic int64_t ving_println_text(const char *value) { return printf(\"%s\\n\", value); }\nstatic int64_t ving_println_double(double value) { return printf(\"%g\\n\", value); }\nstatic int64_t ving_println_bool(bool value) { return fputs(value ? \"true\\n\" : \"false\\n\", stdout); }\nstatic int64_t ving_println_i64(int64_t value) { return printf(\"%\" PRId64 \"\\n\", value); }\n#define print(x) _Generic((x), const char*: ving_print_text, char*: ving_print_text, double: ving_print_double, bool: ving_print_bool, default: ving_print_i64)(x)\n#define println(x) _Generic((x), const char*: ving_println_text, char*: ving_println_text, double: ving_println_double, bool: ving_println_bool, default: ving_println_i64)(x)\n#define abs llabs\nstatic inline const char* _to_text_double(double x) {\n    char* buf = malloc(32);\n    snprintf(buf, 32, \"%g\", x);\n    return buf;\n}\nstatic inline const char* _to_text_long(long x) {\n    char* buf = malloc(32);\n    snprintf(buf, 32, \"%ld\", x);\n    return buf;\n}\n#define to_text(x) _Generic((x), \\\n    double: _to_text_double(x), \\\n    long: _to_text_long(x), \\\n    int: _to_text_long(x) \\\n)\nextern const char* ving_str_concat(const char*, const char*);\nextern int64_t rt_list_new(int64_t);\nextern int64_t rt_list_get(int64_t, int64_t);\nextern int64_t rt_list_borrow_get(int64_t, int64_t);\nextern void rt_list_set(int64_t, int64_t, int64_t);\nextern int64_t rt_list_len(int64_t);\nextern void rt_list_push(int64_t, int64_t);\nextern int64_t rt_list_pop(int64_t);\nextern void rt_list_free(int64_t);\nextern uintptr_t ving_map_free(uintptr_t);\n\n",
     );
     for inc in &module.foreign_includes {
         writeln!(out, "#include \"{}\"", inc)?;
@@ -502,11 +502,20 @@ fn to_c_type(ty: &Type) -> &'static str {
         | Type::Pointer(_)
         | Type::List(_)
         | Type::Dict(_, _)
+        | Type::HashMap(_, _)
         | Type::Optional(_)
         | Type::Result(_, _)
+        | Type::Box(_)
         | Type::Named(_, _)
         | Type::Function(_, _)
         | Type::Var(_) => "uintptr_t",
+        Type::Never => "void", // ! type - zero sized
+        Type::Array(inner, _len) => {
+            // For simplicity, treat arrays as pointers to their element type
+            to_c_type(inner)
+        },
+        Type::Set(_) => "uintptr_t", // Treat as pointer to hash set
+        Type::Tuple(_) => "uintptr_t", // Treat as pointer to struct
     }
 }
 fn c_value_type<V: CValueId>(value: V, symbols: &SymbolTable) -> &'static str {

@@ -533,6 +533,21 @@ impl<'t> Parser<'t> {
                 }
                 (ty, self.parse_expr())
             }
+            Token::Ident(_) => {
+                // Try to parse as a type expression first
+                let ty = self.parse_type_expr();
+                // If we successfully parsed a type and the next token indicates
+                // this is a type-only declaration (no value), return it as such
+                if ty.is_some() && matches!(
+                    self.current(),
+                    Token::Newline | Token::Dedent | Token::EOF | Token::End | Token::Otherwise
+                ) {
+                    return (ty, None);
+                }
+                // Otherwise, parse as an expression (could be a type used as identifier or actual expression)
+                let expr = self.parse_expr();
+                (None, expr)
+            }
             _ => {
                 let expr = self.parse_expr();
                 (None, expr)
@@ -1179,10 +1194,34 @@ impl<'t> Parser<'t> {
         let span = self.current_span();
         match self.current().clone() {
             Token::LParen => {
+                let start = self.current_span();
                 self.advance();
-                let expr = self.parse_expr()?;
-                self.expect(&Token::RParen);
-                Some(expr)
+                let mut elements = Vec::new();
+                loop {
+                    self.skip_newlines();
+                    if self.eat(&Token::RParen) {
+                        break;
+                    }
+                    if let Some(expr) = self.parse_expr() {
+                        elements.push(expr);
+                    }
+                    if !self.eat(&Token::Comma) {
+                        self.expect(&Token::RParen);
+                        break;
+                    }
+                }
+                let end = self.current_span();
+                let span = start.merge(end);
+                if elements.is_empty() {
+                    // Empty tuple
+                    Some(Expr::Tuple { elements, span })
+                } else if elements.len() == 1 {
+                    // Parenthesized expression
+                    Some(elements[0].clone())
+                } else {
+                    // Tuple literal
+                    Some(Expr::Tuple { elements, span })
+                }
             }
             Token::Integer(i) => {
                 self.advance();
@@ -1314,29 +1353,6 @@ impl<'t> Parser<'t> {
 
     fn parse_type_expr(&mut self) -> Option<TypeExpr> {
         let span = self.current_span();
-        // Check for `List of T` or `Dictionary from K to V` before the general case
-        if let Token::Ident(ref s) = self.current().clone() {
-            if s == "List" {
-                self.advance();
-                self.eat(&Token::Of);
-                let inner = self.parse_type_expr().map(Arc::new)?;
-                return Some(TypeExpr::List(inner));
-            }
-            if s == "Dictionary" {
-                self.advance();
-                self.eat(&Token::From);
-                let key = self.parse_type_expr().map(Arc::new)?;
-                self.eat(&Token::To);
-                let val = self.parse_type_expr().map(Arc::new)?;
-                return Some(TypeExpr::Dict { key, val });
-            }
-            if s == "Result" {
-                self.advance();
-                self.eat(&Token::Of);
-                let inner = self.parse_type_expr().map(Arc::new)?;
-                return Some(TypeExpr::Result(inner));
-            }
-        }
         match self.current().clone() {
             Token::Number => {
                 self.advance();
@@ -1354,27 +1370,234 @@ impl<'t> Parser<'t> {
                 self.advance();
                 Some(TypeExpr::Named(Ident::new("boolean", span)))
             }
+            Token::LParen => {
+                self.advance();
+                let mut elements = Vec::new();
+                loop {
+                    self.skip_newlines();
+                    if self.eat(&Token::RParen) {
+                        break;
+                    }
+                    if let Some(ty) = self.parse_type_expr() {
+                        elements.push(ty);
+                    }
+                    if !self.eat(&Token::Comma) {
+                        self.expect(&Token::RParen);
+                        break;
+                    }
+                }
+                Some(TypeExpr::Tuple(elements))
+            }
             Token::Ident(s) => {
                 self.advance();
-                let base = Ident::new(s, span);
-                if self.eat(&Token::Lt) {
-                    let mut args = vec![];
-                    loop {
-                        self.skip_newlines();
-                        if self.eat(&Token::Gt) || self.current() == &Token::EOF {
-                            break;
-                        }
-                        if let Some(ty) = self.parse_type_expr() {
-                            args.push(ty);
-                        }
-                        if !self.eat(&Token::Comma) {
-                            self.expect(&Token::Gt);
-                            break;
+                match s.as_str() {
+                    "List" => {
+                        if self.eat(&Token::Of) {
+                            let inner = self.parse_type_expr().map(Arc::new)?;
+                            Some(TypeExpr::List(inner))
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("List", span)))
                         }
                     }
-                    Some(TypeExpr::Generic { base, args })
-                } else {
-                    Some(TypeExpr::Named(base))
+                    "Dictionary" => {
+                        if self.eat(&Token::From) {
+                            let key = self.parse_type_expr().map(Arc::new)?;
+                            if self.eat(&Token::To) {
+                                let val = self.parse_type_expr().map(Arc::new)?;
+                                Some(TypeExpr::Dict { key, val })
+                            } else {
+                                Some(TypeExpr::Named(Ident::new("Dictionary", span)))
+                            }
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Dictionary", span)))
+                        }
+                    }
+                    "HashMap" => {
+                        if self.eat(&Token::From) {
+                            let key = self.parse_type_expr().map(Arc::new)?;
+                            if self.eat(&Token::To) {
+                                let val = self.parse_type_expr().map(Arc::new)?;
+                                Some(TypeExpr::HashMap { key, val })
+                            } else {
+                                Some(TypeExpr::Named(Ident::new("HashMap", span)))
+                            }
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("HashMap", span)))
+                        }
+                    }
+                    "Set" => {
+                        if self.eat(&Token::Of) {
+                            let inner = self.parse_type_expr().map(Arc::new)?;
+                            Some(TypeExpr::Set(inner))
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Set", span)))
+                        }
+                    }
+                    "Result" => {
+                        if self.eat(&Token::Of) {
+                            let inner = self.parse_type_expr().map(Arc::new)?;
+                            Some(TypeExpr::ResultOf(inner))
+                        } else {
+                            let ok_type = self.parse_type_expr().map(Arc::new)?;
+                            if self.eat(&Token::Comma) {
+                                let error_type = self.parse_type_expr().map(Arc::new)?;
+                                Some(TypeExpr::Result { ok_type, error_type })
+                            } else {
+                                Some(TypeExpr::Named(Ident::new("Result", span)))
+                            }
+                        }
+                    }
+                    "Array" => {
+                        // Try angle bracket syntax first: Array<T> or Array<T; N>
+                        if self.eat(&Token::Lt) {
+                            let element_type = self.parse_type_expr().map(Arc::new)?;
+
+                            // Check if this is a fixed-size array: Array<T; N>
+                            if self.eat(&Token::Semicolon) {
+                                // Parse length expression
+                                let length_expr = self.parse_expr().unwrap_or_else(|| Expr::Lit {
+                                    value: Literal::Int(0),
+                                    span: Span::dummy(),
+                                });
+
+                                // Extract length constant
+                                let length = if let Expr::Lit { value: Literal::Int(n), .. } = length_expr {
+                                    n as u64
+                                } else {
+                                    // Default to 0 for non-literal lengths
+                                    0
+                                };
+
+                                self.expect(&Token::Gt);
+                                return Some(TypeExpr::Array { element_type, length });
+                            } else {
+                                // Generic array: Array<T> (backward compatibility with List<T>)
+                                self.expect(&Token::Gt);
+                                return Some(TypeExpr::List(element_type));
+                            }
+                        }
+
+                        // Fallback to original "Array of T" syntax
+                        if self.eat(&Token::Of) {
+                            let element_type = self.parse_type_expr().map(Arc::new)?;
+
+                            // Check for semicolon and length (fixed-size array syntax)
+                            if self.eat(&Token::Semicolon) {
+                                // Parse length expression
+                                let length_expr = self.parse_expr().unwrap_or_else(|| Expr::Lit {
+                                    value: Literal::Int(0),
+                                    span: Span::dummy(),
+                                });
+
+                                // Extract length constant
+                                let length = if let Expr::Lit { value: Literal::Int(n), .. } = length_expr {
+                                    n as u64
+                                } else {
+                                    // Default to 0 for non-literal lengths
+                                    0
+                                };
+
+                                return Some(TypeExpr::Array { element_type, length });
+                            }
+
+                            // If no semicolon, it's just List syntax (backward compatibility)
+                            return Some(TypeExpr::List(element_type));
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Array", span)))
+                        }
+                    }
+                    "Box" => {
+                        if self.eat(&Token::Of) {
+                            let inner = self.parse_type_expr().map(Arc::new)?;
+                            Some(TypeExpr::Box(inner))
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Box", span)))
+                        }
+                    }
+                    "Tuple" => {
+                        if self.eat(&Token::Lt) {
+                            let mut args = Vec::new();
+                            loop {
+                                self.skip_newlines();
+                                if self.eat(&Token::Gt) || self.current() == &Token::EOF {
+                                    break;
+                                }
+                                if let Some(ty) = self.parse_type_expr() {
+                                    args.push(ty);
+                                }
+                                if !self.eat(&Token::Comma) {
+                                    self.expect(&Token::Gt);
+                                    break;
+                                }
+                            }
+                            Some(TypeExpr::Tuple(args))
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Tuple", span)))
+                        }
+                    }
+                    "Function" => {
+                        if self.eat(&Token::Lt) {
+                            let mut param_types = Vec::new();
+                            loop {
+                                self.skip_newlines();
+                                if self.eat(&Token::Gt) || self.current() == &Token::EOF {
+                                    break;
+                                }
+                                if let Some(ty) = self.parse_type_expr() {
+                                    param_types.push(ty);
+                                }
+                                if !self.eat(&Token::Comma) {
+                                    // Check if this is the return type separator
+                                    if self.eat(&Token::Minus) && self.eat(&Token::Gt) {
+                                        // Parse return type
+                                        let return_type = self.parse_type_expr().map(Arc::new)?;
+                                        return Some(TypeExpr::Function {
+                                            params: param_types,
+                                            return_type
+                                        });
+                                    } else {
+                                        self.expect(&Token::Gt);
+                                        break;
+                                    }
+                                }
+                            }
+                            // If we get here without ->, treat as generic
+                            return Some(TypeExpr::Generic {
+                                base: Ident::new("Function".to_string(), span),
+                                args: param_types
+                            });
+                        } else {
+                            Some(TypeExpr::Named(Ident::new("Function", span)))
+                        }
+                    }
+                    "Unit" => {
+                        Some(TypeExpr::Unit)
+                    }
+                    "Never" => {
+                        Some(TypeExpr::Never)
+                    }
+                    _ => {
+                        let base = Ident::new(s, span);
+                        if self.eat(&Token::Lt) {
+                            let mut args = vec![];
+                            loop {
+                                self.skip_newlines();
+                                if self.eat(&Token::Gt) || self.current() == &Token::EOF {
+                                    break;
+                                }
+                                if let Some(ty) = self.parse_type_expr() {
+                                    args.push(ty);
+                                }
+                                if !self.eat(&Token::Comma) {
+                                    self.expect(&Token::Gt);
+                                    break;
+                                }
+                            }
+                            Some(TypeExpr::Generic { base, args })
+                        } else {
+                            Some(TypeExpr::Named(base))
+                        }
+                    }
                 }
             }
             Token::Borrow => {

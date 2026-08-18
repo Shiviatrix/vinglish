@@ -1,3 +1,4 @@
+use std::boxed::Box;
 use std::collections::HashMap;
 use vinglish_hir::symbol::TypeSymbol;
 use vinglish_hir::types::{Type, TypeVar};
@@ -77,13 +78,13 @@ impl TypeEnv {
     fn seed_builtins(&mut self) {
         use Type::*;
         let builtins: &[(&str, Type)] = &[
-            ("print_number", Function(vec![Int], Box::new(Unit))),
-            ("abs", Function(vec![Int], Box::new(Int))),
-            ("sqrt", Function(vec![Float], Box::new(Float))),
-            ("min", Function(vec![Int, Int], Box::new(Int))),
-            ("max", Function(vec![Int, Int], Box::new(Int))),
-            ("to_text", Function(vec![Int], Box::new(Text))),
-            ("to_number", Function(vec![Text], Box::new(Int))),
+            ("print_number", Function(vec![Int], std::boxed::Box::new(Unit))),
+            ("abs", Function(vec![Int], std::boxed::Box::new(Int))),
+            ("sqrt", Function(vec![Float], std::boxed::Box::new(Float))),
+            ("min", Function(vec![Int, Int], std::boxed::Box::new(Int))),
+            ("max", Function(vec![Int, Int], std::boxed::Box::new(Int))),
+            ("to_text", Function(vec![Int], std::boxed::Box::new(Text))),
+            ("to_number", Function(vec![Text], std::boxed::Box::new(Int))),
         ];
         for (name, ty) in builtins {
             self.define(name, TypeScheme::mono(ty.clone()));
@@ -95,7 +96,7 @@ impl TypeEnv {
             "print",
             TypeScheme {
                 vars: vec![tv1],
-                ty: Function(vec![Var(tv1)], Box::new(Unit)),
+                ty: Function(vec![Var(tv1)], std::boxed::Box::new(Unit)),
             },
         );
 
@@ -104,7 +105,7 @@ impl TypeEnv {
             "println",
             TypeScheme {
                 vars: vec![tv2],
-                ty: Function(vec![Var(tv2)], Box::new(Unit)),
+                ty: Function(vec![Var(tv2)], std::boxed::Box::new(Unit)),
             },
         );
 
@@ -113,7 +114,7 @@ impl TypeEnv {
             "len",
             TypeScheme {
                 vars: vec![tv_len],
-                ty: Function(vec![Named("List".into(), vec![Var(tv_len)])], Box::new(Int)),
+                ty: Function(vec![Named("List".into(), vec![Var(tv_len)])], std::boxed::Box::new(Int)),
             },
         );
     }

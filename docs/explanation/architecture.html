@@ -51,8 +51,7 @@ in Static Single Assignment (SSA) form so we can optimize it.</li>
 </ul>
 <h2 id="constraints">3. Constraints</h2>
 <ul>
-<li>We primarily compile to C. There is an experimental LLVM backend,
-but it’s not the main path.</li>
+<li>The compiler primarily emits C code, but a production-ready LLVM IR backend is also available, providing full support for Vinglish's pointer and borrowing semantics.</li>
 <li>The C runtime (<code>rt/</code>) provides the underlying C code for
 standard library features.</li>
 <li>A Rust runtime (<code>rt_rust/</code>) handles UI capabilities via

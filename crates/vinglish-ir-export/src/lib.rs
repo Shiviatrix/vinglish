@@ -192,6 +192,12 @@ pub struct Call {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Tuple {
+    pub elements: Vec<Expression>,
+    pub span: SourceRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Expression {
     Identifier {
@@ -203,6 +209,7 @@ pub enum Expression {
         span: SourceRange,
     },
     Call(Call),
+    Tuple(Tuple),
     Binary {
         operation: BinaryOperation,
         left: Box<Expression>,
@@ -453,6 +460,13 @@ impl<'a> ExportBuilder<'a> {
                 name: self.name_for(*id),
                 span: (*span).into(),
             },
+            Expr::Tuple { elements, span, .. } => Expression::Tuple(Tuple {
+                elements: elements
+                    .iter()
+                    .map(|element| self.expression(element))
+                    .collect(),
+                span: (*span).into(),
+            }),
             Expr::Call {
                 callee, args, span, ..
             } => Expression::Call(Call {
@@ -542,33 +556,60 @@ impl<'a> ExportBuilder<'a> {
             Type::Unit => ExportType::Unit,
             Type::Reference(inner, mutable) => ExportType::Reference {
                 mutable: *mutable,
-                inner: Box::new(self.type_from_hir(inner)),
+                inner: std::boxed::Box::new(self.type_from_hir(inner)),
             },
             Type::Pointer(inner) => ExportType::Pointer {
-                inner: Box::new(self.type_from_hir(inner)),
+                inner: std::boxed::Box::new(self.type_from_hir(inner)),
             },
             Type::List(inner) => ExportType::Collection {
-                element: Box::new(self.type_from_hir(inner)),
+                element: std::boxed::Box::new(self.type_from_hir(inner)),
             },
             Type::Dict(key, value) => ExportType::Map {
-                key: Box::new(self.type_from_hir(key)),
-                value: Box::new(self.type_from_hir(value)),
+                key: std::boxed::Box::new(self.type_from_hir(key)),
+                value: std::boxed::Box::new(self.type_from_hir(value)),
+            },
+            Type::HashMap(key, value) => ExportType::Map {
+                key: std::boxed::Box::new(self.type_from_hir(key)),
+                value: std::boxed::Box::new(self.type_from_hir(value)),
+            },
+            Type::Set(inner) => ExportType::Collection {
+                element: std::boxed::Box::new(self.type_from_hir(inner)),
             },
             Type::Optional(inner) => ExportType::Optional {
-                inner: Box::new(self.type_from_hir(inner)),
+                inner: std::boxed::Box::new(self.type_from_hir(inner)),
             },
             Type::Result(ok, err) => ExportType::Result {
-                ok: Box::new(self.type_from_hir(ok)),
-                err: Box::new(self.type_from_hir(err)),
+                ok: std::boxed::Box::new(self.type_from_hir(ok)),
+                err: std::boxed::Box::new(self.type_from_hir(err)),
             },
+            Type::Box(inner) => ExportType::Pointer {
+                inner: std::boxed::Box::new(self.type_from_hir(inner)),
+            },
+            Type::Never => ExportType::Unit, // ! type - treat as unit for now
             Type::Function(parameters, returns) => ExportType::Function {
                 parameters: parameters.iter().map(|ty| self.type_from_hir(ty)).collect(),
-                returns: Box::new(self.type_from_hir(returns)),
+                returns: std::boxed::Box::new(self.type_from_hir(returns)),
             },
             Type::Named(name, arguments) => ExportType::Named {
                 name: name.clone(),
                 arguments: arguments.iter().map(|ty| self.type_from_hir(ty)).collect(),
             },
+            Type::Array(element_type, _length) => ExportType::Collection {
+                element: std::boxed::Box::new(self.type_from_hir(element_type)),
+            },
+            Type::Tuple(element_types) => {
+                if element_types.is_empty() {
+                    ExportType::Unit
+                } else if element_types.len() == 1 {
+                    self.type_from_hir(&element_types[0])
+                } else {
+                    // For simplicity, treat as struct-like for now
+                    ExportType::Named {
+                        name: format!("Tuple{}", element_types.len()),
+                        arguments: element_types.iter().map(|ty| self.type_from_hir(ty)).collect(),
+                    }
+                }
+            }
             Type::Var(_) => ExportType::Unknown,
         }
     }

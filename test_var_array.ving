@@ -1,0 +1,3 @@
+function main() begin
+    let x be Array<number>
+end

@@ -142,7 +142,20 @@ impl UnionFind {
                 self.unify(*ka, *kb, span)?;
                 self.unify(*va, *vb, span)
             }
+            (Type::Tuple(a), Type::Tuple(b)) => {
+                if a.len() != b.len() {
+                    return Err(TypeError::new(
+                        format!("tuple length mismatch: expected {} elements, got {}", a.len(), b.len()),
+                        span,
+                    ));
+                }
+                for (x, y) in a.iter().zip(b) {
+                    self.unify(x.clone(), y.clone(), span)?;
+                }
+                Ok(())
+            }
             (Type::Optional(a), Type::Optional(b)) => self.unify(*a, *b, span),
+            (Type::Set(a), Type::Set(b)) => self.unify(*a, *b, span),
             (Type::Result(a1, a2), Type::Result(b1, b2)) => {
                 self.unify(*a1, *b1, span)?;
                 self.unify(*a2, *b2, span)
@@ -443,14 +456,30 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
             }
         },
         TypeExpr::List(t) => Type::List(Box::new(type_expr_to_type(t, env))),
+        TypeExpr::Array { element_type, length } => {
+            Type::Array(Box::new(type_expr_to_type(element_type, env)), *length)
+        }
         TypeExpr::Dict { key, val } => Type::Dict(
             Box::new(type_expr_to_type(key, env)),
             Box::new(type_expr_to_type(val, env)),
         ),
-        TypeExpr::Optional(t) => Type::Optional(Box::new(type_expr_to_type(t, env))),
-        TypeExpr::Result(t) => {
-            Type::Result(Box::new(type_expr_to_type(t, env)), Box::new(Type::Text))
+        TypeExpr::HashMap { key, val } => Type::Dict(
+            Box::new(type_expr_to_type(key, env)),
+            Box::new(type_expr_to_type(val, env)),
+        ),
+        TypeExpr::Set(t) => Type::Set(Box::new(type_expr_to_type(t, env))),
+        TypeExpr::Tuple(elements) => {
+            Type::Tuple(elements.iter().map(|e| type_expr_to_type(e, env)).collect())
         }
+        TypeExpr::Optional(t) => Type::Optional(Box::new(type_expr_to_type(t, env))),
+        TypeExpr::Result { ok_type, error_type } => Type::Result(
+            Box::new(type_expr_to_type(ok_type, env)),
+            Box::new(type_expr_to_type(error_type, env))
+        ),
+        TypeExpr::ResultOf(t) => Type::Result(
+            Box::new(type_expr_to_type(t, env)),
+            Box::new(Type::Text)
+        ),
         TypeExpr::Generic { base, args } => {
             if base.name.as_ref() == "address" && args.len() == 1 {
                 Type::Pointer(Box::new(type_expr_to_type(&args[0], env)))
@@ -464,6 +493,13 @@ fn type_expr_to_type(te: &TypeExpr, env: &std::collections::HashMap<String, Type
         TypeExpr::Reference { mutable, inner } => {
             Type::Reference(Box::new(type_expr_to_type(inner, env)), *mutable)
         }
+        TypeExpr::Box(inner) => Type::Pointer(Box::new(type_expr_to_type(inner, env))),
+        TypeExpr::Function { params, return_type } => Type::Function(
+            params.iter().map(|p| type_expr_to_type(p, env)).collect(),
+            Box::new(type_expr_to_type(return_type, env))
+        ),
+        TypeExpr::Unit => Type::Unit,
+        TypeExpr::Never => Type::Never,
     }
 }
 
@@ -1655,6 +1691,25 @@ impl TypeInferencePass {
                     HirExpr::List {
                         elements: hir_elems,
                         ty: self.intern(ctx, list_ty.clone()),
+                        span: *span,
+                    },
+                )
+            }
+            Expr::Tuple { elements, span } => {
+                let mut elem_tys = Vec::new();
+                let mut hir_elems = Vec::new();
+                for e in elements {
+                    let (et, he) = self.infer_expr(ctx, e);
+                    elem_tys.push(et);
+                    hir_elems.push(he);
+                }
+                let tuple_ty = Type::Tuple(elem_tys);
+                self.record(ctx, *span, tuple_ty.clone());
+                (
+                    tuple_ty.clone(),
+                    HirExpr::Tuple {
+                        elements: hir_elems,
+                        ty: self.intern(ctx, tuple_ty.clone()),
                         span: *span,
                     },
                 )

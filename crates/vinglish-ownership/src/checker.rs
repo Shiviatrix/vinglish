@@ -230,6 +230,11 @@ impl Checker {
                     self.check_expr_use(e);
                 }
             }
+            Expr::Tuple { elements, .. } => {
+                for e in elements {
+                    self.check_expr_use(e);
+                }
+            }
             Expr::Block(b) => {
                 self.check_block(b);
             }

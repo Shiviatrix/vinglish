@@ -254,7 +254,7 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                     pos += 1;
                     Token::StarEq
                 } else {
-                    Token::Star
+                    Token::Deref
                 }
             }
             '/' => {
@@ -290,7 +290,7 @@ fn lex_line(line: &str, base_offset: u32) -> (Vec<Spanned<Token>>, Vec<LexError>
                 }
             }
             '^' => Token::BitXor,
-            '&' => Token::BitAnd,
+            '&' => Token::Borrow,
             '|' => Token::BitOr,
             '?' => Token::QuestionMark,
             '<' => {

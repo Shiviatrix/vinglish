@@ -162,6 +162,11 @@ pub enum Expr {
         ty: TypeId,
         span: Span,
     },
+    Tuple {
+        elements: Vec<Expr>,
+        ty: TypeId,
+        span: Span,
+    },
     StructInit {
         id: TypeId,
         fields: Vec<Expr>,
@@ -193,6 +198,7 @@ impl Expr {
             Expr::FieldIndex { ty, .. } => *ty,
             Expr::Index { ty, .. } => *ty,
             Expr::List { ty, .. } => *ty,
+            Expr::Tuple { ty, .. } => *ty,
             Expr::StructInit { ty, .. } => *ty,
             Expr::MacroCall { ty, .. } => *ty,
             Expr::PostfixTry { ty, .. } => *ty,
@@ -210,6 +216,7 @@ impl Expr {
             Expr::FieldIndex { span, .. } => *span,
             Expr::Index { span, .. } => *span,
             Expr::List { span, .. } => *span,
+            Expr::Tuple { span, .. } => *span,
             Expr::StructInit { span, .. } => *span,
             Expr::MacroCall { span, .. } => *span,
             Expr::PostfixTry { span, .. } => *span,

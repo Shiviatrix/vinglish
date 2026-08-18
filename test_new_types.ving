@@ -1,0 +1,101 @@
+// Test file for new type expressions in Vinglish
+
+// Test Array type
+function test_array()
+returns Array<number>
+begin
+    let mut arr be [1; 5] // Array of 5 numbers
+    return arr
+end
+
+// Test HashMap type
+function test_hashmap()
+returns HashMap from text to number
+begin
+    let mut map be HashMap from text to number
+    // Note: We can't actually instantiate HashMap yet as we need stdlib support
+    // but we can test the type parsing
+    return map
+end
+
+// Test Set type
+function test_set()
+returns Set of number
+begin
+    let mut set be Set of number
+    return set
+end
+
+// Test Tuple type
+function test_tuple()
+returns (text, number, boolean)
+begin
+    // Tuple return type - we'd need to actually return a tuple
+    // For now just testing the type parsing
+    return ("hello", 42, true)
+end
+
+// Test enhanced Result type
+function test_result_explicit()
+returns Result<number, text>
+begin
+    // Explicit Result type with custom error type
+    return ok 42
+end
+
+function test_result_shorthand()
+returns Result of number
+begin
+    // Shorthand Result type (equivalent to Result<number, text>)
+    return ok 100
+end
+
+// Test Box type
+function test_box()
+returns Box<number>
+begin
+    // Box type for explicit heap allocation
+    // We can't actually allocate yet without stdlib support
+    return box 123
+end
+
+// Test Unit type
+function test_unit()
+returns Unit
+begin
+    return ()
+end
+
+// Test Never type (for functions that never return)
+function test_never() -> Never
+begin
+    // This function never returns normally
+    // In practice, this might call exit() or loop forever
+    loop
+    end
+end
+
+// Test Function type
+type MyFunctionType = Function<(number, text), boolean>
+
+function apply_func(f: MyFunctionType, x: number, y: text) returns boolean
+begin
+    return f(x, y)
+end
+
+// Test nested types
+function test_nested()
+returns HashMap from text to List of Array<number>
+begin
+    // Complex nested type
+    return HashMap from text to List of Array<number>
+end
+
+// Test generic types (existing functionality)
+type Container<T> = Dictionary from text to T
+
+function test_generic()
+returns Container<number>
+begin
+    return Container<number>
+end
