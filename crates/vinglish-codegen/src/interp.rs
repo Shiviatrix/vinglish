@@ -502,7 +502,7 @@ impl<'a> Interpreter<'a> {
                     },
                     UnOp::Not => Value::Bool(!val.is_truthy()),
                     UnOp::Borrow(_) | UnOp::Deref => {
-                        panic!("borrow/deref not supported in interpreter")
+                        return Err(InterpError::new("borrow/deref UnOp should be lowered to Instruction::Borrow/Instruction::Deref"))
                     }
                 };
                 locals.insert(*dest, res);
@@ -531,8 +531,9 @@ impl<'a> Interpreter<'a> {
                         ReferenceLoc::ListElement(addr, idx) => {
                             addr.borrow().get(idx).cloned().unwrap_or(Value::Unit)
                         }
-                        ReferenceLoc::StructField(_, _) => {
-                            return Err(InterpError::new("Struct field deref unsupported"));
+                        ReferenceLoc::StructField(addr, fid) => {
+                            let borrow = addr.borrow();
+                            borrow.get(&fid).cloned().unwrap_or(Value::Unit)
                         }
                     };
                     locals.insert(*dest, deref_val);
@@ -560,8 +561,8 @@ impl<'a> Interpreter<'a> {
                                 ));
                             }
                         }
-                        ReferenceLoc::StructField(_, _) => {
-                            return Err(InterpError::new("Struct field deref unsupported"));
+                        ReferenceLoc::StructField(addr, fid) => {
+                            addr.borrow_mut().insert(fid, val);
                         }
                     }
                 } else {

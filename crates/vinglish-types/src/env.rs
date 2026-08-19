@@ -148,6 +148,16 @@ impl TypeEnv {
         None
     }
 
+    pub fn get_all_names(&self) -> std::collections::HashSet<String> {
+        let mut names = std::collections::HashSet::new();
+        for scope in &self.scopes {
+            for name in scope.keys() {
+                names.insert(name.clone());
+            }
+        }
+        names
+    }
+
     pub fn define_struct(&mut self, name: &str, symbol: TypeSymbol) {
         self.structs.insert(name.to_string(), symbol);
     }

@@ -17,6 +17,8 @@ pub enum ParseError {
     InvalidType { span: Span },
     #[error("{message} at {span}")]
     Custom { message: String, span: Span },
+    #[error("automatically healed: {message}")]
+    Healed { message: String, span: Span },
 }
 
 impl ParseError {
@@ -34,6 +36,7 @@ impl ParseError {
             Self::InvalidExpr { span } => *span,
             Self::InvalidType { span } => *span,
             Self::Custom { span, .. } => *span,
+            Self::Healed { span, .. } => *span,
             Self::UnexpectedEof => Span::dummy(),
         }
     }

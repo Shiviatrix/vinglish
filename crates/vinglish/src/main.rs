@@ -345,8 +345,13 @@ fn load_module_graph(
     }
 
     let (module, parse_errors) = parse(&tokens);
+    let mut has_fatal_errors = false;
     if !parse_errors.is_empty() {
         for e in &parse_errors {
+            let is_healed = matches!(e, vinglish_parser::error::ParseError::Healed { .. });
+            if !is_healed {
+                has_fatal_errors = true;
+            }
             let mut found = match e {
                 vinglish_parser::error::ParseError::Expected { found: f, .. } => f.clone(),
                 _ => String::new(),
@@ -359,7 +364,11 @@ fn load_module_graph(
                 found = src[(span.start as usize)..(span.end as usize)].to_string();
             }
 
-            let mut diag = vinglish_diagnostics::Diagnostic::error("P0001", &message, span);
+            let mut diag = if is_healed {
+                vinglish_diagnostics::Diagnostic::warning("P1001", &message, span)
+            } else {
+                vinglish_diagnostics::Diagnostic::error("P0001", &message, span)
+            };
             diag.enrich(&src);
 
             let source_line = diag.source_line.clone();
@@ -370,7 +379,9 @@ fn load_module_graph(
             let rendered = vinglish_diagnostics::render(&[diag], &file_path.display().to_string());
             eprint!("{}", rendered);
         }
-        return Err(format!("Parse errors in module '{}'", module_name));
+        if has_fatal_errors {
+            return Err(format!("Parse errors in module '{}'", module_name));
+        }
     }
 
     let mut module_deps = Vec::new();

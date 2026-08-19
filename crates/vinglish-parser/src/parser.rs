@@ -972,6 +972,14 @@ impl<'t> Parser<'t> {
                         }
                     }
                 }
+                Token::Be => {
+                    let span = self.current_span();
+                    self.errors.push(ParseError::Healed {
+                        message: "used `=` instead of `==` for comparison".into(),
+                        span,
+                    });
+                    BinOp::Eq
+                }
                 _ => break,
             };
             let op_span = self.current_span();

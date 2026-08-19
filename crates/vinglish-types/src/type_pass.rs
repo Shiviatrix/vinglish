@@ -1151,9 +1151,9 @@ impl TypeInferencePass {
                     )
                 } else {
                     let fresh = self.fresh();
-                    // Get all known symbol names for typo suggestions
-                    let symbol_names: Vec<String> =
+                    let mut symbol_names: std::collections::HashSet<String> =
                         ctx.symbol_table.names().keys().cloned().collect();
+                    symbol_names.extend(ctx.scope_stack.iter().flat_map(|s| s.keys()).cloned());
                     let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(
                         &id.name,
                         id.span,
@@ -1209,9 +1209,9 @@ impl TypeInferencePass {
                     } else {
                         // Types or vars with generics not supported in expressions yet
                         let fresh = self.fresh();
-                        // Get all known symbol names for typo suggestions
-                        let symbol_names: Vec<String> =
+                        let mut symbol_names: std::collections::HashSet<String> =
                             ctx.symbol_table.names().keys().cloned().collect();
+                        symbol_names.extend(ctx.scope_stack.iter().flat_map(|s| s.keys()).cloned());
                         let diag = vinglish_diagnostics::diagnostic::from_unknown_ident(
                             &base.name,
                             *span,

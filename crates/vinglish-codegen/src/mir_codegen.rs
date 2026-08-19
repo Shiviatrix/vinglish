@@ -1,6 +1,8 @@
 //! MIR-only C backend. AST nodes cannot enter this API.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::Write;
 use thiserror::Error;
 use vinglish_hir::symbol::{FunctionId, SsaValueId, SymbolTable, VariableId};
@@ -105,6 +107,9 @@ pub fn emit_mir_c<V: CValueId + serde::Serialize>(
         }
     }
     out.push('\n');
+    emit_drop_functions(&mut out, module, symbols).unwrap();
+    out.push('\n');
+
     for function in &module.functions {
         if !function.is_foreign {
             emit_function(&mut out, function, symbols, module, &pool)?;
@@ -379,9 +384,16 @@ fn instruction_to_c<V: CValueId>(
                     | Type::Unit => {
                         format!("/* skip free v_{} */", var.raw())
                     }
-                    Type::List(_) => format!("rt_list_free((int64_t)v_{})", var.raw()),
-                    Type::Dict(_, _) => format!("ving_map_free((uintptr_t)v_{})", var.raw()),
-                    _ => format!("free((void *)(uintptr_t)v_{})", var.raw()),
+                    Type::List(_) | Type::Dict(_, _) | Type::HashMap(_, _) => {
+                        format!("drop_type_{}((uintptr_t)v_{})", type_hash(&symbol.ty), var.raw())
+                    }
+                    _ => {
+                        if !symbol.ty.is_copy() && !matches!(symbol.ty, Type::Text) {
+                            format!("drop_type_{}((uintptr_t)v_{})", type_hash(&symbol.ty), var.raw())
+                        } else {
+                            format!("/* skip free v_{} (is_copy) */", var.raw())
+                        }
+                    }
                 }
             } else {
                 format!("free((void *)(uintptr_t)v_{})", var.raw())
@@ -508,6 +520,100 @@ fn function_c_return_type<V: CValueId>(
         })
         .unwrap_or("int64_t")
 }
+
+fn type_hash(ty: &Type) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    ty.hash(&mut hasher);
+    hasher.finish()
+}
+
+fn emit_drop_functions<V: CValueId>(
+    out: &mut String,
+    module: &MirModule<V>,
+    symbols: &SymbolTable,
+) -> std::fmt::Result {
+    use std::fmt::Write;
+    let mut dropped_types = HashSet::new();
+
+    // Collect all dropped types
+    for function in &module.functions {
+        for block in &function.blocks {
+            for instruction in &block.instrs {
+                if let Instruction::Drop(var) = instruction {
+                    if let Some(symbol) = symbols.get_var(VariableId(vinglish_hir::symbol::SymbolId(var.raw()))) {
+                        dropped_types.insert(symbol.ty.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // Expand to include inner types (e.g. List<List<T>> needs drop for List<T>)
+    let mut queue: Vec<Type> = dropped_types.into_iter().collect();
+    let mut processed = HashSet::new();
+    let mut to_emit = Vec::new();
+
+    while let Some(ty) = queue.pop() {
+        if processed.contains(&ty) {
+            continue;
+        }
+        processed.insert(ty.clone());
+        to_emit.push(ty.clone());
+
+        match &ty {
+            Type::List(inner) => queue.push(*inner.clone()),
+            Type::Dict(k, v) | Type::HashMap(k, v) => {
+                queue.push(*k.clone());
+                queue.push(*v.clone());
+            }
+            Type::Named(_, _) | Type::Tuple(_) | Type::Set(_) | Type::Array(_, _) | Type::Optional(_) | Type::Result(_, _) | Type::Box(_) => {
+                // Not fully implemented recursive drop for all these yet
+            }
+            _ => {}
+        }
+    }
+
+    // Forward declare drop functions
+    for ty in &to_emit {
+        let hash = type_hash(ty);
+        writeln!(out, "static void drop_type_{}(uintptr_t ptr);", hash)?;
+    }
+    
+    // Implement drop functions
+    for ty in to_emit {
+        let hash = type_hash(&ty);
+        writeln!(out, "static void drop_type_{}(uintptr_t ptr) {{", hash)?;
+        writeln!(out, "    if (!ptr) return;")?;
+        match &ty {
+            Type::List(inner) => {
+                writeln!(out, "    int64_t len = rt_list_len(ptr);")?;
+                writeln!(out, "    for (int64_t i = 0; i < len; i++) {{")?;
+                writeln!(out, "        uintptr_t elem = rt_list_get(ptr, i);")?;
+                if inner.is_copy() || matches!(**inner, Type::Text) {
+                    // primitive, no drop needed
+                } else {
+                    let inner_hash = type_hash(inner);
+                    writeln!(out, "        drop_type_{}(elem);", inner_hash)?;
+                }
+                writeln!(out, "    }}")?;
+                writeln!(out, "    rt_list_free(ptr);")?;
+            }
+            Type::Dict(_, _) | Type::HashMap(_, _) => {
+                // Not implemented iterating over map in C yet, just free it
+                writeln!(out, "    ving_map_free(ptr);")?;
+            }
+            _ => {
+                if !ty.is_copy() && !matches!(ty, Type::Text) {
+                    writeln!(out, "    free((void *)ptr);")?;
+                }
+            }
+        }
+        writeln!(out, "}}")?;
+    }
+
+    Ok(())
+}
+
 fn c_ident(name: &str) -> String {
     name.chars()
         .map(|c| {
