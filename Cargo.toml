@@ -4,7 +4,6 @@ members = [
     "crates/vinglish-lexer",
     "crates/vinglish-parser",
     "crates/vinglish-types",
-    "crates/vinglish-ownership",
     "crates/vinglish-diagnostics",
     "crates/vinglish-codegen",
     "crates/vinglish-fmt",

@@ -12,7 +12,6 @@ path = "src/main.rs"
 vinglish-lexer      = { path = "../vinglish-lexer" }
 vinglish-parser     = { path = "../vinglish-parser" }
 vinglish-types      = { path = "../vinglish-types" }
-vinglish-ownership  = { path = "../vinglish-ownership" }
 vinglish-diagnostics= { path = "../vinglish-diagnostics" }
 vinglish-codegen    = { path = "../vinglish-codegen" }
 vinglish-fmt        = { path = "../vinglish-fmt" }

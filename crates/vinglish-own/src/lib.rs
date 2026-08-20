@@ -1,3 +1,5 @@
+pub mod liveness;
+pub mod borrowck;
 pub mod analysis;
 pub mod diagnostics;
 pub mod graph;

@@ -3268,7 +3268,6 @@ dependencies = [
  "vinglish-mir",
  "vinglish-opt",
  "vinglish-own",
- "vinglish-ownership",
  "vinglish-parser",
  "vinglish-pkg",
  "vinglish-ssa",
@@ -3431,16 +3430,6 @@ dependencies = [
  "vinglish-hir",
  "vinglish-lexer",
  "vinglish-mir",
-]
-
-[[package]]
-name = "vinglish-ownership"
-version = "0.2.1"
-dependencies = [
- "thiserror",
- "vinglish-lexer",
- "vinglish-parser",
- "vinglish-types",
 ]
 
 [[package]]

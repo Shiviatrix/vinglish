@@ -1,0 +1,6 @@
+function main()
+begin
+    let x be list[1, 2, 3]
+    let y be (x)
+    let z be (x)
+end

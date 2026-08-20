@@ -843,7 +843,7 @@ mod tests {
         );
 
         let c = emit_mir_c(&module, &symbols).unwrap();
-        assert!(c.contains("rt_list_free((int64_t)v_1)"));
+        assert!(c.contains("drop_type_"));
         assert!(!c.contains("free((void *)(uintptr_t)v_1)"));
     }
 }

@@ -14,7 +14,7 @@ use vinglish_ir_export::{ExportBuilder, to_json};
 use vinglish_lexer::tokenize;
 use vinglish_mir::MirModule;
 use vinglish_mir::validator::MirValidatorPass;
-use vinglish_ownership::check_module;
+
 use vinglish_parser::parse;
 use vinglish_types::{
     CompilerContext, MirLowerer,
@@ -542,19 +542,6 @@ fn compile_project(
             }
         }
 
-        let own_errors = check_module(&ast);
-        for e in &own_errors {
-            let mut diag = Diagnostic::error("O0001", &e.message, e.span);
-            if let Some(note) = &e.note {
-                diag.add_note(note.clone());
-            }
-            diag.enrich(src);
-            if !is_fixing {
-                let rendered = render(&[diag], &path.display().to_string());
-                eprint!("{}", rendered);
-            }
-            has_errors = true;
-        }
 
         if has_errors {
             return Err("compilation failed due to errors above".into());
@@ -632,17 +619,6 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
         return Err("SSA validation failed".into());
     }
 
-    let mut post_pm = vinglish_opt::post_ssa_pipeline();
-    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
-        for e in &errors {
-            eprintln!(
-                "MIR validation error after post-SSA optimization: {}",
-                e.message
-            );
-        }
-        return Err("Post-SSA optimization validation failed".into());
-    }
-
     let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
     let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
 
@@ -655,6 +631,17 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
             eprint!("{}", rendered);
         }
         return Err("Ownership validation failed".into());
+    }
+
+    let mut post_pm = vinglish_opt::post_ssa_pipeline();
+    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
+        for e in &errors {
+            eprintln!(
+                "MIR validation error after post-SSA optimization: {}",
+                e.message
+            );
+        }
+        return Err("Post-SSA optimization validation failed".into());
     }
 
     let mut interp = Interpreter::new(&symbol_table);
@@ -955,6 +942,20 @@ fn cmd_build(
         }
     }
 
+    let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
+    let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
+
+    let own_validator = vinglish_own::OwnershipValidator::new();
+    if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
+        for e in &errors {
+            let mut diag = e.clone();
+            diag.enrich(&compile_res.entry_src);
+            let rendered = render(&[diag], &compile_res.entry_filename);
+            eprint!("{}", rendered);
+        }
+        return Err("Ownership validation failed".into());
+    }
+
     let mut post_pm = vinglish_opt::post_ssa_pipeline();
     let post_stats = match post_pm.run_all(&mut ssa_module, &symbol_table) {
         Ok(s) => s,
@@ -971,58 +972,6 @@ fn cmd_build(
 
     let mut stats = pre_stats;
     stats.add(&post_stats);
-
-    if let Some(emit_type) = emit.as_deref() {
-        match emit_type {
-            "ssa" => {
-                println!("{}", ssa_module);
-                return Ok(());
-            }
-            "mir" | "mir-after" => {
-                println!("{}", ssa_module);
-                return Ok(());
-            }
-            "mir-stats" => {
-                println!("--- MIR OPTIMIZATION STATS ---");
-                println!(
-                    "Total variables: {}",
-                    mir_before
-                        .functions
-                        .iter()
-                        .map(|f| f.locals.len())
-                        .sum::<usize>()
-                );
-                println!("Functions: {}", ssa_module.functions.len());
-                println!("CFG Simplification:");
-                println!("  Merged blocks: {}", stats.merged_blocks);
-                println!("Folded constants: {}", stats.folded_constants);
-                println!("GVN Eliminated: {}", stats.gvn_eliminated);
-                return Ok(());
-            }
-            "mir-diff" => {
-                println!("Before\n");
-                println!("{}", mir_before);
-                println!("After\n");
-                println!("{}", ssa_module);
-                return Ok(());
-            }
-            _ => {}
-        }
-    }
-
-    let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
-    let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
-
-    let own_validator = vinglish_own::OwnershipValidator::new();
-    if let Err(errors) = own_validator.validate(&symbol_table, &ssa_module, &own_graph) {
-        for e in &errors {
-            let mut diag = e.clone();
-            diag.enrich(&compile_res.entry_src);
-            let rendered = render(&[diag], &compile_res.entry_filename);
-            eprint!("{}", rendered);
-        }
-        return Err("Ownership validation failed".into());
-    }
 
     if emit.as_deref() == Some("ownership") {
         println!("{}", own_graph);
@@ -1199,17 +1148,6 @@ fn cmd_check(file: &Path, mode: HealingMode) -> bool {
         return false;
     }
 
-    let mut post_pm = vinglish_opt::post_ssa_pipeline();
-    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
-        for e in &errors {
-            eprintln!(
-                "MIR validation error after post-SSA optimization: {}",
-                e.message
-            );
-        }
-        return false;
-    }
-
     let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
     let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
 
@@ -1220,6 +1158,17 @@ fn cmd_check(file: &Path, mode: HealingMode) -> bool {
             diag.enrich(&compile_res.entry_src);
             let rendered = render(&[diag], &compile_res.entry_filename);
             eprint!("{}", rendered);
+        }
+        return false;
+    }
+
+    let mut post_pm = vinglish_opt::post_ssa_pipeline();
+    if let Err(errors) = post_pm.run_all(&mut ssa_module, &symbol_table) {
+        for e in &errors {
+            eprintln!(
+                "MIR validation error after post-SSA optimization: {}",
+                e.message
+            );
         }
         return false;
     }

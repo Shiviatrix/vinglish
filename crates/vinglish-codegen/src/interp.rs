@@ -573,8 +573,9 @@ impl<'a> Interpreter<'a> {
                 }
             }
             Instruction::<SsaValueId>::Drop(var) => {
-                // Interpreter doesn't enforce drop right now
-                let _ = var;
+                // Remove the variable from the environment.
+                // Rust's Rc drops it automatically if this is the last reference.
+                locals.remove(var);
             }
             Instruction::<SsaValueId>::Phi(dest, args) => {
                 let mut resolved = false;

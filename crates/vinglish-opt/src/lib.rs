@@ -79,7 +79,6 @@ impl<V: Clone + Copy + Display + Eq + Hash + vinglish_hir::symbol::HasSymbolId> 
 
 pub fn pre_ssa_pipeline() -> PassManager<vinglish_hir::symbol::VariableId> {
     let mut pm = PassManager::new();
-    pm.add_pass(Box::new(dce::DeadCodeEliminationPass));
     pm.add_pass(Box::new(cfg_simplify::CfgSimplifyPass));
     pm
 }

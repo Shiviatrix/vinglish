@@ -1,19 +1,24 @@
 use crate::diagnostics;
 use crate::graph::OwnershipGraph;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use vinglish_diagnostics::Diagnostic;
 use vinglish_hir::symbol::SsaValueId;
 use vinglish_hir::symbol::SymbolTable;
-use vinglish_mir::{Instruction, MirModule, Operand};
+use vinglish_mir::{BlockId, Instruction, MirModule, Operand, Terminator};
 
-/// Validates ownership invariants such as move semantics and mutable borrowing rules.
-/// Ensures that moved values are not used subsequently and that values are not mutably borrowed more than once concurrently.
 pub struct OwnershipValidator;
 
 impl Default for OwnershipValidator {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Clone, Default, PartialEq, Eq)]
+struct BlockState {
+    moved: HashMap<SsaValueId, vinglish_lexer::Span>,
+    mutably_borrowed: HashMap<SsaValueId, vinglish_lexer::Span>,
+    borrow_sources: HashMap<SsaValueId, SsaValueId>,
 }
 
 impl OwnershipValidator {
@@ -50,28 +55,42 @@ impl OwnershipValidator {
         };
 
         for func in &module.functions {
-            let mut moved = HashMap::new();
-            let mut mutably_borrowed = HashMap::new();
-            let mut borrow_sources = HashMap::new();
+            let mut block_states: HashMap<BlockId, BlockState> = HashMap::new();
+            let mut worklist = Vec::new();
+            
+            if let Some(first_block) = func.blocks.first() {
+                block_states.insert(first_block.id, BlockState::default());
+                worklist.push(first_block.id);
+            }
 
-            for block in &func.blocks {
-                for instr in &block.instrs {
+            let mut processed = HashSet::new();
+
+            while let Some(block_id) = worklist.pop() {
+                if processed.contains(&block_id) {
+                    continue;
+                }
+                processed.insert(block_id);
+
+                let block = func.blocks.iter().find(|b| b.id == block_id).unwrap();
+                let mut state = block_states.get(&block_id).unwrap().clone();
+
+                for (idx, instr) in block.instrs.iter().enumerate() {
+                    let instr_span = block.spans.get(idx).copied().unwrap_or_default();
                     let mut check_op =
                         |op: &Operand<SsaValueId>, is_val: bool, dest: SsaValueId| {
                             if let Operand::<SsaValueId>::Var(src) = op {
-                                if let Some(move_span) = moved.get(src) {
-                                    let use_span = get_span(dest);
+                                if let Some(move_span) = state.moved.get(src) {
                                     errors.push(diagnostics::use_after_move(
                                         symbol_table,
                                         *src,
                                         dest,
-                                        use_span,
+                                        instr_span,
                                         *move_span,
                                     ));
                                 } else if is_val && is_move(*src) {
-                                    moved.insert(*src, get_span(dest));
-                                    if let Some(underlying) = borrow_sources.get(src) {
-                                        mutably_borrowed.remove(underlying);
+                                    state.moved.insert(*src, instr_span);
+                                    if let Some(underlying) = state.borrow_sources.get(src) {
+                                        state.mutably_borrowed.remove(underlying);
                                     }
                                 }
                             }
@@ -92,7 +111,7 @@ impl OwnershipValidator {
                             check_op(left, true, *dest);
                             check_op(right, true, *dest);
                         }
-                        Instruction::<SsaValueId>::Call(dest, _, args) => {
+                        Instruction::<SsaValueId>::Call(dest, _, args) | Instruction::<SsaValueId>::CallIntrinsic(dest, _, args) => {
                             for arg in args {
                                 check_op(arg, true, *dest);
                             }
@@ -104,21 +123,21 @@ impl OwnershipValidator {
                             dest,
                             Operand::<SsaValueId>::Var(src),
                         ) => {
-                            if let Some(_move_span) = moved.get(src) {
+                            if let Some(_move_span) = state.moved.get(src) {
                                 errors.push(diagnostics::borrow_after_move(
                                     symbol_table,
                                     *src,
-                                    get_span(*dest),
+                                    instr_span,
                                 ));
-                            } else if mutably_borrowed.contains_key(src) {
+                            } else if state.mutably_borrowed.contains_key(src) {
                                 errors.push(diagnostics::double_mutable_borrow(
                                     symbol_table,
                                     *src,
-                                    get_span(*dest),
+                                    instr_span,
                                 ));
                             } else {
-                                mutably_borrowed.insert(*src, get_span(*dest));
-                                borrow_sources.insert(*dest, *src);
+                                state.mutably_borrowed.insert(*src, instr_span);
+                                state.borrow_sources.insert(*dest, *src);
                             }
                         }
                         Instruction::<SsaValueId>::ListNew(dest, cap) => {
@@ -128,7 +147,7 @@ impl OwnershipValidator {
                             check_op(idx, true, *dest);
                             check_op(list, false, *dest);
                             if is_move(*dest) {
-                                errors.push(diagnostics::move_from_collection(get_span(*dest)));
+                                errors.push(diagnostics::move_from_collection(instr_span));
                             }
                         }
                         Instruction::<SsaValueId>::ListBorrowGet(dest, list, idx) => {
@@ -138,27 +157,26 @@ impl OwnershipValidator {
                         Instruction::<SsaValueId>::ListBorrowMutGet(dest, list, idx) => {
                             check_op(idx, true, *dest);
                             if let Operand::<SsaValueId>::Var(src) = list {
-                                if let Some(_move_span) = moved.get(src) {
+                                if let Some(_move_span) = state.moved.get(src) {
                                     errors.push(diagnostics::borrow_after_move(
                                         symbol_table,
                                         *src,
-                                        get_span(*dest),
+                                        instr_span,
                                     ));
-                                } else if mutably_borrowed.contains_key(src) {
+                                } else if state.mutably_borrowed.contains_key(src) {
                                     errors.push(diagnostics::double_mutable_borrow(
                                         symbol_table,
                                         *src,
-                                        get_span(*dest),
+                                        instr_span,
                                     ));
                                 } else {
-                                    mutably_borrowed.insert(*src, get_span(*dest));
+                                    state.mutably_borrowed.insert(*src, instr_span);
                                 }
                             }
                         }
                         Instruction::<SsaValueId>::ListSet(_list, idx, val) => {
-                            check_op(idx, true, SsaValueId(0)); // using dummy 0, could cause wrong span but no dest
+                            check_op(idx, true, SsaValueId(0)); 
                             check_op(val, true, SsaValueId(0));
-                            // we need a valid dest for spans, let's just use val's own var if it is one, or just get_span of something
                         }
                         Instruction::<SsaValueId>::StoreDeref(_ptr, val) => {
                             check_op(val, true, SsaValueId(0));
@@ -173,12 +191,65 @@ impl OwnershipValidator {
                             check_op(list, false, *dest);
                         }
                         Instruction::<SsaValueId>::Drop(var) => {
-                            if let Some(src) = borrow_sources.get(var) {
-                                mutably_borrowed.remove(src);
+                            if let Some(src) = state.borrow_sources.get(var) {
+                                state.mutably_borrowed.remove(src);
                             }
                         }
                         _ => {}
                     }
+                }
+
+                // Handle propagation
+                let mut propagate = |target: BlockId, st: &BlockState| {
+                    if let Some(existing) = block_states.get_mut(&target) {
+                        let mut changed = false;
+                        for (k, v) in &st.moved {
+                            if !existing.moved.contains_key(k) {
+                                existing.moved.insert(*k, *v);
+                                changed = true;
+                            }
+                        }
+                        // For mutably_borrowed, a merge is union (if borrowed on one path, it's borrowed)
+                        for (k, v) in &st.mutably_borrowed {
+                            if !existing.mutably_borrowed.contains_key(k) {
+                                existing.mutably_borrowed.insert(*k, *v);
+                                changed = true;
+                            }
+                        }
+                        for (k, v) in &st.borrow_sources {
+                            if !existing.borrow_sources.contains_key(k) {
+                                existing.borrow_sources.insert(*k, *v);
+                                changed = true;
+                            }
+                        }
+                        if changed {
+                            worklist.push(target);
+                            processed.remove(&target);
+                        }
+                    } else {
+                        block_states.insert(target, st.clone());
+                        worklist.push(target);
+                    }
+                };
+
+                match &block.terminator {
+                    Terminator::Jump(target) => propagate(*target, &state),
+                    Terminator::Branch(cond, t_target, f_target) => {
+                        if let Operand::<SsaValueId>::Var(src) = cond {
+                            if let Some(move_span) = state.moved.get(src) {
+                                errors.push(diagnostics::use_after_move(
+                                    symbol_table,
+                                    *src,
+                                    SsaValueId(0), // dummy
+                                    vinglish_lexer::Span::dummy(),
+                                    *move_span,
+                                ));
+                            }
+                        }
+                        propagate(*t_target, &state);
+                        propagate(*f_target, &state);
+                    }
+                    _ => {}
                 }
             }
         }
