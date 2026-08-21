@@ -140,6 +140,7 @@ pub struct Interpreter<'a> {
     _symbol_table: &'a SymbolTable,
     functions: HashMap<FunctionId, &'a MirFunction<SsaValueId>>,
     native_functions: HashMap<FunctionId, NativeFn>,
+    foreign_functions: HashMap<String, NativeFn>,
     libraries: Vec<libloading::Library>,
     pub debugger_hook: Option<std::rc::Rc<std::cell::RefCell<dyn DebuggerHook + 'a>>>,
 }
@@ -150,10 +151,12 @@ impl<'a> Interpreter<'a> {
             _symbol_table: symbol_table,
             functions: HashMap::new(),
             native_functions: HashMap::new(),
+            foreign_functions: HashMap::new(),
             libraries: Vec::new(),
             debugger_hook: None,
         };
 
+        // ... builtins ...
         let builtins: Vec<(&'static str, NativeFnPointer)> = vec![
             ("print", |args| {
                 if let Some(val) = args.first() {
@@ -208,6 +211,51 @@ impl<'a> Interpreter<'a> {
                     Ok(Value::Int(0))
                 }
             }),
+            ("ving_sys_env", |args| {
+                if let Some(Value::Text(key)) = args.first() {
+                    if let Ok(val) = std::env::var(key) {
+                        Ok(Value::Text(val))
+                    } else {
+                        Ok(Value::Text("".to_string()))
+                    }
+                } else {
+                    Ok(Value::Text("".to_string()))
+                }
+            }),
+            ("ving_sys_exec", |args| {
+                if let Some(Value::Text(cmd)) = args.first() {
+                    let output = std::process::Command::new("sh")
+                        .arg("-c")
+                        .arg(cmd)
+                        .output()
+                        .map_err(|_| InterpError::new("Failed to execute command"))?;
+                    Ok(Value::Text(String::from_utf8_lossy(&output.stdout).to_string()))
+                } else {
+                    Ok(Value::Text("".to_string()))
+                }
+            }),
+            ("ving_regex_is_match", |args| {
+                if let (Some(Value::Text(pattern)), Some(Value::Text(text))) = (args.get(0), args.get(1)) {
+                    if let Ok(re) = regex::Regex::new(pattern) {
+                        Ok(Value::Int(if re.is_match(text) { 1 } else { 0 }))
+                    } else {
+                        Ok(Value::Int(0))
+                    }
+                } else {
+                    Ok(Value::Int(0))
+                }
+            }),
+            ("ving_regex_replace", |args| {
+                if let (Some(Value::Text(pattern)), Some(Value::Text(replacement)), Some(Value::Text(text))) = (args.get(0), args.get(1), args.get(2)) {
+                    if let Ok(re) = regex::Regex::new(pattern) {
+                        Ok(Value::Text(re.replace_all(text, replacement).to_string()))
+                    } else {
+                        Ok(Value::Text(text.clone()))
+                    }
+                } else {
+                    Ok(Value::Text("".to_string()))
+                }
+            }),
         ];
 
         for (name, f) in builtins {
@@ -216,6 +264,7 @@ impl<'a> Interpreter<'a> {
                     .native_functions
                     .insert(vinglish_hir::symbol::FunctionId(id), NativeFn { name, f });
             }
+            interp.foreign_functions.insert(name.to_string(), NativeFn { name, f });
         }
 
         interp
@@ -308,12 +357,13 @@ impl<'a> Interpreter<'a> {
             .ok_or_else(|| InterpError::new("Function not found"))?;
 
         let mut locals = HashMap::new();
-        // Bind arguments to parameters (the first N locals are parameters)
+        // Bind arguments to parameters
         for (i, arg) in args.into_iter().enumerate() {
-            if i < func.locals.len() {
-                locals.insert(func.locals[i], arg);
+            if i < func.params.len() {
+                locals.insert(func.params[i], arg);
             }
         }
+        println!("DEBUG: Started call_function for {}, initial locals: {:?}", func.name, locals.keys().map(|k| k.0).collect::<Vec<_>>());
 
         if func.blocks.is_empty() {
             return Ok(Value::Unit);
@@ -343,6 +393,7 @@ impl<'a> Interpreter<'a> {
 
             match &block.terminator {
                 Terminator::<SsaValueId>::Return(opt_op) => {
+                    println!("DEBUG: {} Returning from block {}, locals keys: {:?}", func.name, block.id, locals.keys().map(|k| k.0).collect::<Vec<_>>());
                     return match opt_op {
                         Some(op) => self.eval_operand(op, &locals),
                         None => Ok(Value::Unit),
@@ -369,6 +420,7 @@ impl<'a> Interpreter<'a> {
         locals: &mut HashMap<SsaValueId, Value>,
         previous_block: BlockId,
     ) -> Result<(), InterpError> {
+        println!("DEBUG: exec_instr start for {:?}, locals keys: {:?}", instr, locals.keys().map(|k| k.0).collect::<Vec<_>>());
         match instr {
             Instruction::<SsaValueId>::Assign(dest, op) => {
                 let val = self.eval_operand(op, locals)?;
@@ -444,9 +496,30 @@ impl<'a> Interpreter<'a> {
                                 break;
                             }
                         }
+                        if matched_id.is_none() {
+                            println!("DEBUG: c_symbol '{}' not found in native_functions. Registered native functions:", c_symbol);
+                            for nf in self.native_functions.values() {
+                                println!("DEBUG:   - {}", nf.name);
+                            }
+                        }
                         if let Some(id) = matched_id {
                             id
                         } else {
+                            // Check foreign_functions first
+                            if let Some(nf) = self.foreign_functions.get(c_symbol) {
+                                println!("DEBUG: Calling foreign_functions[{}]", c_symbol);
+                                let ret = (nf.f)(args)?;
+                                println!("DEBUG: foreign_functions returned, inserting into locals ID {}", dest.0);
+                                locals.insert(*dest, ret);
+                                println!("DEBUG: locals keys after insert: {:?}", locals.keys().map(|k| k.0).collect::<Vec<_>>());
+                                return Ok(());
+                            } else {
+                                println!("DEBUG: c_symbol '{}' not found in foreign_functions. Keys:", c_symbol);
+                                for k in self.foreign_functions.keys() {
+                                    println!("DEBUG:   - {}", k);
+                                }
+                            }
+
                             // Try dynamically loaded libraries
                             let mut dynamic_fn: Option<NativeFnPointer> = None;
                             for lib in &self.libraries {
@@ -469,7 +542,9 @@ impl<'a> Interpreter<'a> {
                                 }
                             }
                             if let Some(f) = dynamic_fn {
+                                println!("DEBUG: Calling dynamic fn for {}", c_symbol);
                                 let ret = (f)(args)?;
+                                println!("DEBUG: Returned from dynamic fn, inserting {} (ID {}) into locals", dest, dest.0);
                                 locals.insert(*dest, ret);
                                 return Ok(());
                             }

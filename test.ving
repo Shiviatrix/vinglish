@@ -1,0 +1,16 @@
+use std.sys
+use std.regex
+
+public function main()
+begin
+    let path be env("PATH")
+    print("PATH: ")
+    print(path)
+    
+    let is_m be is_match("bin", path)
+    if is_m == 1 then
+        print("Found bin in PATH!")
+    otherwise
+        print("Did not find bin in PATH.")
+    end
+end

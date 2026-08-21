@@ -619,6 +619,8 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
         return Err("SSA validation failed".into());
     }
 
+    println!("SSA MIR:\n{}", ssa_module);
+
     let own_analyzer = vinglish_own::OwnershipAnalysisPass::new();
     let own_graph = own_analyzer.run(&mut ssa_module, &symbol_table);
 
@@ -643,6 +645,8 @@ fn cmd_run(file: &Path, lib: &Option<PathBuf>) -> Result<(), String> {
         }
         return Err("Post-SSA optimization validation failed".into());
     }
+
+    println!("SSA MIR AFTER OPT:\n{}", ssa_module);
 
     let mut interp = Interpreter::new(&symbol_table);
     if let Some(lib_path) = lib {
@@ -972,6 +976,11 @@ fn cmd_build(
 
     let mut stats = pre_stats;
     stats.add(&post_stats);
+
+    if emit.as_deref() == Some("mir") {
+        println!("{}", ssa_module);
+        return Ok(());
+    }
 
     if emit.as_deref() == Some("ownership") {
         println!("{}", own_graph);

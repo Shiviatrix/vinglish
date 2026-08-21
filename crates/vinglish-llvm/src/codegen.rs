@@ -356,6 +356,19 @@ impl<'ctx> LLVMCodeGen<'ctx> {
                             // These functions return void, so we insert a unit value
                             self.ssa_values
                                 .insert(*dest, self.context.i64_type().const_int(0, false).into());
+                        } else if let Some(func) = self.module.get_function(c_symbol) {
+                            let mut llvm_args = Vec::new();
+                            for arg_op in args {
+                                let arg_val = self.resolve_operand(arg_op)?;
+                                llvm_args.push(arg_val.into());
+                            }
+                            let call_result = self.builder.build_call(func, &llvm_args, &format!("call_{}", dest.0)).map_err(|e| e.to_string())?;
+                            if let Some(val) = call_result.try_as_basic_value().basic() {
+                                self.ssa_values.insert(*dest, val);
+                            } else {
+                                // void return
+                                self.ssa_values.insert(*dest, self.context.i64_type().const_int(0, false).into());
+                            }
                         } else {
                             return Err(format!(
                                 "foreign MIR call `{}` (length: {}) is not implemented by the LLVM backend",
@@ -566,15 +579,77 @@ impl<'ctx> LLVMCodeGen<'ctx> {
 
                 self.ssa_values.insert(*dest, phi.as_basic_value());
             }
-            Instruction::ListNew(_, _)
-            | Instruction::ListGet(_, _, _)
-            | Instruction::ListBorrowGet(_, _, _)
-            | Instruction::ListBorrowMutGet(_, _, _)
-            | Instruction::ListSet(_, _, _)
-            | Instruction::ListLen(_, _)
-            | Instruction::ListPush(_, _)
-            | Instruction::ListPop(_, _) => {
-                todo!("List support in LLVM backend")
+            Instruction::ListNew(dest, cap_op) => {
+                let cap = self.resolve_operand(cap_op)?;
+                let list_ptr = self
+                    .builder
+                    .build_call(self.builtins.rt_list_new, &[cap.into()], "list_new")
+                    .map_err(|e| e.to_string())?
+                    .try_as_basic_value()
+                    .basic()
+                    .unwrap();
+                self.ssa_values.insert(*dest, list_ptr);
+            }
+            Instruction::ListGet(dest, list_op, idx_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let idx = self.resolve_operand(idx_op)?;
+                let elem = self
+                    .builder
+                    .build_call(self.builtins.rt_list_get, &[list.into(), idx.into()], "list_get")
+                    .map_err(|e| e.to_string())?
+                    .try_as_basic_value()
+                    .basic()
+                    .unwrap();
+                self.ssa_values.insert(*dest, elem);
+            }
+            Instruction::ListBorrowGet(dest, list_op, idx_op) | Instruction::ListBorrowMutGet(dest, list_op, idx_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let idx = self.resolve_operand(idx_op)?;
+                let elem_ptr = self
+                    .builder
+                    .build_call(self.builtins.rt_list_borrow_get, &[list.into(), idx.into()], "list_borrow_get")
+                    .map_err(|e| e.to_string())?
+                    .try_as_basic_value()
+                    .basic()
+                    .unwrap();
+                self.ssa_values.insert(*dest, elem_ptr);
+            }
+            Instruction::ListSet(list_op, idx_op, val_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let idx = self.resolve_operand(idx_op)?;
+                let val = self.resolve_operand(val_op)?;
+                self.builder
+                    .build_call(self.builtins.rt_list_set, &[list.into(), idx.into(), val.into()], "list_set")
+                    .map_err(|e| e.to_string())?;
+            }
+            Instruction::ListLen(dest, list_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let len = self
+                    .builder
+                    .build_call(self.builtins.rt_list_len, &[list.into()], "list_len")
+                    .map_err(|e| e.to_string())?
+                    .try_as_basic_value()
+                    .basic()
+                    .unwrap();
+                self.ssa_values.insert(*dest, len);
+            }
+            Instruction::ListPush(list_op, val_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let val = self.resolve_operand(val_op)?;
+                self.builder
+                    .build_call(self.builtins.rt_list_push, &[list.into(), val.into()], "list_push")
+                    .map_err(|e| e.to_string())?;
+            }
+            Instruction::ListPop(dest, list_op) => {
+                let list = self.resolve_operand(list_op)?;
+                let val = self
+                    .builder
+                    .build_call(self.builtins.rt_list_pop, &[list.into()], "list_pop")
+                    .map_err(|e| e.to_string())?
+                    .try_as_basic_value()
+                    .basic()
+                    .unwrap();
+                self.ssa_values.insert(*dest, val);
             }
         }
         Ok(())

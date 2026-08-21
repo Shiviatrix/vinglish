@@ -163,12 +163,21 @@ impl<'a> MirLowerer<'a> {
             HirExpr::Lit { value, .. } => Operand::Constant(value.clone()),
             HirExpr::VarRef { id, .. } => Operand::Var(*id),
             HirExpr::Tuple {
-                elements: _, ty, ..
+                elements, ty, ..
             } => {
-                // For now, we'll handle tuples by allocating space on the stack
-                // and storing each element. This is a simplified implementation.
                 let temp = self.new_temp(*ty, expr.span());
-                // TODO: Proper tuple layout and element storage
+                self.push_instr(Instruction::StackAllocate(
+                    temp,
+                    self.allocation_layout(*ty),
+                ));
+                for (i, e) in elements.iter().enumerate() {
+                    let val = self.lower_expr(e);
+                    self.push_instr(Instruction::StoreField(
+                        temp,
+                        self.field_access(*ty, vinglish_hir::symbol::FieldId(i)),
+                        val,
+                    ));
+                }
                 Operand::Var(temp)
             }
             HirExpr::Call {

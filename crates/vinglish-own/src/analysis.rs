@@ -251,8 +251,23 @@ impl OwnershipAnalysisPass {
                     }
                 }
 
+                let mut terminator_uses = HashSet::new();
+                match &block.terminator {
+                    Terminator::Return(Some(op)) => {
+                        if let Operand::<SsaValueId>::Var(v) = op {
+                            terminator_uses.insert(*v);
+                        }
+                    }
+                    Terminator::Branch(cond, _, _) => {
+                        if let Operand::<SsaValueId>::Var(v) = cond {
+                            terminator_uses.insert(*v);
+                        }
+                    }
+                    _ => {}
+                }
+
                 for var in candidates {
-                    if !live_out.contains(&var) {
+                    if !live_out.contains(&var) && !terminator_uses.contains(&var) {
                         // The variable dies here. If it's Owned, we inject a Drop.
                         // Wait, `graph.is_owned` is global right now! We shouldn't rely strictly on it for drop placement in branches.
                         // But since we are constructing MIR, injecting a drop is fine (it might become a no-op if moved).

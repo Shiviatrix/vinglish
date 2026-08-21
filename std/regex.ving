@@ -1,0 +1,15 @@
+package std
+module regex
+
+public foreign function ving_regex_is_match(pattern: text, data: text) returns number
+public foreign function ving_regex_replace(pattern: text, data: text, replacement: text) returns text
+
+public function is_match(pattern: text, data: text) returns number
+begin
+    return ving_regex_is_match(pattern, data)
+end
+
+public function replace(pattern: text, data: text, replacement: text) returns text
+begin
+    return ving_regex_replace(pattern, data, replacement)
+end

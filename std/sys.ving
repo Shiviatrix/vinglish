@@ -1,0 +1,15 @@
+package std
+module sys
+
+public foreign function ving_sys_env(key: text) returns text
+public foreign function ving_sys_exec(cmd: text) returns text
+
+public function env(key: text) returns text
+begin
+    return ving_sys_env(key)
+end
+
+public function exec(cmd: text) returns text
+begin
+    return ving_sys_exec(cmd)
+end

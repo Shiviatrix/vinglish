@@ -517,27 +517,23 @@ impl<'t> Parser<'t> {
     fn parse_let_rhs(&mut self) -> (Option<TypeExpr>, Option<Expr>) {
         // If we see `otherwise` it's an error-chain let
         // `let file be open "x" otherwise return "missing"`
-        // For now: try to parse expression; if it's just a type name, treat as type
+        let saved = self.pos;
         let tok = self.current().clone();
         match tok {
             Token::Number | Token::Decimal | Token::Text | Token::Boolean => {
-                // Peek: is the next token a newline/end? Then it's a type annotation.
-                // Otherwise might be a value with type keyword used as ident.
                 let ty = self.parse_type_expr();
-                // If there's an `=` or further expression after, parse value too
                 if matches!(
                     self.current(),
                     Token::Newline | Token::Dedent | Token::EOF | Token::End | Token::Otherwise
                 ) {
                     return (ty, None);
                 }
-                (ty, self.parse_expr())
+                // Backtrack if we are parsing as an expression instead
+                self.pos = saved;
+                (None, self.parse_expr())
             }
             Token::Ident(_) => {
-                // Try to parse as a type expression first
                 let ty = self.parse_type_expr();
-                // If we successfully parsed a type and the next token indicates
-                // this is a type-only declaration (no value), return it as such
                 if ty.is_some()
                     && matches!(
                         self.current(),
@@ -546,7 +542,8 @@ impl<'t> Parser<'t> {
                 {
                     return (ty, None);
                 }
-                // Otherwise, parse as an expression (could be a type used as identifier or actual expression)
+                // Backtrack to parse as an expression
+                self.pos = saved;
                 let expr = self.parse_expr();
                 (None, expr)
             }

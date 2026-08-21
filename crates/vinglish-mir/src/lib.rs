@@ -227,7 +227,8 @@ impl<V: Clone + Copy + fmt::Display> fmt::Display for BasicBlock<V> {
 
 impl<V: Clone + Copy + fmt::Display> fmt::Display for MirFunction<V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "fn {} (fn_{}) {{", self.name, self.id.0.0)?;
+        let params_str = self.params.iter().map(|p| format!("{}", p)).collect::<Vec<_>>().join(", ");
+        writeln!(f, "fn {} (fn_{}) ({}) {{", self.name, self.id.0.0, params_str)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }

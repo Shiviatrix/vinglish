@@ -1,0 +1,7 @@
+public function main()
+begin
+    let x be 1
+    if x == 1 then
+        print("x")
+    end
+end
